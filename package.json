@@ -1,5 +1,5 @@
 {
-  "name": "my-jarvis-dashboard-__TENANT__",
+  "name": "my-jarvis-dashboard-yaron",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"functions/**/*.{ts,tsx}\"",
     "lint:apply": "eslint \"src/**/*.{ts,tsx}\" \"functions/**/*.{ts,tsx}\" --fix",
     "smoke": "node scripts/smoke.mjs",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name my-jarvis-dashboard-__TENANT__ --branch main --commit-dirty=true"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name my-jarvis-dashboard-yaron --branch main --commit-dirty=true"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

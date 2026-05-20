@@ -17,7 +17,7 @@
  */
 import { createClerkClient } from "@clerk/backend";
 
-const BASE = process.env.BASE ?? "https://my-jarvis-dashboard-__TENANT__.pages.dev";
+const BASE = process.env.BASE ?? "https://my-jarvis-dashboard-yaron.pages.dev";
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 const CLERK_PUBLISHABLE_KEY = process.env.CLERK_PUBLISHABLE_KEY;
 if (!CLERK_SECRET_KEY || !CLERK_PUBLISHABLE_KEY) {

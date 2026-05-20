@@ -1,57 +1,13 @@
-name = "my-jarvis-dashboard-__TENANT__"
+name = "my-jarvis-dashboard-yaron"
 compatibility_date = "2024-11-06"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
-# WorkOS client ID is public — the JWKS endpoint is client-scoped, not a secret.
-# Committed here so Pages Functions (`env.WORKOS_CLIENT_ID`) have it without a
-# separate `wrangler pages secret put` step.
-#
-# Shared across all tenants (single WorkOS AuthKit app, scoped per-user by sub).
-# If you ever move to per-tenant WorkOS apps, promote this to a __WORKOS_CLIENT_ID__
-# placeholder and let the Provisioning Worker substitute it.
 [vars]
-WORKOS_CLIENT_ID = "client_01KPRK1S863QSD94SK99FKZV0Y"
+# Single-tenant dashboard. Auth runs through Cloudflare Access — the email
+# allow-listed on the Access policy is the only person who can reach this app.
+# Functions verify the Cf-Access-Authenticated-User-Email header matches.
+TENANT_OWNER_EMAIL = "aitheroad@gmail.com"
 
-# R2 public URL base — the domain auto-provisioned when the R2 bucket was
-# made public. /api/voice returns full audio URLs as `${VOICE_PUBLIC_URL}/${key}`.
-# Per-tenant: the Provisioning Worker substitutes this after creating + publishing
-# the R2 bucket, since Cloudflare assigns a fresh `pub-<hash>.r2.dev` per bucket.
-VOICE_PUBLIC_URL = "__VOICE_PUBLIC_URL__"
-
-# TTS gateway — self-hosted Kokoro behind a Worker + Container.
-# Bearer auth via TTS_WORKER_KEY (Pages secret, set by Provisioning Worker
-# step-08). Same URL across all tenants.
-TTS_WORKER_URL = "https://my-jarvis-tts-worker.myjarvis.workers.dev"
-
-# R2 bucket binding — stores voice message audio files.
-# The Provisioning Worker creates `my-jarvis-dashboard-__TENANT__-voice` before
-# `wrangler pages deploy` runs, so the binding is valid on first deploy.
-[[r2_buckets]]
-binding = "VOICE_BUCKET"
-bucket_name = "my-jarvis-dashboard-__TENANT__-voice"
-
-# Durable Object namespace binding. The DO *class* (VoiceChannel) lives in the
-# consolidated `my-jarvis-voice-channel` Worker — one shared Worker across all
-# tenants, per-tenant DO instances keyed by `__TENANT__`. The shared Worker is
-# deployed once and referenced here via `script_name`; the template does NOT
-# ship a `workers/voice-channel/` directory any more (it previously did, but
-# the per-tenant Worker pattern was retired in favor of a single binary with
-# tenant-scoped DO IDs).
-#
-# To address this tenant's DO from Pages Functions:
-#   env.VOICE_CHANNEL.get(env.VOICE_CHANNEL.idFromName("__TENANT__"))
-[[durable_objects.bindings]]
-name = "VOICE_CHANNEL"
-class_name = "VoiceChannel"
-script_name = "my-jarvis-voice-channel"
-
-# Secrets (set via `wrangler pages secret put <NAME> --project-name my-jarvis-dashboard-__TENANT__`):
-#   DATABASE_URL           — Neon pooled connection string (this tenant's own DB)
-#   WORKOS_CLIENT_SECRET   — WorkOS backend secret (shared across tenants)
-#   TENANT_OWNER_USER_ID   — The single WorkOS user.id allowed to use this tenant
-#   VOICE_API_KEY          — Shared bearer the MCP Worker uses to authenticate POST /api/voice
-#   TTS_WORKER_KEY         — Shared bearer for my-jarvis-tts-worker (Kokoro gateway).
-#                            Mirror of the same secret set on that Worker. Generated via
-#                            `openssl rand -hex 32`; stored in
-#                            ~/Workspace/jarvis-pai/integrations/tts-worker-key.
+# Secrets (set via `wrangler pages secret put <NAME> --project-name my-jarvis-dashboard-yaron`):
+#   DATABASE_URL   — Neon pooled connection string
