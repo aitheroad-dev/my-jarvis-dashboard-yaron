@@ -9,7 +9,7 @@
 // same hook (see Layout.tsx) so flipping this toggle takes effect on the
 // next page load (no remount needed).
 
-import { useAuth } from "@workos-inc/authkit-react";
+import { useAuth } from "@/lib/workos-shim";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserSettings } from "@/hooks/useUserSettings";

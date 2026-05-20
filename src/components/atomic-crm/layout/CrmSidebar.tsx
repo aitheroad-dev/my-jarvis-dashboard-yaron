@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
-import { useAuth } from "@workos-inc/authkit-react";
+import { useAuth } from "@/lib/workos-shim";
 import { getTenantIdentity } from "@/lib/tenant";
 import {
   DropdownMenu,

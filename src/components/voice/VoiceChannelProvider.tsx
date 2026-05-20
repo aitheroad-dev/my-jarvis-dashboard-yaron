@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAuth } from "@workos-inc/authkit-react";
+import { useAuth } from "@/lib/workos-shim";
 import { useApi } from "@/lib/api";
 
 export type VoiceSample = {

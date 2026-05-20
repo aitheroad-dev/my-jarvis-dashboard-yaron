@@ -11,7 +11,7 @@
  * `useLogout()` for ra-core-era pages being ported over (Daniel, Flame King,
  * OS-merged). New pages should use `useAuth()` directly.
  */
-import { useAuth as useAuthKit } from "@workos-inc/authkit-react";
+import { useAuth as useAuthKit } from "@/lib/workos-shim";
 
 export interface AuthIdentity {
   /** WorkOS `user.id` — same value as `oauth_subject` in admin.tenants. */
