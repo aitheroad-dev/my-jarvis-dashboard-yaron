@@ -20,6 +20,7 @@ type ProjectDetail = {
   slug: string;
   name: string;
   mission: string | null;
+  body: string | null;
   status: "active" | "paused" | "done" | "archived";
   created_at: string;
   updated_at: string;
@@ -41,6 +42,49 @@ type ProjectDetail = {
   }[];
 };
 
+// Parse a markdown body into block recipe entries.
+// Supports `## ` headings (H3), `- ` bullet lists (UL), and paragraphs (P).
+// Inline markdown (links, code, bold, italic) is handled by renderRich inside
+// P / UL via the existing block components.
+function parseBodyBlocks(body: string): Block[] {
+  const out: Block[] = [];
+  const lines = body.split("\n");
+  let bullets: string[] = [];
+  const flushBullets = () => {
+    if (bullets.length > 0) {
+      out.push({ type: "UL", props: { items: bullets.slice() } });
+      bullets = [];
+    }
+  };
+  let paragraph: string[] = [];
+  const flushParagraph = () => {
+    if (paragraph.length > 0) {
+      out.push({ type: "P", props: { body: paragraph.join(" ").trim() } });
+      paragraph = [];
+    }
+  };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line.startsWith("## ")) {
+      flushBullets();
+      flushParagraph();
+      out.push({ type: "H3", props: { text: line.slice(3) } });
+    } else if (line.startsWith("- ")) {
+      flushParagraph();
+      bullets.push(line.slice(2));
+    } else if (line.trim() === "") {
+      flushBullets();
+      flushParagraph();
+    } else {
+      flushBullets();
+      paragraph.push(line);
+    }
+  }
+  flushBullets();
+  flushParagraph();
+  return out;
+}
+
 function buildRecipe(p: ProjectDetail): Block[] {
   const blocks: Block[] = [];
 
@@ -48,9 +92,16 @@ function buildRecipe(p: ProjectDetail): Block[] {
   blocks.push({ type: "SectionHeader", props: { eyebrow: "01 — MISSION", title: "What this project is for" } });
   blocks.push({ type: "Lede", props: { body: p.mission ?? "*No mission set yet.*" } });
 
-  // 02 — GOALS
+  // 02 — DOCUMENTS & NOTES (only if body is set)
+  if (p.body && p.body.trim().length > 0) {
+    blocks.push({ type: "Divider", props: {} });
+    blocks.push({ type: "SectionHeader", props: { eyebrow: "02 — DOCUMENTS & NOTES", title: "Related documents, links, and details" } });
+    blocks.push(...parseBodyBlocks(p.body));
+  }
+
+  // 03 — GOALS
   blocks.push({ type: "Divider", props: {} });
-  blocks.push({ type: "SectionHeader", props: { eyebrow: "02 — GOALS", title: `Goals under this project (${p.goals.length})` } });
+  blocks.push({ type: "SectionHeader", props: { eyebrow: "03 — GOALS", title: `Goals under this project (${p.goals.length})` } });
   if (p.goals.length === 0) {
     blocks.push({ type: "P", props: { body: "*No goals linked yet.*" } });
   } else {
@@ -68,9 +119,9 @@ function buildRecipe(p: ProjectDetail): Block[] {
     });
   }
 
-  // 03 — TICKETS
+  // 04 — TICKETS
   blocks.push({ type: "Divider", props: {} });
-  blocks.push({ type: "SectionHeader", props: { eyebrow: "03 — TICKETS", title: `Tickets in flight (${p.tickets.length})` } });
+  blocks.push({ type: "SectionHeader", props: { eyebrow: "04 — TICKETS", title: `Tickets in flight (${p.tickets.length})` } });
   if (p.tickets.length === 0) {
     blocks.push({ type: "P", props: { body: "*No tickets under this project yet.*" } });
   } else {

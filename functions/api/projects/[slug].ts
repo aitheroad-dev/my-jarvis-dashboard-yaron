@@ -7,6 +7,7 @@ type ProjectDetail = {
   slug: string;
   name: string;
   mission: string | null;
+  body: string | null;
   status: "active" | "paused" | "done" | "archived";
   created_at: string;
   updated_at: string;
@@ -41,7 +42,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
   const sql = getDb(env);
   const rows = (await sql/* sql */ `
-    SELECT id, slug, name, mission, status, created_at, updated_at
+    SELECT id, slug, name, mission, body, status, created_at, updated_at
     FROM projects
     WHERE slug = ${slug}
     LIMIT 1
