@@ -243,19 +243,23 @@ export function VoiceFeedBody({ onClose }: { onClose: () => void }) {
                           >
                             <Copy className="w-3.5 h-3.5" />
                           </button>
-                          <a
-                            href={sample.audio_url}
-                            download
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1 rounded-md hover:bg-black/5 text-[#999] hover:text-[#666] transition-colors"
-                            title="Download audio"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </a>
+                          {sample.audio_url ? (
+                            <a
+                              href={sample.audio_url}
+                              download
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 rounded-md hover:bg-black/5 text-[#999] hover:text-[#666] transition-colors"
+                              title="Download audio"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </a>
+                          ) : null}
                         </div>
                       </div>
                       <ExpandableText text={sample.text_content} />
-                      <VoicePlayerInline audioUrl={sample.audio_url} />
+                      {sample.audio_url ? (
+                        <VoicePlayerInline audioUrl={sample.audio_url} />
+                      ) : null}
                     </div>
                   );
                 })}

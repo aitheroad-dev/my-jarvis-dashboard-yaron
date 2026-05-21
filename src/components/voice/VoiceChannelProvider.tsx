@@ -8,14 +8,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAuth } from "@/lib/workos-shim";
 import { useApi } from "@/lib/api";
 
 export type VoiceSample = {
   id: string;
   agent_name: string | null;
   text_content: string;
-  audio_url: string;
+  audio_url: string | null;
   title: string | null;
   duration_seconds: number | null;
   category: string | null;
@@ -49,188 +48,83 @@ export function useVoiceChannel(): VoiceChannelContextValue {
   return ctx;
 }
 
-// Keepalive every 25s fights idle-timeouts on intermediaries (browser,
-// proxies, CF edge). The DO's WS handler ignores unknown-type frames so
-// client->server pings are safely dropped there.
-const PING_INTERVAL_MS = 25_000;
-// Initial reconnect delay. Doubles up to MAX on each failure; resets on
-// successful open. Fast enough for transient drops, slow enough not to
-// storm the edge when the whole endpoint is down.
-const INITIAL_BACKOFF_MS = 1_000;
-const MAX_BACKOFF_MS = 30_000;
+const POLL_INTERVAL_MS = 5_000;
 
 export function VoiceChannelProvider({ children }: { children: ReactNode }) {
   const api = useApi();
-  const { getAccessToken } = useAuth();
   const [samples, setSamples] = useState<VoiceSample[]>([]);
   const [connected, setConnected] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({});
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const pingTimerRef = useRef<number | null>(null);
-  const reconnectTimerRef = useRef<number | null>(null);
-  const backoffRef = useRef(INITIAL_BACKOFF_MS);
   const listenersRef = useRef<Set<SampleListener>>(new Set());
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const pollTimerRef = useRef<number | null>(null);
   const destroyedRef = useRef(false);
 
-  // Initial feed + settings fetch. WS subscribes separately and stays
-  // alive for the life of the authed session.
+  const fetchFeed = useCallback(async () => {
+    try {
+      const res = await api("/api/voice/feed");
+      if (!res.ok) {
+        setConnected(false);
+        return;
+      }
+      const rows = (await res.json()) as VoiceSample[];
+      setConnected(true);
+      const newOnes: VoiceSample[] = [];
+      for (const s of rows) {
+        if (!knownIdsRef.current.has(s.id)) {
+          knownIdsRef.current.add(s.id);
+          newOnes.push(s);
+        }
+      }
+      if (newOnes.length > 0) {
+        setSamples(rows);
+        // Fire listeners for genuinely new samples (skip on first load —
+        // every row is "new" at mount, but we don't want to spam autoplay).
+        if (knownIdsRef.current.size > newOnes.length) {
+          newOnes.forEach((s) => {
+            listenersRef.current.forEach((fn) => {
+              try { fn(s); } catch { /* isolate listener errors */ }
+            });
+          });
+        }
+      } else if (samples.length === 0 && rows.length === 0) {
+        setSamples([]);
+      }
+    } catch {
+      setConnected(false);
+    }
+  }, [api, samples.length]);
+
   useEffect(() => {
     let cancelled = false;
+    destroyedRef.current = false;
+
     (async () => {
       try {
-        const [feedRes, settingsRes] = await Promise.all([
-          api("/api/voice/feed"),
-          api("/api/settings"),
-        ]);
-        if (!cancelled && feedRes.ok) {
-          const rows = (await feedRes.json()) as VoiceSample[];
-          setSamples(rows);
-        }
+        const settingsRes = await api("/api/settings");
         if (!cancelled && settingsRes.ok) {
           const body = (await settingsRes.json()) as { data?: UserSettings };
           setSettings(body.data ?? {});
         }
       } catch {
-        // Transient fetch failures don't block the WS path.
+        // ignore
       }
     })();
+
+    void fetchFeed();
+    pollTimerRef.current = window.setInterval(() => {
+      if (!destroyedRef.current) void fetchFeed();
+    }, POLL_INTERVAL_MS);
+
     return () => {
       cancelled = true;
-    };
-    // api closure is recreated per render; depending on it would refetch
-    // on every App re-render. Stable under normal AuthKit usage.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    destroyedRef.current = false;
-
-    const clearPing = () => {
-      if (pingTimerRef.current !== null) {
-        window.clearInterval(pingTimerRef.current);
-        pingTimerRef.current = null;
-      }
-    };
-
-    const clearReconnect = () => {
-      if (reconnectTimerRef.current !== null) {
-        window.clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
-    };
-
-    const scheduleReconnect = () => {
-      if (destroyedRef.current) return;
-      clearReconnect();
-      const delay = backoffRef.current;
-      reconnectTimerRef.current = window.setTimeout(() => {
-        backoffRef.current = Math.min(backoffRef.current * 2, MAX_BACKOFF_MS);
-        void connect();
-      }, delay);
-    };
-
-    const connect = async () => {
-      if (destroyedRef.current) return;
-      try {
-        const token = await getAccessToken();
-        if (!token || destroyedRef.current) return;
-        const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const url = `${proto}//${window.location.host}/api/voice/stream?token=${encodeURIComponent(token)}`;
-        const ws = new WebSocket(url);
-        wsRef.current = ws;
-
-        ws.addEventListener("open", () => {
-          backoffRef.current = INITIAL_BACKOFF_MS;
-          setConnected(true);
-          clearPing();
-          pingTimerRef.current = window.setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-              try {
-                ws.send(JSON.stringify({ type: "ping" }));
-              } catch {
-                // Send can throw on half-closed sockets; ignore.
-              }
-            }
-          }, PING_INTERVAL_MS);
-        });
-
-        ws.addEventListener("message", (ev) => {
-          try {
-            const frame = JSON.parse(ev.data);
-            if (frame && frame.type === "sample" && frame.data) {
-              const sample = frame.data as VoiceSample;
-              setSamples((prev) => {
-                if (prev.some((s) => s.id === sample.id)) return prev;
-                return [sample, ...prev];
-              });
-              listenersRef.current.forEach((fn) => {
-                try {
-                  fn(sample);
-                } catch {
-                  // Isolate listener failures from the others.
-                }
-              });
-            } else if (frame && frame.type === "deploy") {
-              // New deployment broadcast. Reload immediately — voice samples
-              // are persisted in the feed so anything mid-playback can be
-              // replayed after reload. This is the fast path; useVersionPoll
-              // is the fallback for tabs that lost the WS.
-              window.location.reload();
-            }
-          } catch {
-            // Non-JSON or unknown frame — drop.
-          }
-        });
-
-        const handleClose = () => {
-          setConnected(false);
-          clearPing();
-          if (destroyedRef.current) return;
-          scheduleReconnect();
-        };
-        ws.addEventListener("close", handleClose);
-        ws.addEventListener("error", () => {
-          try {
-            ws.close();
-          } catch {
-            // close() can throw if already closed; ignore.
-          }
-        });
-      } catch {
-        scheduleReconnect();
-      }
-    };
-
-    const onVisibility = () => {
-      if (
-        document.visibilityState === "visible" &&
-        (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED)
-      ) {
-        clearReconnect();
-        backoffRef.current = INITIAL_BACKOFF_MS;
-        void connect();
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    void connect();
-
-    return () => {
       destroyedRef.current = true;
-      document.removeEventListener("visibilitychange", onVisibility);
-      clearPing();
-      clearReconnect();
-      if (wsRef.current) {
-        try {
-          wsRef.current.close();
-        } catch {
-          // ignore
-        }
-        wsRef.current = null;
+      if (pollTimerRef.current !== null) {
+        window.clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
       }
     };
-    // getAccessToken is stable from AuthKit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
