@@ -4,11 +4,13 @@ import {
   Briefcase,
   Home,
   Library,
+  Network,
   PieChart,
   Sparkles,
   Target,
   Ticket,
   Users,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,10 +21,10 @@ export type NavItem = {
   icon: LucideIcon;
 };
 
-// Template default sidebar (MJOS-074).
-// Meetings route is registered in CRM.tsx but NOT in the sidebar by default —
-// tenants opt in by adding `{ label: "Meetings", to: "/meetings", icon: Video }`
-// once they're using the meetings feature.
+// Sidebar nav. Every registered top-level route is exposed here. Settings is
+// reachable from the avatar menu at the sidebar footer (not duplicated here).
+// Detail routes (/goals/:slug, /meetings/:id, etc.) and doc catchalls
+// (/kb-doc/*, /pitch-doc/*) are reached by drilling in, not from the sidebar.
 export const navItems: NavItem[] = [
   { label: "Home", to: "/home", icon: Home },
   { label: "Goals", to: "/goals-list", icon: Target },
@@ -33,6 +35,8 @@ export const navItems: NavItem[] = [
   { label: "Skills", to: "/skills", icon: Sparkles },
   { label: "Memory", to: "/memory", icon: Brain },
   { label: "Knowledge Base", to: "/knowledge-base", icon: Library },
+  { label: "Meetings", to: "/meetings", icon: Video },
+  { label: "Architecture", to: "/dashboard-architecture", icon: Network },
 ];
 
 export function NavLink({ item }: { item: NavItem }) {
