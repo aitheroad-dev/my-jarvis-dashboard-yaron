@@ -10,6 +10,10 @@ const audio = new Audio();
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
+// Dedicated "clip finished" listeners — the autoplay queue advances on these.
+// Kept separate from the generic state listeners so the queue can tell
+// "ended" apart from play/pause/timeupdate without inspecting the event.
+const endedListeners = new Set<Listener>();
 
 function notify() {
   listeners.forEach((fn) => fn());
@@ -18,6 +22,7 @@ function notify() {
 audio.addEventListener("play", notify);
 audio.addEventListener("pause", notify);
 audio.addEventListener("ended", notify);
+audio.addEventListener("ended", () => endedListeners.forEach((fn) => fn()));
 audio.addEventListener("timeupdate", notify);
 audio.addEventListener("loadedmetadata", notify);
 
@@ -78,5 +83,16 @@ export const audioManager = {
   subscribe(fn: Listener): () => void {
     listeners.add(fn);
     return () => listeners.delete(fn);
+  },
+
+  /** Subscribe to clip-finished events. Returns unsubscribe function. */
+  onEnded(fn: Listener): () => void {
+    endedListeners.add(fn);
+    return () => endedListeners.delete(fn);
+  },
+
+  /** True iff a clip is loaded and actively playing right now. */
+  isBusy(): boolean {
+    return !!audio.src && !audio.paused && !audio.ended;
   },
 };

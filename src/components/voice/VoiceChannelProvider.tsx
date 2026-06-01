@@ -27,7 +27,9 @@ export type UserSettings = {
 };
 
 const DEFAULT_SETTINGS: Required<UserSettings> = {
-  voice_autoplay: false,
+  // On by default — mirrors the always-on local pai-voice player. The user can
+  // still flip it off via the toggle (persisted in /api/settings).
+  voice_autoplay: true,
 };
 
 type SampleListener = (sample: VoiceSample) => void;
@@ -81,8 +83,10 @@ export function VoiceChannelProvider({ children }: { children: ReactNode }) {
         setSamples(rows);
         // Fire listeners for genuinely new samples (skip on first load —
         // every row is "new" at mount, but we don't want to spam autoplay).
+        // rows are newest-first, so reverse to deliver oldest-first — the
+        // autoplay queue then plays in the order the agent actually spoke.
         if (knownIdsRef.current.size > newOnes.length) {
-          newOnes.forEach((s) => {
+          [...newOnes].reverse().forEach((s) => {
             listenersRef.current.forEach((fn) => {
               try { fn(s); } catch { /* isolate listener errors */ }
             });
