@@ -18,7 +18,6 @@ import { HomePage } from "../pages/HomePage";
 import { PortfolioPage } from "../pages/PortfolioPage";
 
 // === Standards + chrome ===
-import { DashboardArchitecturePage } from "../blueprint/DashboardArchitecturePage";
 import { KbBlueprintPage } from "../blueprint/KbBlueprintPage";
 import { PitchDocBlueprintPage } from "../blueprint/PitchDocBlueprintPage";
 import { KnowledgeBaseListPage } from "../knowledge-base-list/KnowledgeBaseListPage";
@@ -28,7 +27,7 @@ import { SettingsPage } from "../pages/SettingsPage";
 //
 // Top-level slugs that ship with every fresh tenant:
 //   /home  /goals(-list)  /projects(-list)  /tickets  /agents
-//   /skills  /memory  /knowledge-base  /dashboard-architecture
+//   /skills  /memory  /knowledge-base
 // Plus catchall renderers: /kb-doc/*, /pitch-doc/*.
 // Plus detail patterns: /tickets/:slug, /goals/:slug, /projects/:slug, /skills/:slug.
 // Plus structured Meetings (route registered, sidebar entry off by default — flip
@@ -81,7 +80,6 @@ export const CRM = () => (
 
       {/* Knowledge Base index + named standards page. */}
       <Route path="/knowledge-base" element={<KnowledgeBaseListPage />} />
-      <Route path="/dashboard-architecture" element={<DashboardArchitecturePage />} />
 
       {/* Settings (sidebar account dropdown). */}
       <Route path="/settings" element={<SettingsPage />} />

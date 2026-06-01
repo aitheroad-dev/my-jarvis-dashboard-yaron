@@ -4,7 +4,6 @@ import {
   Briefcase,
   Home,
   Library,
-  Network,
   PieChart,
   Sparkles,
   Target,
@@ -36,7 +35,6 @@ export const navItems: NavItem[] = [
   { label: "Memory", to: "/memory", icon: Brain },
   { label: "Knowledge Base", to: "/knowledge-base", icon: Library },
   { label: "Meetings", to: "/meetings", icon: Video },
-  { label: "Architecture", to: "/dashboard-architecture", icon: Network },
 ];
 
 export function NavLink({ item }: { item: NavItem }) {
