@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { CRM } from "./components/atomic-crm/root/CRM";
 import { VoiceChannelProvider } from "./components/voice/VoiceChannelProvider";
+import { AutoplayManager } from "./components/voice/AutoplayManager";
 import { ChunkErrorBoundary } from "./components/ChunkErrorBoundary";
 import { useVersionPoll } from "./lib/useVersionPoll";
 
@@ -29,6 +30,7 @@ const App = () => (
       <BrowserRouter>
         <VoiceChannelProvider>
           <VersionPollMount />
+          <AutoplayManager />
           <CRM />
         </VoiceChannelProvider>
       </BrowserRouter>
