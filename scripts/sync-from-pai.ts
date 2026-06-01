@@ -23,7 +23,7 @@
  */
 
 import { neon } from "@neondatabase/serverless";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { dirname, resolve, basename } from "node:path";
 
 // ── paths ────────────────────────────────────────────────────────────────
@@ -205,19 +205,30 @@ type MemoryRow = {
   type: MemoryType;
   title: string;
   body: string;
+  created_at: string; // the memory's own date (file birth time), NOT the sync time
   metadata: Record<string, unknown>;
 };
+
+/** Date of the memory itself: file birth time, falling back to modified time. */
+function memoryDate(path: string): string {
+  const st = statSync(path);
+  const birth = st.birthtime;
+  const d = birth && birth.getTime() > 0 ? birth : st.mtime;
+  return d.toISOString();
+}
 
 function readMemories(): MemoryRow[] {
   if (!existsSync(MEMORY_DIR)) return [];
   return readdirSync(MEMORY_DIR)
     .filter((f) => f.endsWith(".md") && f !== "MEMORY.md")
     .map((f) => {
-      const { fm, body } = frontmatter(read(`${MEMORY_DIR}/${f}`));
+      const path = `${MEMORY_DIR}/${f}`;
+      const { fm, body } = frontmatter(read(path));
       return {
         type: mapMemoryType(fm.type),
         title: fm.name || f.replace(/\.md$/, ""),
         body: body.trim(),
+        created_at: memoryDate(path),
         metadata: {
           source: "pai-auto-memory",
           slug: f.replace(/\.md$/, ""),
@@ -310,8 +321,8 @@ async function syncLive(
   await sql`DELETE FROM memories WHERE metadata->>'source' = 'pai-auto-memory'`;
   for (const m of memories) {
     await sql`
-      INSERT INTO memories (type, title, body, metadata)
-      VALUES (${m.type}, ${m.title}, ${m.body}, ${JSON.stringify(m.metadata)}::jsonb)
+      INSERT INTO memories (type, title, body, metadata, created_at)
+      VALUES (${m.type}, ${m.title}, ${m.body}, ${JSON.stringify(m.metadata)}::jsonb, ${m.created_at})
     `;
   }
 }
