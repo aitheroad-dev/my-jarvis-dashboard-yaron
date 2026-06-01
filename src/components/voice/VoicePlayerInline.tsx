@@ -2,28 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { Play, Pause } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { audioManager } from "./audioManager";
+import { getPlayedSet, markPlayed } from "./playedStore";
 
 interface VoicePlayerInlineProps {
   audioUrl: string;
   autoPlay?: boolean;
-}
-
-const PLAYED_KEY = "mc-voice-played";
-
-function getPlayedSet(): Set<string> {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(PLAYED_KEY) || "[]"));
-  } catch {
-    return new Set();
-  }
-}
-
-function markPlayed(url: string) {
-  const s = getPlayedSet();
-  s.add(url);
-  const arr = [...s];
-  if (arr.length > 200) arr.splice(0, arr.length - 200);
-  localStorage.setItem(PLAYED_KEY, JSON.stringify(arr));
 }
 
 const SPEEDS = [1, 1.25, 1.5];
