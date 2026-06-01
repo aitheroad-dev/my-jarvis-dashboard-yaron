@@ -10,17 +10,28 @@ import { cn } from "@/lib/utils";
 // via `VITE_VOICE_PUBLIC_URL` (the provisioner fills it after R2 setup).
 const AVATAR_BASE = `${import.meta.env.VITE_VOICE_PUBLIC_URL ?? ""}/avatars`;
 
+// Colors are the canonical PAI persona colors from ~/.config/myjarvis/agents/<name>.json
+// — keep these in sync with that source of truth so the dashboard, the local
+// voice player, and the agent configs all show the same color per agent.
+// Rex has no avatar image yet (rex.jpg 404 in R2) → renders a colored initial.
 const AGENT_META: Record<string, { label: string; color: string; avatar: string }> = {
-  jarvis: { label: "Jarvis", color: "#2563eb", avatar: `${AVATAR_BASE}/jarvis.jpg` },
-  atlas: { label: "Atlas", color: "#ea580c", avatar: `${AVATAR_BASE}/atlas.jpg` },
+  jarvis: { label: "Jarvis", color: "#4f9cf9", avatar: `${AVATAR_BASE}/jarvis.jpg` },
+  atlas: { label: "Atlas", color: "#34d399", avatar: `${AVATAR_BASE}/atlas.jpg` },
+  nova: { label: "Nova", color: "#f472b6", avatar: `${AVATAR_BASE}/nova.jpg` },
+  rex: { label: "Rex", color: "#fb923c", avatar: "" },
   ben: { label: "Ben", color: "#0891b2", avatar: `${AVATAR_BASE}/ben.jpg` },
-  nova: { label: "Nova", color: "#7c3aed", avatar: `${AVATAR_BASE}/nova.jpg` },
   emma: { label: "Emma", color: "#db2777", avatar: `${AVATAR_BASE}/emma.jpg` },
   iris: { label: "Iris", color: "#65a30d", avatar: `${AVATAR_BASE}/iris.jpg` },
   echo: { label: "Echo", color: "#16a34a", avatar: `${AVATAR_BASE}/echo.jpg` },
   bolt: { label: "Bolt", color: "#f59e0b", avatar: "" },
   spark: { label: "Spark", color: "#ef4444", avatar: "" },
 };
+
+// The persona color for any agent_name, with a neutral fallback for unknowns.
+function agentColor(agentName: string | null): string {
+  const meta = AGENT_META[(agentName || "").toLowerCase()];
+  return meta?.color ?? "#6b7280";
+}
 
 // Capitalize first letter; everything else as-is. Used as the display
 // fallback when an agent_name isn't in AGENT_META.
@@ -38,7 +49,7 @@ function AgentAvatar({ agentName }: { agentName: string | null }) {
     if (agentName && agentName.length > 0) {
       return (
         <div
-          className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold ring-1 ring-gray-200"
+          className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold"
           style={{ backgroundColor: "#6b7280" }}
         >
           {agentName[0].toUpperCase()}
@@ -51,18 +62,22 @@ function AgentAvatar({ agentName }: { agentName: string | null }) {
       </div>
     );
   }
+  // Photo avatars get a 2px ring in the agent's persona color so the color is
+  // a consistent identity cue even when the face is the same size as others.
   if (meta.avatar) {
     return (
       <img
         src={meta.avatar}
         alt={meta.label}
-        className="w-7 h-7 rounded-full shrink-0 object-cover ring-1 ring-gray-200"
+        className="w-7 h-7 rounded-full shrink-0 object-cover border-2"
+        style={{ borderColor: meta.color }}
       />
     );
   }
+  // No photo (e.g. Rex) → a solid persona-colored circle with the initial.
   return (
     <div
-      className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold ring-1 ring-gray-200"
+      className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold"
       style={{ backgroundColor: meta.color }}
     >
       {meta.label[0]}
@@ -226,7 +241,12 @@ export function VoiceFeedBody({ onClose }: { onClose: () => void }) {
                       <div className="flex items-center gap-2">
                         <AgentAvatar agentName={sample.agent_name} />
                         {labelText && (
-                          <span className="text-sm font-medium text-[#1a1a1a]">{labelText}</span>
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: agentColor(sample.agent_name) }}
+                          >
+                            {labelText}
+                          </span>
                         )}
                         <span className="text-[10px] text-[#999] tabular-nums">
                           {formatTime(sample.created_at)}
