@@ -15,6 +15,7 @@ import { SkillDetailPage } from "../skills/SkillDetailPage";
 import { MeetingsPage } from "../pages/MeetingsPage";
 import { MeetingDetailPage } from "../pages/MeetingDetailPage";
 import { HomePage } from "../pages/HomePage";
+import { PortfolioPage } from "../pages/PortfolioPage";
 
 // === Standards + chrome ===
 import { DashboardArchitecturePage } from "../blueprint/DashboardArchitecturePage";
@@ -63,6 +64,9 @@ export const CRM = () => (
 
       {/* Agents (Structured). */}
       <Route path="/agents" element={<AgentsPage />} />
+
+      {/* Portfolio (Structured) — mirror of local pai-portfolio CLI. */}
+      <Route path="/portfolio" element={<PortfolioPage />} />
 
       {/* Skills (Structured list + Knowledge — Classic detail). */}
       <Route path="/skills" element={<SkillsPage />} />
