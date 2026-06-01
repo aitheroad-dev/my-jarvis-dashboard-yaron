@@ -31,8 +31,9 @@ export function AgentsPage() {
           setError(`Failed (${res.status})`);
           return;
         }
-        const data = (await res.json()) as { agents?: AgentRow[] };
-        if (!cancelled) setAgents(data.agents ?? []);
+        // /api/agents returns a bare array; tolerate a legacy { agents } envelope too.
+        const data = (await res.json()) as AgentRow[] | { agents?: AgentRow[] };
+        if (!cancelled) setAgents(Array.isArray(data) ? data : (data.agents ?? []));
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       }
