@@ -118,7 +118,7 @@ function AutoplayToggle({
         onClick={() => onChange(!enabled)}
         className={cn(
           "relative h-4 w-7 shrink-0 rounded-full border transition-colors",
-          enabled ? "border-foreground bg-foreground" : "border-border bg-muted",
+          enabled ? "border-green-600 bg-green-600" : "border-border bg-muted",
         )}
       >
         <span
