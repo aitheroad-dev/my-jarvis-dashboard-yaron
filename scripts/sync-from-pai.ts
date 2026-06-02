@@ -335,32 +335,57 @@ export function deriveTicketStatus(phase: string): TicketRow["status"] {
  * FILTER: only ISA-bearing E2+ work becomes a ticket — trivial E1/native
  * chatter (no ISA, or effort < E2) never reaches the board.
  */
+/** Read one ISA file → a ticket row, or null if absent / not E2+. */
+function readIsaTicket(
+  isaPath: string,
+  relPath: string,
+  fallbackSlug: string,
+): TicketRow | null {
+  if (!existsSync(isaPath)) return null;
+  const content = read(isaPath);
+  const { fm } = frontmatter(content);
+  const effort = (fm.effort || "").toUpperCase();
+  if (!/^E[2-5]$/.test(effort)) return null; // ISA-bearing E2+ only
+  const slug = fm.slug || (fm.project ? kebab(fm.project) : "") || fallbackSlug;
+  const step = (fm.phase || "").toUpperCase();
+  const { sections, iscs } = parseIsaProjection(content);
+  return {
+    slug,
+    title: fm.title || fm.task || slug,
+    status: deriveTicketStatus(fm.phase || ""),
+    current_step: ALGO_STEPS.has(step) ? step : null,
+    tier: effort,
+    progress: fm.progress || null,
+    isa_path: relPath,
+    agent: fm.agent || null,
+    sections,
+    iscs,
+  };
+}
+
 function readTickets(): TicketRow[] {
-  if (!existsSync(WORK_DIR)) return [];
   const rows: TicketRow[] = [];
-  for (const dir of readdirSync(WORK_DIR)) {
-    const isaPath = `${WORK_DIR}/${dir}/ISA.md`;
-    if (!existsSync(isaPath)) continue;
-    const content = read(isaPath);
-    const { fm } = frontmatter(content);
-    const effort = (fm.effort || "").toUpperCase();
-    if (!/^E[2-5]$/.test(effort)) continue; // ISA-bearing E2+ only
-    const slug = fm.slug || dir;
-    const step = (fm.phase || "").toUpperCase();
-    const { sections, iscs } = parseIsaProjection(content);
-    rows.push({
-      slug,
-      title: fm.title || fm.task || slug,
-      status: deriveTicketStatus(fm.phase || ""),
-      current_step: ALGO_STEPS.has(step) ? step : null,
-      tier: effort,
-      progress: fm.progress || null,
-      isa_path: `MEMORY/WORK/${dir}/ISA.md`,
-      agent: fm.agent || null,
-      sections,
-      iscs,
-    });
-  }
+  // Work-session ISAs — MEMORY/WORK/<slug>/ISA.md (ad-hoc / one-shot work).
+  if (existsSync(WORK_DIR))
+    for (const dir of readdirSync(WORK_DIR)) {
+      const r = readIsaTicket(
+        `${WORK_DIR}/${dir}/ISA.md`,
+        `MEMORY/WORK/${dir}/ISA.md`,
+        dir,
+      );
+      if (r) rows.push(r);
+    }
+  // Project ISAs — USER/PROJECTS/<NAME>/ISA.md (persistent project identity).
+  const PROJ_DIR = `${PAI}/USER/PROJECTS`;
+  if (existsSync(PROJ_DIR))
+    for (const dir of readdirSync(PROJ_DIR)) {
+      const r = readIsaTicket(
+        `${PROJ_DIR}/${dir}/ISA.md`,
+        `USER/PROJECTS/${dir}/ISA.md`,
+        kebab(dir),
+      );
+      if (r) rows.push(r);
+    }
   return rows;
 }
 
