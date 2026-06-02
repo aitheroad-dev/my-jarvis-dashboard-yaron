@@ -240,7 +240,8 @@ function readMemories(): MemoryRow[] {
     });
 }
 
-// ── tickets: thin face of ISA-bearing work units ──────────────────────────
+// ── tickets: thin face of ISA-bearing work units, + projected ISA content ──
+type Isc = { id: string; text: string; done: boolean };
 type TicketRow = {
   slug: string;
   title: string;
@@ -249,7 +250,68 @@ type TicketRow = {
   tier: string | null;
   progress: string | null;
   isa_path: string;
+  agent: string | null;
+  sections: Record<string, string | null>;
+  iscs: Isc[];
 };
+
+/** Canonical ISA `## Heading` → tickets prose column. Criteria → iscs jsonb. */
+const SECTION_COLUMN: Record<string, string> = {
+  Problem: "problem",
+  Vision: "vision",
+  "Out of Scope": "out_of_scope",
+  Principles: "principles",
+  Constraints: "constraints",
+  Goal: "goal",
+  "Test Strategy": "test_strategy",
+  Features: "features",
+  Decisions: "decisions",
+  Changelog: "changelog",
+  Verification: "verification",
+};
+
+/** Match a possibly-suffixed heading ("Out of Scope (v1)") to its canonical name. */
+function canonicalHeading(h: string): string | null {
+  const names = ["Criteria", ...Object.keys(SECTION_COLUMN)];
+  for (const n of names) if (h === n || h.startsWith(n + " ")) return n;
+  return null;
+}
+
+/**
+ * Project an ISA's body into content columns + ISC checklist. MUST stay
+ * byte-identical to PAI hooks/lib/ticket-push.ts parseIsaProjection() so
+ * batch and real-time sync never disagree.
+ */
+function parseIsaProjection(content: string): {
+  sections: Record<string, string | null>;
+  iscs: Isc[];
+} {
+  const body = content.replace(/^---\n[\s\S]*?\n---\n?/, "");
+  const sections: Record<string, string | null> = {};
+  const iscs: Isc[] = [];
+  for (const part of body.split(/^##\s+/m)) {
+    const nl = part.indexOf("\n");
+    if (nl === -1) continue;
+    const heading = canonicalHeading(part.slice(0, nl).trim());
+    if (!heading) continue;
+    const text = part.slice(nl + 1).trim();
+    if (heading === "Criteria") {
+      for (const line of text.split("\n")) {
+        const m = line.match(/^- \[(.+?)\]\s+(ISC-[\d.]+)\s*:?\s*(.*)$/);
+        if (m) {
+          iscs.push({
+            id: m[2],
+            text: m[3].trim(),
+            done: m[1].trim().toLowerCase() === "x",
+          });
+        }
+      }
+      continue;
+    }
+    sections[SECTION_COLUMN[heading]] = text || null;
+  }
+  return { sections, iscs };
+}
 
 const ALGO_STEPS = new Set([
   "OBSERVE", "THINK", "PLAN", "BUILD", "EXECUTE", "VERIFY", "LEARN", "COMPLETE",
@@ -279,19 +341,24 @@ function readTickets(): TicketRow[] {
   for (const dir of readdirSync(WORK_DIR)) {
     const isaPath = `${WORK_DIR}/${dir}/ISA.md`;
     if (!existsSync(isaPath)) continue;
-    const { fm } = frontmatter(read(isaPath));
+    const content = read(isaPath);
+    const { fm } = frontmatter(content);
     const effort = (fm.effort || "").toUpperCase();
     if (!/^E[2-5]$/.test(effort)) continue; // ISA-bearing E2+ only
     const slug = fm.slug || dir;
     const step = (fm.phase || "").toUpperCase();
+    const { sections, iscs } = parseIsaProjection(content);
     rows.push({
       slug,
-      title: fm.task || fm.title || slug,
+      title: fm.title || fm.task || slug,
       status: deriveTicketStatus(fm.phase || ""),
       current_step: ALGO_STEPS.has(step) ? step : null,
       tier: effort,
       progress: fm.progress || null,
       isa_path: `MEMORY/WORK/${dir}/ISA.md`,
+      agent: fm.agent || null,
+      sections,
+      iscs,
     });
   }
   return rows;
@@ -388,13 +455,31 @@ async function syncLive(
   // tickets — upsert by slug, source='pai'. The WHERE guard on DO UPDATE means
   // a row a human owns (source='manual') is NEVER clobbered by the sync.
   for (const t of tickets) {
+    const s = t.sections;
     await sql`
-      INSERT INTO tickets (slug, title, status, current_step, tier, progress, isa_path, source, updated_at)
-      VALUES (${t.slug}, ${t.title}, ${t.status}, ${t.current_step}, ${t.tier}, ${t.progress}, ${t.isa_path}, 'pai', NOW())
+      INSERT INTO tickets (
+        slug, title, status, current_step, tier, progress, isa_path, source, agent,
+        problem, vision, out_of_scope, principles, constraints, goal,
+        test_strategy, features, decisions, changelog, verification, iscs, updated_at
+      )
+      VALUES (
+        ${t.slug}, ${t.title}, ${t.status}, ${t.current_step}, ${t.tier}, ${t.progress}, ${t.isa_path}, 'pai', ${t.agent},
+        ${s.problem ?? null}, ${s.vision ?? null}, ${s.out_of_scope ?? null},
+        ${s.principles ?? null}, ${s.constraints ?? null}, ${s.goal ?? null},
+        ${s.test_strategy ?? null}, ${s.features ?? null}, ${s.decisions ?? null},
+        ${s.changelog ?? null}, ${s.verification ?? null}, ${JSON.stringify(t.iscs)}::jsonb, NOW()
+      )
       ON CONFLICT (slug) DO UPDATE SET
         title = EXCLUDED.title, status = EXCLUDED.status,
         current_step = EXCLUDED.current_step, tier = EXCLUDED.tier,
         progress = EXCLUDED.progress, isa_path = EXCLUDED.isa_path,
+        agent = COALESCE(EXCLUDED.agent, tickets.agent),
+        problem = EXCLUDED.problem, vision = EXCLUDED.vision,
+        out_of_scope = EXCLUDED.out_of_scope, principles = EXCLUDED.principles,
+        constraints = EXCLUDED.constraints, goal = EXCLUDED.goal,
+        test_strategy = EXCLUDED.test_strategy, features = EXCLUDED.features,
+        decisions = EXCLUDED.decisions, changelog = EXCLUDED.changelog,
+        verification = EXCLUDED.verification, iscs = EXCLUDED.iscs,
         updated_at = NOW()
       WHERE tickets.source = 'pai'
     `;

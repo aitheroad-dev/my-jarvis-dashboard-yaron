@@ -15,6 +15,7 @@ type TicketDetail = {
   status: "todo" | "in_progress" | "review" | "done" | "archived";
   tier: "E1" | "E2" | "E3" | "E4" | "E5" | null;
   current_step: string | null;
+  isa_path: string | null;
   problem: string | null;
   vision: string | null;
   out_of_scope: string | null;
@@ -110,6 +111,7 @@ export const onRequestGet: PagesFunction<Env, "slug"> = async ({
       t.status,
       t.tier,
       t.current_step,
+      t.isa_path,
       t.problem,
       t.vision,
       t.out_of_scope,
@@ -340,6 +342,7 @@ export const onRequestPut: PagesFunction<Env, "slug"> = async ({
       t.status,
       t.tier,
       t.current_step,
+      t.isa_path,
       t.problem,
       t.vision,
       t.out_of_scope,
