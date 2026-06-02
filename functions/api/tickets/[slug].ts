@@ -50,13 +50,13 @@ const ALLOWED_STEP = new Set([
   "LEARN",
   "COMPLETE",
 ]);
+// The four PAI personas (jarvis/atlas/nova/rex). Client-specific agents
+// (ben/emma/iris) were removed — they never own dashboard tickets here.
 const ALLOWED_AGENT = new Set([
   "jarvis",
   "atlas",
-  "ben",
   "nova",
-  "emma",
-  "iris",
+  "rex",
 ]);
 
 // Columns the PUT endpoint is willing to update — keep the surface small and

@@ -58,6 +58,8 @@ type TicketRow = {
   title: string;
   status: Status;
   current_step: string | null;
+  progress: string | null;
+  source: "pai" | "manual" | null;
   log: string | null;
   created_at: string;
   updated_at: string;
@@ -66,13 +68,13 @@ type TicketRow = {
 // 5-second poll cadence — fast enough to feel live, slow enough to be free.
 const REFRESH_MS = 5_000;
 
-const COLUMN_ORDER: Status[] = [
-  "todo",
-  "in_progress",
-  "review",
-  "done",
-  "archived",
-];
+// Archived is intentionally omitted — archived tickets leave the board.
+// Done is capped (see DONE_VISIBLE_LIMIT) so it doesn't grow unbounded.
+const COLUMN_ORDER: Status[] = ["todo", "in_progress", "review", "done"];
+
+// Show at most this many Done cards (most-recently-updated first); the rest
+// collapse into a "+N more" footer so the column stays scannable.
+const DONE_VISIBLE_LIMIT = 12;
 
 const STATUS_LABEL: Record<Status, string> = {
   todo: "To do",
@@ -110,13 +112,12 @@ const CARD_ACCENT: Record<Status, string> = {
 
 // Persona colors — sky-tinted variants where natural; existing pitch-deck
 // hues otherwise.
+// The four PAI personas: jarvis (blue), atlas (green), nova (plum), rex (amber).
 const AGENT_COLOR: Record<string, string> = {
   jarvis: T.skyDark,
-  atlas: "#C7763A",
-  ben: T.green,
+  atlas: T.green,
   nova: T.plum,
-  emma: "#D6336C",
-  iris: "#0EA5E9",
+  rex: T.amber,
 };
 
 function lastLogLine(log: string | null): string | null {
@@ -277,6 +278,24 @@ function CardBody({
             </span>
           </>
         ) : null}
+
+        {t.progress ? (
+          <>
+            <MetaDot />
+            <span
+              style={{
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                fontSize: 10,
+                color: T.ink2,
+                fontWeight: 600,
+              }}
+              title={`${t.progress} criteria met`}
+            >
+              {t.progress}
+            </span>
+          </>
+        ) : null}
       </div>
 
       {/* Log tail */}
@@ -309,21 +328,27 @@ function DraggableCard({
   t: TicketRow;
   onOpen: (slug: string) => void;
 }) {
+  // PAI-owned tickets are phase-driven: status mirrors the live ISA, so a manual
+  // drag would be silently overwritten on the next sync. Lock drag for
+  // source='pai'; manual cards stay draggable. Both stay click-to-open.
+  const draggable = t.source !== "pai";
   const { attributes, listeners, setNodeRef, isDragging, transform } =
-    useDraggable({ id: t.id, data: { ticket: t } });
+    useDraggable({ id: t.id, data: { ticket: t }, disabled: !draggable });
 
   // dnd-kit ships a `transform` we apply only when actively dragging — the
   // DragOverlay handles the floating preview, so we just hide the in-place
   // card with opacity while it's being dragged.
   const style: React.CSSProperties = {
-    cursor: isDragging ? "grabbing" : "grab",
+    cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer",
     opacity: isDragging ? 0.4 : 1,
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
     marginBottom: 8,
-    touchAction: "none",
+    touchAction: draggable ? "none" : undefined,
   };
+
+  const dragHandlers = draggable ? { ...listeners, ...attributes } : {};
 
   // Click-to-detail vs drag — PointerSensor's distance:5 activationConstraint
   // (configured at the DndContext level) decides; if the pointer moves >5px
@@ -332,8 +357,7 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
+      {...dragHandlers}
       onClick={() => onOpen(t.slug)}
       role="button"
       tabIndex={0}
@@ -344,6 +368,9 @@ function DraggableCard({
         }
       }}
       aria-label={`Open ${t.slug}`}
+      title={
+        draggable ? undefined : "Status follows the ISA phase — not draggable"
+      }
     >
       <CardBody t={t} />
     </div>
@@ -356,15 +383,23 @@ function Column({
   status,
   tickets,
   onOpen,
+  limit,
 }: {
   status: Status;
   tickets: TicketRow[];
   onOpen: (slug: string) => void;
+  limit?: number;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: status,
     data: { status },
   });
+
+  // Cap the rendered cards (most-recent first, already sorted by the API);
+  // the overflow collapses into a "+N more" footer so the column stays short.
+  const visible =
+    limit && tickets.length > limit ? tickets.slice(0, limit) : tickets;
+  const hiddenCount = tickets.length - visible.length;
 
   return (
     <div
@@ -449,9 +484,24 @@ function Column({
             empty
           </p>
         ) : (
-          tickets.map((t) => (
-            <DraggableCard key={t.id} t={t} onOpen={onOpen} />
-          ))
+          <>
+            {visible.map((t) => (
+              <DraggableCard key={t.id} t={t} onOpen={onOpen} />
+            ))}
+            {hiddenCount > 0 ? (
+              <p
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 11,
+                  color: T.ink3,
+                  textAlign: "center",
+                  margin: "8px 0 2px",
+                }}
+              >
+                +{hiddenCount} more
+              </p>
+            ) : null}
+          </>
         )}
       </div>
     </div>
@@ -466,6 +516,11 @@ export function TicketsKanbanPage() {
   const [rows, setRows] = useState<TicketRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Manual To-Do composer state.
+  const [composing, setComposing] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
 
   // Pending optimistic moves — { ticketId: status }. While a PUT is in flight,
   // the polling response is merged through this map so the optimistic state
@@ -523,6 +578,61 @@ export function TicketsKanbanPage() {
   const handleOpen = (slug: string) => {
     if (isDraggingRef.current) return;
     navigate(`/tickets/${slug}`);
+  };
+
+  // Create a manual To-Do (source='manual' — the sync never touches it). Slug
+  // is derived from the title plus a short suffix to stay unique. Optimistically
+  // prepended; the 5s poll reconciles with the server row.
+  const createTodo = async () => {
+    const title = newTitle.trim();
+    if (!title || creating) return;
+    setCreating(true);
+    const base =
+      title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40) || "todo";
+    const slug = `${base}-${Date.now().toString(36).slice(-4)}`;
+    try {
+      const res = await api("/api/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, title, status: "todo" }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const created = (await res.json()) as { id: string; slug: string };
+      const now = new Date().toISOString();
+      setRows((cur) => [
+        {
+          id: created.id,
+          slug: created.slug,
+          project_id: null,
+          project_name: null,
+          goal_id: null,
+          goal_title: null,
+          agent: null,
+          title,
+          status: "todo",
+          current_step: null,
+          progress: null,
+          source: "manual",
+          log: null,
+          created_at: now,
+          updated_at: now,
+        },
+        ...(cur ?? []),
+      ]);
+      setNewTitle("");
+      setComposing(false);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? `Create failed: ${err.message}` : "Create failed",
+      );
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -663,45 +773,144 @@ export function TicketsKanbanPage() {
           </p>
         </div>
 
-        {rows && (
-          <div
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 12,
+            fontFamily: "Inter, sans-serif",
+            fontSize: 12,
+          }}
+        >
+          {rows && (
+            <>
+              {inProgressCount > 0 && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: T.green,
+                    fontWeight: 600,
+                  }}
+                >
+                  <span
+                    className="animate-pulse"
+                    style={{
+                      display: "inline-block",
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: T.green,
+                    }}
+                  />
+                  {inProgressCount} live
+                </span>
+              )}
+              <span style={{ color: T.ink3 }}>
+                {rows.length} ticket{rows.length === 1 ? "" : "s"}
+              </span>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setComposing((c) => !c)}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 12,
               fontFamily: "Inter, sans-serif",
               fontSize: 12,
+              fontWeight: 600,
+              color: T.white,
+              background: T.skyDark,
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 12px",
+              cursor: "pointer",
             }}
           >
-            {inProgressCount > 0 && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  color: T.green,
-                  fontWeight: 600,
-                }}
-              >
-                <span
-                  className="animate-pulse"
-                  style={{
-                    display: "inline-block",
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: T.green,
-                  }}
-                />
-                {inProgressCount} live
-              </span>
-            )}
-            <span style={{ color: T.ink3 }}>
-              {rows.length} ticket{rows.length === 1 ? "" : "s"}
-            </span>
-          </div>
-        )}
+            + To-Do
+          </button>
+        </div>
       </div>
+
+      {/* Manual To-Do composer */}
+      {composing && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 16,
+            padding: "10px 12px",
+            background: T.white,
+            border: `1px solid ${T.line}`,
+            borderRadius: 10,
+          }}
+        >
+          <input
+            autoFocus
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void createTodo();
+              if (e.key === "Escape") {
+                setComposing(false);
+                setNewTitle("");
+              }
+            }}
+            placeholder="New to-do — title…"
+            style={{
+              flex: 1,
+              fontFamily: "Inter, sans-serif",
+              fontSize: 13,
+              color: T.ink,
+              border: `1px solid ${T.line}`,
+              borderRadius: 8,
+              padding: "8px 10px",
+              outline: "none",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => void createTodo()}
+            disabled={creating || !newTitle.trim()}
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              color: T.white,
+              background:
+                creating || !newTitle.trim() ? T.ink3 : T.skyDark,
+              border: "none",
+              borderRadius: 8,
+              padding: "8px 14px",
+              cursor:
+                creating || !newTitle.trim() ? "not-allowed" : "pointer",
+            }}
+          >
+            {creating ? "Adding…" : "Add"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setComposing(false);
+              setNewTitle("");
+            }}
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              color: T.ink2,
+              background: "transparent",
+              border: `1px solid ${T.line}`,
+              borderRadius: 8,
+              padding: "8px 12px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -810,6 +1019,7 @@ export function TicketsKanbanPage() {
                 status={status}
                 tickets={grouped[status]}
                 onOpen={handleOpen}
+                limit={status === "done" ? DONE_VISIBLE_LIMIT : undefined}
               />
             ))}
           </div>

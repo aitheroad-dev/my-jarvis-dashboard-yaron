@@ -13,6 +13,8 @@ type TicketRow = {
   title: string;
   status: "todo" | "in_progress" | "review" | "done" | "archived";
   current_step: string | null;
+  progress: string | null;
+  source: "pai" | "manual" | null;
   created_at: string;
   updated_at: string;
 };
@@ -25,13 +27,13 @@ const ALLOWED_STATUS = new Set([
   "archived",
 ]);
 const ALLOWED_TIER = new Set(["E1", "E2", "E3", "E4", "E5"]);
+// The four PAI personas (jarvis/atlas/nova/rex). Client-specific agents
+// (ben/emma/iris) were removed — they never own dashboard tickets here.
 const ALLOWED_AGENT = new Set([
   "jarvis",
   "atlas",
-  "ben",
   "nova",
-  "emma",
-  "iris",
+  "rex",
 ]);
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
@@ -55,6 +57,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       t.title,
       t.status,
       t.current_step,
+      t.progress,
+      t.source,
       t.created_at,
       t.updated_at,
       t.log
