@@ -35,6 +35,7 @@ const AGENTS_DIR = `${HOME}/.config/myjarvis/agents`;
 const MEMORY_DIR =
   process.env.CLAUDE_MEMORY_DIR ??
   `${HOME}/.claude/projects/-Users-yaronkra/memory`;
+const WORK_DIR = `${PAI}/MEMORY/WORK`;
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -239,6 +240,63 @@ function readMemories(): MemoryRow[] {
     });
 }
 
+// ── tickets: thin face of ISA-bearing work units ──────────────────────────
+type TicketRow = {
+  slug: string;
+  title: string;
+  status: "todo" | "in_progress" | "review" | "done" | "archived";
+  current_step: string | null;
+  tier: string | null;
+  progress: string | null;
+  isa_path: string;
+};
+
+const ALGO_STEPS = new Set([
+  "OBSERVE", "THINK", "PLAN", "BUILD", "EXECUTE", "VERIFY", "LEARN", "COMPLETE",
+]);
+
+/**
+ * ISA phase → kanban status. THE single mapping; the real-time ISASync hook
+ * mirrors this exact function so batch and live sync never disagree.
+ */
+export function deriveTicketStatus(phase: string): TicketRow["status"] {
+  const p = phase.toLowerCase();
+  if (p === "complete") return "done";
+  if (p === "verify") return "review";
+  if (["observe", "think", "plan", "build", "execute", "learn"].includes(p))
+    return "in_progress";
+  return "todo";
+}
+
+/**
+ * Read MEMORY/WORK/*\/ISA.md and project each into a thin ticket.
+ * FILTER: only ISA-bearing E2+ work becomes a ticket — trivial E1/native
+ * chatter (no ISA, or effort < E2) never reaches the board.
+ */
+function readTickets(): TicketRow[] {
+  if (!existsSync(WORK_DIR)) return [];
+  const rows: TicketRow[] = [];
+  for (const dir of readdirSync(WORK_DIR)) {
+    const isaPath = `${WORK_DIR}/${dir}/ISA.md`;
+    if (!existsSync(isaPath)) continue;
+    const { fm } = frontmatter(read(isaPath));
+    const effort = (fm.effort || "").toUpperCase();
+    if (!/^E[2-5]$/.test(effort)) continue; // ISA-bearing E2+ only
+    const slug = fm.slug || dir;
+    const step = (fm.phase || "").toUpperCase();
+    rows.push({
+      slug,
+      title: fm.task || fm.title || slug,
+      status: deriveTicketStatus(fm.phase || ""),
+      current_step: ALGO_STEPS.has(step) ? step : null,
+      tier: effort,
+      progress: fm.progress || null,
+      isa_path: `MEMORY/WORK/${dir}/ISA.md`,
+    });
+  }
+  return rows;
+}
+
 // ── DB upserts ───────────────────────────────────────────────────────────
 function getDatabaseUrl(): string | undefined {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
@@ -255,6 +313,7 @@ async function syncLive(
   goals: GoalRow[],
   agents: AgentRow[],
   memories: MemoryRow[],
+  tickets: TicketRow[],
 ) {
   const url = getDatabaseUrl();
   if (!url) {
@@ -325,6 +384,21 @@ async function syncLive(
       VALUES (${m.type}, ${m.title}, ${m.body}, ${JSON.stringify(m.metadata)}::jsonb, ${m.created_at})
     `;
   }
+
+  // tickets — upsert by slug, source='pai'. The WHERE guard on DO UPDATE means
+  // a row a human owns (source='manual') is NEVER clobbered by the sync.
+  for (const t of tickets) {
+    await sql`
+      INSERT INTO tickets (slug, title, status, current_step, tier, progress, isa_path, source, updated_at)
+      VALUES (${t.slug}, ${t.title}, ${t.status}, ${t.current_step}, ${t.tier}, ${t.progress}, ${t.isa_path}, 'pai', NOW())
+      ON CONFLICT (slug) DO UPDATE SET
+        title = EXCLUDED.title, status = EXCLUDED.status,
+        current_step = EXCLUDED.current_step, tier = EXCLUDED.tier,
+        progress = EXCLUDED.progress, isa_path = EXCLUDED.isa_path,
+        updated_at = NOW()
+      WHERE tickets.source = 'pai'
+    `;
+  }
 }
 
 // ── main ─────────────────────────────────────────────────────────────────
@@ -332,6 +406,7 @@ const projects = readProjects();
 const goals = readGoals();
 const agents = readAgents();
 const memories = readMemories();
+const tickets = readTickets();
 
 console.log(`\nPAI → Neon sync  ${DRY_RUN ? "(DRY RUN — no DB writes)" : "(LIVE)"}\n`);
 console.log(`  projects : ${projects.length}`);
@@ -346,10 +421,13 @@ const byType = memories.reduce<Record<string, number>>((acc, m) => {
   return acc;
 }, {});
 console.log(`     by type: ${JSON.stringify(byType)}`);
+console.log(`  tickets  : ${tickets.length}  (ISA-bearing E2+ work units)`);
+for (const t of tickets)
+  console.log(`     • ${t.slug.padEnd(28)} [${t.status}] ${t.tier} ${t.progress ?? ""}  ${t.title}`);
 
 if (DRY_RUN) {
   console.log("\n✓ Dry run complete. No database touched. Re-run without --dry-run to write.\n");
 } else {
-  await syncLive(projects, goals, agents, memories);
+  await syncLive(projects, goals, agents, memories, tickets);
   console.log("\n✓ Live sync complete.\n");
 }
