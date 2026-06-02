@@ -251,6 +251,7 @@ type TicketRow = {
   progress: string | null;
   isa_path: string;
   agent: string | null;
+  project_slug: string | null;
   sections: Record<string, string | null>;
   iscs: Isc[];
 };
@@ -318,15 +319,22 @@ const ALGO_STEPS = new Set([
 ]);
 
 /**
- * ISA phase → kanban status. THE single mapping; the real-time ISASync hook
- * mirrors this exact function so batch and live sync never disagree.
+ * Canonical status derivation: ISC progress + an on-disk done marker.
+ * THE single mapping; the real-time ticket-push hook mirrors this exactly so
+ * batch and live sync never disagree.
+ *   - phase 'complete' → 'done'  (the durable, disk-side confirmation marker)
+ *   - all ISCs done (total>0)    → 'review'
+ *   - ≥1 ISC done                → 'in_progress'
+ *   - else (incl. 0/0 stub)      → 'todo'
  */
-export function deriveTicketStatus(phase: string): TicketRow["status"] {
-  const p = phase.toLowerCase();
-  if (p === "complete") return "done";
-  if (p === "verify") return "review";
-  if (["observe", "think", "plan", "build", "execute", "learn"].includes(p))
-    return "in_progress";
+export function deriveTicketStatus(
+  phase: string,
+  iscsDone: number,
+  iscsTotal: number,
+): TicketRow["status"] {
+  if (phase.toLowerCase() === "complete") return "done";
+  if (iscsTotal > 0 && iscsDone === iscsTotal) return "review";
+  if (iscsDone >= 1) return "in_progress";
   return "todo";
 }
 
@@ -340,24 +348,39 @@ function readIsaTicket(
   isaPath: string,
   relPath: string,
   fallbackSlug: string,
+  isProjectDir = false,
 ): TicketRow | null {
   if (!existsSync(isaPath)) return null;
   const content = read(isaPath);
   const { fm } = frontmatter(content);
+  // Containers are not tickets. `kind: project` is explicit; for ISAs under
+  // USER/PROJECTS we also treat an unset kind as a container, so an un-stamped
+  // project ISA never regresses into a "done" card.
+  const isContainer = fm.kind === "project" || (isProjectDir && fm.kind == null);
+  if (isContainer) return null;
+  // Discriminator = the ISA file exists (checked above). No effort-tier gate:
+  // trivial work writes no ISA, so chatter is already excluded.
   const effort = (fm.effort || "").toUpperCase();
-  if (!/^E[2-5]$/.test(effort)) return null; // ISA-bearing E2+ only
   const slug = fm.slug || (fm.project ? kebab(fm.project) : "") || fallbackSlug;
   const step = (fm.phase || "").toUpperCase();
   const { sections, iscs } = parseIsaProjection(content);
+  const iscsDone = iscs.filter((i) => i.done).length;
+  const iscsTotal = iscs.length;
   return {
     slug,
     title: fm.title || fm.task || slug,
-    status: deriveTicketStatus(fm.phase || ""),
+    status: deriveTicketStatus(fm.phase || "", iscsDone, iscsTotal),
     current_step: ALGO_STEPS.has(step) ? step : null,
-    tier: effort,
-    progress: fm.progress || null,
+    tier: effort || null,
+    progress:
+      (fm.phase || "").toLowerCase() === "complete"
+        ? fm.progress || (iscsTotal > 0 ? `${iscsTotal}/${iscsTotal}` : null)
+        : iscsTotal > 0
+          ? `${iscsDone}/${iscsTotal}`
+          : fm.progress || null,
     isa_path: relPath,
     agent: fm.agent || null,
+    project_slug: fm.project ? kebab(fm.project) : null,
     sections,
     iscs,
   };
@@ -383,6 +406,7 @@ function readTickets(): TicketRow[] {
         `${PROJ_DIR}/${dir}/ISA.md`,
         `USER/PROJECTS/${dir}/ISA.md`,
         kebab(dir),
+        true, // project-dir: unset kind defaults to container
       );
       if (r) rows.push(r);
     }
@@ -483,12 +507,12 @@ async function syncLive(
     const s = t.sections;
     await sql`
       INSERT INTO tickets (
-        slug, title, status, current_step, tier, progress, isa_path, source, agent,
+        slug, title, status, current_step, tier, progress, isa_path, source, agent, project_id,
         problem, vision, out_of_scope, principles, constraints, goal,
         test_strategy, features, decisions, changelog, verification, iscs, updated_at
       )
       VALUES (
-        ${t.slug}, ${t.title}, ${t.status}, ${t.current_step}, ${t.tier}, ${t.progress}, ${t.isa_path}, 'pai', ${t.agent},
+        ${t.slug}, ${t.title}, ${t.status}, ${t.current_step}, ${t.tier}, ${t.progress}, ${t.isa_path}, 'pai', ${t.agent}, (SELECT id FROM projects WHERE slug = ${t.project_slug}),
         ${s.problem ?? null}, ${s.vision ?? null}, ${s.out_of_scope ?? null},
         ${s.principles ?? null}, ${s.constraints ?? null}, ${s.goal ?? null},
         ${s.test_strategy ?? null}, ${s.features ?? null}, ${s.decisions ?? null},
@@ -499,6 +523,7 @@ async function syncLive(
         current_step = EXCLUDED.current_step, tier = EXCLUDED.tier,
         progress = EXCLUDED.progress, isa_path = EXCLUDED.isa_path,
         agent = COALESCE(EXCLUDED.agent, tickets.agent),
+        project_id = COALESCE(EXCLUDED.project_id, tickets.project_id),
         problem = EXCLUDED.problem, vision = EXCLUDED.vision,
         out_of_scope = EXCLUDED.out_of_scope, principles = EXCLUDED.principles,
         constraints = EXCLUDED.constraints, goal = EXCLUDED.goal,

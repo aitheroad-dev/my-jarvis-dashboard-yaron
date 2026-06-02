@@ -72,9 +72,9 @@ const REFRESH_MS = 5_000;
 // Done is capped (see DONE_VISIBLE_LIMIT) so it doesn't grow unbounded.
 const COLUMN_ORDER: Status[] = ["todo", "in_progress", "review", "done"];
 
-// Show at most this many Done cards (most-recently-updated first); the rest
-// collapse into a "+N more" footer so the column stays scannable.
-const DONE_VISIBLE_LIMIT = 12;
+// Show at most this many Done cards per swimlane (most-recently-updated first);
+// the rest collapse into a "+N more" footer so each project lane stays short.
+const DONE_VISIBLE_LIMIT = 6;
 
 const STATUS_LABEL: Record<Status, string> = {
   todo: "To do",
@@ -381,17 +381,21 @@ function DraggableCard({
 
 function Column({
   status,
+  droppableId,
   tickets,
   onOpen,
   limit,
 }: {
   status: Status;
+  droppableId: string;
   tickets: TicketRow[];
   onOpen: (slug: string) => void;
   limit?: number;
 }) {
+  // Droppable id is unique per (swimlane, status) so columns in different
+  // project lanes never collide; the status itself rides in `data`.
   const { isOver, setNodeRef } = useDroppable({
-    id: status,
+    id: droppableId,
     data: { status },
   });
 
@@ -506,6 +510,46 @@ function Column({
       </div>
     </div>
   );
+}
+
+// ── Swimlanes ─────────────────────────────────────────────────────────────────
+// Project-first board: each project is a horizontal swimlane holding the 4
+// status columns. Tickets with no project_id collapse into a "Standalone" lane,
+// always rendered last. Containers (kind:project) never reach here — the sync
+// excludes them, so a project shows only its child work efforts.
+
+type Swimlane = {
+  key: string;
+  name: string;
+  tickets: TicketRow[];
+  byStatus: Record<Status, TicketRow[]>;
+};
+
+const STANDALONE_KEY = "__standalone__";
+
+function buildSwimlanes(rows: TicketRow[]): Swimlane[] {
+  const map = new Map<string, Swimlane>();
+  for (const r of rows) {
+    const key = r.project_id ?? STANDALONE_KEY;
+    const name = r.project_name ?? "Standalone";
+    let lane = map.get(key);
+    if (!lane) {
+      lane = {
+        key,
+        name,
+        tickets: [],
+        byStatus: { todo: [], in_progress: [], review: [], done: [], archived: [] },
+      };
+      map.set(key, lane);
+    }
+    lane.tickets.push(r);
+    lane.byStatus[r.status]?.push(r);
+  }
+  return [...map.values()].sort((a, b) => {
+    if (a.key === STANDALONE_KEY) return 1;
+    if (b.key === STANDALONE_KEY) return -1;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 // ── Page ────────────────────────────────────────────────────────────────────
@@ -696,18 +740,7 @@ export function TicketsKanbanPage() {
   const inProgressCount =
     rows?.filter((t) => t.status === "in_progress").length ?? 0;
 
-  const grouped: Record<Status, TicketRow[]> = {
-    todo: [],
-    in_progress: [],
-    review: [],
-    done: [],
-    archived: [],
-  };
-  if (rows) {
-    for (const r of rows) {
-      grouped[r.status]?.push(r);
-    }
-  }
+  const swimlanes = rows ? buildSwimlanes(rows) : [];
 
   const activeTicket = activeId
     ? rows?.find((r) => r.id === activeId) ?? null
@@ -768,8 +801,8 @@ export function TicketsKanbanPage() {
               maxWidth: 640,
             }}
           >
-            Drag a card between columns to change status. Auto-refreshes every{" "}
-            {Math.round(REFRESH_MS / 1000)}s.
+            Grouped by project. Drag a card between columns to change status.
+            Auto-refreshes every {Math.round(REFRESH_MS / 1000)}s.
           </p>
         </div>
 
@@ -1007,21 +1040,71 @@ export function TicketsKanbanPage() {
           <div
             style={{
               display: "flex",
-              gap: 12,
-              alignItems: "stretch",
-              overflowX: "auto",
-              paddingBottom: 8,
+              flexDirection: "column",
+              gap: 28,
             }}
           >
-            {COLUMN_ORDER.map((status) => (
-              <Column
-                key={status}
-                status={status}
-                tickets={grouped[status]}
-                onOpen={handleOpen}
-                limit={status === "done" ? DONE_VISIBLE_LIMIT : undefined}
-              />
-            ))}
+            {swimlanes.map((lane) => {
+              const doneCount = lane.byStatus.done.length;
+              const activeCount = lane.tickets.length - doneCount;
+              return (
+                <div key={lane.key}>
+                  {/* Swimlane header — project name + rollup */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 10,
+                      marginBottom: 10,
+                      paddingBottom: 6,
+                      borderBottom: `2px solid ${T.line}`,
+                    }}
+                  >
+                    <h2
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: lane.key === STANDALONE_KEY ? T.ink2 : T.ink,
+                        margin: 0,
+                      }}
+                    >
+                      {lane.name}
+                    </h2>
+                    <span
+                      style={{
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: 12,
+                        color: T.ink3,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {doneCount} done · {activeCount} active
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "stretch",
+                      overflowX: "auto",
+                      paddingBottom: 8,
+                    }}
+                  >
+                    {COLUMN_ORDER.map((status) => (
+                      <Column
+                        key={status}
+                        status={status}
+                        droppableId={`${lane.key}:${status}`}
+                        tickets={lane.byStatus[status]}
+                        onOpen={handleOpen}
+                        limit={status === "done" ? DONE_VISIBLE_LIMIT : undefined}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <DragOverlay>
