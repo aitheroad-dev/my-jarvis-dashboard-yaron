@@ -338,6 +338,49 @@ export function deriveTicketStatus(
   return "todo";
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// SHARED CLASSIFICATION HELPERS — keep BYTE-IDENTICAL with the PAI hook
+// ~/.claude/hooks/lib/ticket-push.ts. Maintained as character-equal copies
+// across repos; ticket-push.selftest.ts is the parity oracle. Advisor
+// 2026-06-04: normalize the path INPUT at both call sites, not just the regex,
+// or a nested effort classifies differently in batch vs real-time.
+// ──────────────────────────────────────────────────────────────────────────
+/** Canonicalize any ISA path (absolute or relative) to a PAI-relative,
+ *  forward-slash form like `USER/PROJECTS/<NAME>/ISA.md`. */
+export function normalizeRelIsa(p: string): string {
+  const rel = p.startsWith(PAI) ? p.slice(PAI.length) : p;
+  return rel.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+/** Container = NOT a ticket (it's a project swimlane). Explicit `kind: project`
+ *  wins. With no `kind`, ONLY the project-root ISA — path EXACTLY
+ *  `USER/PROJECTS/<NAME>/ISA.md` (one segment via `[^/]+`) — is a container;
+ *  any deeper-nested ISA defaults to a ticket. */
+export function isContainerISA(
+  kind: string | null | undefined,
+  relIsa: string,
+): boolean {
+  if (kind === "project") return true;
+  if (kind != null && kind !== "") return false;
+  return /^USER\/PROJECTS\/[^/]+\/ISA\.md$/.test(normalizeRelIsa(relIsa));
+}
+
+const TICKET_STATUSES = new Set(["todo", "in_progress", "review", "done"]);
+
+/** Explicit `status:` frontmatter overrides ISC derivation — for effort ISAs
+ *  that carry prose `phase:` strings instead of canonical ISC checkbox
+ *  bookkeeping (e.g. "SHIPPED 2026-06-03 …"). Falls back to deriveTicketStatus. */
+export function statusFor(
+  fmStatus: string | undefined,
+  phase: string,
+  iscsDone: number,
+  iscsTotal: number,
+): TicketRow["status"] {
+  const s = (fmStatus || "").toLowerCase().trim();
+  if (TICKET_STATUSES.has(s)) return s as TicketRow["status"];
+  return deriveTicketStatus(phase, iscsDone, iscsTotal);
+}
+
 /**
  * Read MEMORY/WORK/*\/ISA.md and project each into a thin ticket.
  * FILTER: only ISA-bearing E2+ work becomes a ticket — trivial E1/native
@@ -348,16 +391,14 @@ function readIsaTicket(
   isaPath: string,
   relPath: string,
   fallbackSlug: string,
-  isProjectDir = false,
 ): TicketRow | null {
   if (!existsSync(isaPath)) return null;
   const content = read(isaPath);
   const { fm } = frontmatter(content);
-  // Containers are not tickets. `kind: project` is explicit; for ISAs under
-  // USER/PROJECTS we also treat an unset kind as a container, so an un-stamped
-  // project ISA never regresses into a "done" card.
-  const isContainer = fm.kind === "project" || (isProjectDir && fm.kind == null);
-  if (isContainer) return null;
+  // Containers are not tickets. Driven by `kind:` with a strict project-root-only
+  // path fallback (isContainerISA) — a NESTED effort ISA under a project is a
+  // ticket, not a container.
+  if (isContainerISA(fm.kind, relPath)) return null;
   // Discriminator = the ISA file exists (checked above). No effort-tier gate:
   // trivial work writes no ISA, so chatter is already excluded.
   const effort = (fm.effort || "").toUpperCase();
@@ -369,7 +410,7 @@ function readIsaTicket(
   return {
     slug,
     title: fm.title || fm.task || slug,
-    status: deriveTicketStatus(fm.phase || "", iscsDone, iscsTotal),
+    status: statusFor(fm.status, fm.phase || "", iscsDone, iscsTotal),
     current_step: ALGO_STEPS.has(step) ? step : null,
     tier: effort || null,
     progress:
@@ -386,6 +427,35 @@ function readIsaTicket(
   };
 }
 
+// Dirs that must never be walked for effort ISAs: vendored deps, archives,
+// ephemeral feature views, backups, build output. Advisor 2026-06-04: without
+// this, a nested ISA.md anywhere under a project (e.g. node_modules, _archive)
+// would wrongly become a ticket — the inverse of the original invisibility bug.
+const ISA_WALK_EXCLUDE =
+  /(^|\/)(node_modules|_archive|_ephemeral|Backups|\.git|dist|build|\.astro)(\/|$)/;
+
+/** Recursively collect every `ISA.md` under `absDir`, skipping excluded dirs.
+ *  `rel` accumulates the PAI-relative path so classification sees the real depth. */
+function walkISAs(
+  absDir: string,
+  relDir: string,
+  out: { abs: string; rel: string }[],
+): void {
+  let entries;
+  try {
+    entries = readdirSync(absDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const e of entries) {
+    const rel = relDir ? `${relDir}/${e.name}` : e.name;
+    if (ISA_WALK_EXCLUDE.test(rel)) continue;
+    const abs = `${absDir}/${e.name}`;
+    if (e.isDirectory()) walkISAs(abs, rel, out);
+    else if (e.name === "ISA.md") out.push({ abs, rel });
+  }
+}
+
 function readTickets(): TicketRow[] {
   const rows: TicketRow[] = [];
   // Work-session ISAs — MEMORY/WORK/<slug>/ISA.md (ad-hoc / one-shot work).
@@ -398,18 +468,18 @@ function readTickets(): TicketRow[] {
       );
       if (r) rows.push(r);
     }
-  // Project ISAs — USER/PROJECTS/<NAME>/ISA.md (persistent project identity).
+  // Project ISAs — RECURSIVE under USER/PROJECTS so nested work-effort ISAs
+  // (e.g. <NAME>/Websites/<effort>/ISA.md) are discovered, not just roots.
+  // isContainerISA() still skips the project-root ISA (the swimlane container).
   const PROJ_DIR = `${PAI}/USER/PROJECTS`;
-  if (existsSync(PROJ_DIR))
-    for (const dir of readdirSync(PROJ_DIR)) {
-      const r = readIsaTicket(
-        `${PROJ_DIR}/${dir}/ISA.md`,
-        `USER/PROJECTS/${dir}/ISA.md`,
-        kebab(dir),
-        true, // project-dir: unset kind defaults to container
-      );
+  if (existsSync(PROJ_DIR)) {
+    const found: { abs: string; rel: string }[] = [];
+    walkISAs(PROJ_DIR, "USER/PROJECTS", found);
+    for (const { abs, rel } of found) {
+      const r = readIsaTicket(abs, rel, kebab(basename(dirname(abs))));
       if (r) rows.push(r);
     }
+  }
   return rows;
 }
 
