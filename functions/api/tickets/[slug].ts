@@ -33,6 +33,14 @@ type TicketDetail = {
   updated_at: string;
 };
 
+type Movement = {
+  kind: "commit" | "pivot" | "decision" | "milestone";
+  ts: string | null;
+  summary: string;
+  ref: string | null;
+  progress: string | null;
+};
+
 const ALLOWED_STATUS = new Set([
   "todo",
   "in_progress",
@@ -136,7 +144,17 @@ export const onRequestGet: PagesFunction<Env, "slug"> = async ({
   if (rows.length === 0) {
     return json({ error: "ticket not found" }, { status: 404 });
   }
-  return json(rows[0]);
+
+  // Movement feed — the derived timeline (commits / pivots / decisions /
+  // milestones). Dated entries first (chronological), then undated by sequence.
+  const movements = (await sql/* sql */ `
+    SELECT kind, ts, summary, ref, progress
+    FROM ticket_movements
+    WHERE ticket_slug = ${slug}
+    ORDER BY (ts IS NULL), ts ASC, seq ASC
+  `) as Movement[];
+
+  return json({ ...rows[0], movements });
 };
 
 export const onRequestPut: PagesFunction<Env, "slug"> = async ({

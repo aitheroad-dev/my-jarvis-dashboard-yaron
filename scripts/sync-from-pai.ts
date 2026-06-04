@@ -421,7 +421,7 @@ function readIsaTicket(
           : fm.progress || null,
     isa_path: relPath,
     agent: fm.agent || null,
-    project_slug: fm.project ? kebab(fm.project) : null,
+    project_slug: fm.project ? kebab(fm.project.replace(/\s*\([^)]*\)\s*$/, "")) : null,
     sections,
     iscs,
   };

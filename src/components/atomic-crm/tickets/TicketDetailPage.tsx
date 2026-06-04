@@ -21,6 +21,14 @@ import { BlockRenderer, type Block } from "../blueprint/BlockRenderer";
 
 type ISC = { id: string; text: string; done: boolean };
 
+type Movement = {
+  kind: "commit" | "pivot" | "decision" | "milestone";
+  ts: string | null;
+  summary: string;
+  ref: string | null;
+  progress: string | null;
+};
+
 type TicketDetail = {
   id: string;
   slug: string;
@@ -50,6 +58,14 @@ type TicketDetail = {
   log: string | null;
   created_at: string;
   updated_at: string;
+  movements?: Movement[];
+};
+
+const MOVEMENT_LABEL: Record<Movement["kind"], string> = {
+  commit: "● commit",
+  pivot: "↻ pivot",
+  decision: "◆ decision",
+  milestone: "▸ milestone",
 };
 
 const STATUS_TONE: Record<TicketDetail["status"], { fg: string; bg: string; bd: string }> = {
@@ -95,6 +111,26 @@ function buildRecipe(t: TicketDetail): Block[] {
       props: {
         pillLabel: t.status.replace("_", " "),
         message: chainLine.join(" · "),
+      },
+    });
+  }
+
+  // MOVEMENT — the derived journey (commits / pivots / decisions / milestones).
+  // Placed up top: it's the headline answer to "how did this move?".
+  const moves = t.movements ?? [];
+  if (moves.length > 0) {
+    blocks.push({ type: "Divider", props: {} });
+    blocks.push({ type: "SectionHeader", props: { eyebrow: "MOVEMENT", title: `Movement (${moves.length})` } });
+    blocks.push({
+      type: "DataTable",
+      props: {
+        headers: ["When", "Type", "Δ", "What"],
+        rows: moves.map((m) => [
+          m.ts ? new Date(m.ts).toISOString().slice(0, 10) : "—",
+          MOVEMENT_LABEL[m.kind] ?? m.kind,
+          m.progress ?? "",
+          m.summary,
+        ]),
       },
     });
   }
