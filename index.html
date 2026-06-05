@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#4A7C4E" />
     <link rel="shortcut icon" href="./favicon.ico" />
-    <title>MyJarvis Dashboard</title>
+    <title>מתכנן הטיולים בישראל</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -17,7 +17,8 @@
       body {
         margin: 0;
         padding: 0;
-        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-family: "Heebo", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #f2ecd8;
       }
       button,
       input,
@@ -32,17 +33,17 @@
         justify-content: center;
         position: fixed;
         inset: 0;
-        background: #fafafa;
-        color: #444;
+        background: #f2ecd8;
+        color: #8b5e3c;
         font-size: 14px;
       }
     </style>
   </head>
   <body>
     <div id="root">
-      <div class="boot">Loading…</div>
+      <div class="boot">טוען…</div>
     </div>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>יש להפעיל JavaScript כדי להריץ את האפליקציה.</noscript>
     <script type="module" src="<%= mainScript %>"></script>
   </body>
 </html>

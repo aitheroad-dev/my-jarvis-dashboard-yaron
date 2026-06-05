@@ -1,0 +1,118 @@
+/* Israel-trail visual language for the hiking planner. */
+
+:root {
+  --h-cream: #f2ecd8;
+  --h-cream-deep: #e7dec3;
+  --h-trail: #4a7c4e;
+  --h-mustard: #c8963e;
+  --h-sea: #2e6b8a;
+  --h-earth: #8b5e3c;
+  --h-ink: #3b352b;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.hiking-app {
+  min-height: 100vh;
+  background-color: var(--h-cream);
+  color: var(--h-ink);
+  font-family: "Heebo", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.hiking-app h1,
+.hiking-app h2,
+.hiking-app h3,
+.hiking-display {
+  font-family: "Frank Ruhl Libre", "Heebo", Georgia, serif;
+  font-weight: 700;
+}
+
+/* Faint topographic contour texture for headers / hero / cards. */
+.topo {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%238b5e3c' stroke-opacity='0.12' stroke-width='1.2'%3E%3Cpath d='M-20 60 C 40 20, 120 100, 200 50 S 320 80, 360 40'/%3E%3Cpath d='M-20 100 C 40 60, 120 140, 200 90 S 320 120, 360 80'/%3E%3Cpath d='M-20 140 C 40 100, 120 180, 200 130 S 320 160, 360 120'/%3E%3Cpath d='M-20 180 C 40 140, 120 220, 200 170 S 320 200, 360 160'/%3E%3Cpath d='M-20 220 C 40 180, 120 260, 200 210 S 320 240, 360 200'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Israel-trail blaze: orange / blue / white stripe. */
+.blaze {
+  display: inline-block;
+  width: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    180deg,
+    var(--h-mustard) 0 33.3%,
+    #ffffff 33.3% 66.6%,
+    var(--h-sea) 66.6% 100%
+  );
+}
+.blaze-row {
+  height: 6px;
+  width: 100%;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--h-mustard) 0 33.3%,
+    #ffffff 33.3% 66.6%,
+    var(--h-sea) 66.6% 100%
+  );
+}
+
+/* "Old map" card frame. */
+.map-card {
+  background: #fbf8ef;
+  border: 1px solid var(--h-cream-deep);
+  box-shadow:
+    0 1px 0 rgba(139, 94, 60, 0.08),
+    0 6px 18px -10px rgba(59, 53, 43, 0.25);
+}
+.map-card:hover {
+  border-color: var(--h-mustard);
+}
+
+/* Leaflet tweaks: keep controls usable inside an RTL document. */
+.leaflet-container {
+  font-family: "Heebo", sans-serif;
+  border-radius: 12px;
+}
+.leaflet-popup-content {
+  direction: rtl;
+  text-align: right;
+  margin: 10px 12px;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+/* Custom teardrop marker built from a div icon. */
+.hike-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #fbf8ef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+.hike-pin span {
+  transform: rotate(45deg);
+  display: block;
+  text-align: center;
+  line-height: 22px;
+  font-size: 13px;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
