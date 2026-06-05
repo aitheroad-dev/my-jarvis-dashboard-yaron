@@ -3,8 +3,9 @@
 // Kanban view. Drag a card between columns → PUT /api/tickets/:slug { status }.
 // Sky-blue palette (mirrors DashboardArchitecturePage's inline T tokens — page
 // identity stays sky-blue, distinct from cream/peach editorial pages).
-// Heartbeat preserved: pulsing emerald dot when in_progress, 5s auto-refresh,
+// Heartbeat preserved: pulsing emerald dot when in_progress,
 // log tail under title, click-into-card opens /tickets/:slug detail.
+// Loads once on open — 5s polling removed 2026-06-05 to stop Neon egress drain.
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -65,8 +66,8 @@ type TicketRow = {
   updated_at: string;
 };
 
-// 5-second poll cadence — fast enough to feel live, slow enough to be free.
-const REFRESH_MS = 5_000;
+// Polling removed 2026-06-05 — the 5s /api/tickets poll was the dominant Neon
+// egress source. The board now loads once on open; refresh the page to re-pull.
 
 // Archived is intentionally omitted — archived tickets leave the board.
 // Done is capped (see DONE_VISIBLE_LIMIT) so it doesn't grow unbounded.
@@ -609,12 +610,12 @@ export function TicketsKanbanPage() {
       }
     }
 
+    // Load once on mount. Polling intentionally removed 2026-06-05 — the 5s
+    // /api/tickets poll was draining Neon egress. Refresh the page to re-pull.
     void fetchOnce();
-    const intervalId = window.setInterval(fetchOnce, REFRESH_MS);
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -802,7 +803,7 @@ export function TicketsKanbanPage() {
             }}
           >
             Grouped by project. Drag a card between columns to change status.
-            Auto-refreshes every {Math.round(REFRESH_MS / 1000)}s.
+            Refresh the page to pull the latest.
           </p>
         </div>
 
