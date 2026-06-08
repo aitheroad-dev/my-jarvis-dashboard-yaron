@@ -29,6 +29,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const url = new URL(request.url);
   const agent = url.searchParams.get("agent");
   const type = url.searchParams.get("type");
+  const limitRaw: string | null = url.searchParams.get("limit");
+  const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
+  const limit: number =
+    !Number.isFinite(limitParsed) || limitParsed <= 0
+      ? 500
+      : Math.min(limitParsed, 1000);
 
   const sql = getDb(env);
   const rows = (await sql/* sql */ `
@@ -44,7 +50,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     WHERE (${agent}::text IS NULL OR agent = ${agent})
       AND (${type}::text  IS NULL OR type  = ${type})
     ORDER BY created_at DESC
-    LIMIT 200
+    LIMIT ${limit}
   `) as MemoryRow[];
 
   return json(rows);

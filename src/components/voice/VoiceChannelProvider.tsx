@@ -118,7 +118,9 @@ export function VoiceChannelProvider({ children }: { children: ReactNode }) {
 
     void fetchFeed();
     pollTimerRef.current = window.setInterval(() => {
-      if (!destroyedRef.current) void fetchFeed();
+      // Skip polling while the tab is hidden — a 5s feed poll on a background
+      // tab is the same unbounded-egress pattern that blew the Neon cap.
+      if (!destroyedRef.current && !document.hidden) void fetchFeed();
     }, POLL_INTERVAL_MS);
 
     return () => {

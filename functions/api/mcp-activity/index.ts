@@ -3,7 +3,7 @@
  *
  * Migrated off legacy Supabase Edge Function (was xtkfuchjmeekofeuplfu).
  *
- *   GET  — authenticated dashboard user. Returns the latest 200 activity rows
+ *   GET  — authenticated dashboard user. Returns the latest 100 activity rows
  *          for the tenant query param (defaults to "(unprovisioned)" guard).
  *   POST — header-auth via X-MCP-Secret. The MCP Worker posts every audit event
  *          here. Single-tenant for now; tenant_id comes from the body.
@@ -27,7 +27,7 @@ const ALLOWED_OP_TYPES = new Set([
   "upload_asset",
 ]);
 const ALLOWED_STATUS = new Set(["success", "failed", "escalated"]);
-const DEFAULT_LIMIT = 200;
+const DEFAULT_LIMIT = 100;
 
 // ── GET ────────────────────────────────────────────────────────────────────
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
@@ -40,8 +40,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const url = new URL(request.url);
   const tenant = url.searchParams.get("tenant") ?? "erezfern";
-  const limitRaw = Number.parseInt(url.searchParams.get("limit") ?? "", 10);
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : DEFAULT_LIMIT;
+  const limitRaw: string | null = url.searchParams.get("limit");
+  const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
+  const limit: number =
+    !Number.isFinite(limitParsed) || limitParsed <= 0
+      ? DEFAULT_LIMIT
+      : Math.min(limitParsed, 1000);
 
   const sql = getDb(env);
   const rows = await sql/* sql */ `

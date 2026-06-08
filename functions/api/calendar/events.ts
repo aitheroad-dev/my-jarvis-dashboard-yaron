@@ -35,7 +35,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const url = new URL(request.url);
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
-  const limitParam = url.searchParams.get("limit");
+  const limitRaw: string | null = url.searchParams.get("limit");
 
   const from = fromParam
     ? new Date(fromParam)
@@ -43,10 +43,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const to = toParam
     ? new Date(toParam)
     : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const limit = Math.min(
-    Math.max(Number(limitParam) || 100, 1),
-    500,
-  );
+  const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
+  const limit: number =
+    !Number.isFinite(limitParsed) || limitParsed <= 0
+      ? 100
+      : Math.min(limitParsed, 1000);
 
   if (Number.isNaN(from.valueOf()) || Number.isNaN(to.valueOf())) {
     return json({ error: "invalid from/to" }, { status: 400 });

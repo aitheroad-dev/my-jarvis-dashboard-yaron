@@ -28,6 +28,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     throw res;
   }
 
+  const url = new URL(request.url);
+  const limitRaw: string | null = url.searchParams.get("limit");
+  const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
+  const limit: number =
+    !Number.isFinite(limitParsed) || limitParsed <= 0
+      ? 500
+      : Math.min(limitParsed, 1000);
+
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
@@ -37,6 +45,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         updated_at
       FROM page_content
       ORDER BY page_slug ASC
+      LIMIT ${limit}
     `) as ListRow[];
 
     return json(

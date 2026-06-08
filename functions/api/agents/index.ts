@@ -25,6 +25,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     throw res;
   }
 
+  const url = new URL(request.url);
+  const limitRaw: string | null = url.searchParams.get("limit");
+  const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
+  const limit: number =
+    !Number.isFinite(limitParsed) || limitParsed <= 0
+      ? 500
+      : Math.min(limitParsed, 1000);
+
   const sql = getDb(env);
   const rows = (await sql/* sql */ `
     SELECT
@@ -48,6 +56,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     FROM agents a
     LEFT JOIN tickets ct ON ct.id = a.current_ticket_id
     ORDER BY a.display_name
+    LIMIT ${limit}
   `) as AgentRow[];
 
   return json(rows);

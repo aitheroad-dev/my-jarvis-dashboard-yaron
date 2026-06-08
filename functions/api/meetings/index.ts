@@ -38,6 +38,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     throw res;
   }
 
+  const url = new URL(request.url);
+  const limitRaw: string | null = url.searchParams.get("limit");
+  const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
+  const limit: number =
+    !Number.isFinite(limitParsed) || limitParsed <= 0
+      ? 500
+      : Math.min(limitParsed, 1000);
+
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
@@ -45,7 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
              started_at, ended_at, created_at
         FROM meetings
        ORDER BY created_at DESC
-       LIMIT 100
+       LIMIT ${limit}
     `) as MeetingRow[];
     return json({ meetings: rows });
   } catch (err) {
