@@ -167,7 +167,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const sql = getDb(env);
   try {
-    // Cast text → uuid for project_id / goal_id (NULL passes through cleanly).
+    // D1 stores project_id / goal_id as TEXT, so no cast is needed.
     const rows = (await sql/* sql */ `
       INSERT INTO tickets (
         slug, title, agent, status, tier, current_step,
@@ -175,7 +175,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       )
       VALUES (
         ${slug}, ${title}, ${agent}, ${status}, ${tier}, ${currentStep},
-        ${projectId}::uuid, ${goalId}::uuid,
+        ${projectId}, ${goalId},
         ${problem}, ${goalText}
       )
       RETURNING

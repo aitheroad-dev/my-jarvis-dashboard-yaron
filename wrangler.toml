@@ -8,6 +8,16 @@ pages_build_output_dir = "dist"
 # allow-listed on the Access policy is the only person who can reach this app.
 # Functions verify the Cf-Access-Authenticated-User-Email header matches.
 TENANT_OWNER_EMAIL = "aitheroad@gmail.com"
+# Public base URL of the R2 voice bucket; audio_url = ${VOICE_PUBLIC_URL}/<id>.mp3
+VOICE_PUBLIC_URL = "https://pub-6fcd8a707615437da46fb97b8be570ba.r2.dev"
 
-# Secrets (set via `wrangler pages secret put <NAME> --project-name my-jarvis-dashboard-yaron`):
-#   DATABASE_URL   — Neon pooled connection string
+# Data store: Cloudflare D1 (SQLite). Replaces Neon Postgres — no DATABASE_URL secret.
+[[d1_databases]]
+binding = "DB"
+database_name = "mjd-yaron-db"
+database_id = "bede39da-5d58-4a2d-9198-89f9f6e2804c"
+
+# Voice-clip audio store: Cloudflare R2 (replaces Postgres bytea).
+[[r2_buckets]]
+binding = "VOICE_BUCKET"
+bucket_name = "mjd-yaron-voice"

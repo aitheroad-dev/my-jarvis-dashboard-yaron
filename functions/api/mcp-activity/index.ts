@@ -29,6 +29,20 @@ const ALLOWED_OP_TYPES = new Set([
 const ALLOWED_STATUS = new Set(["success", "failed", "escalated"]);
 const DEFAULT_LIMIT = 100;
 
+type McpActivityRow = {
+  id: string;
+  tenant_id: string;
+  user_id: string | null;
+  op_type: string;
+  status: string;
+  payload: string | null;
+  result: string | null;
+  duration_ms: number | null;
+  mcp_session_id: string | null;
+  chat_id: string | null;
+  created_at: string;
+};
+
 // ── GET ────────────────────────────────────────────────────────────────────
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -48,7 +62,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       : Math.min(limitParsed, 1000);
 
   const sql = getDb(env);
-  const rows = await sql/* sql */ `
+  const rows = (await sql/* sql */ `
     SELECT
       id,
       tenant_id,
@@ -65,9 +79,15 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     WHERE tenant_id = ${tenant}
     ORDER BY created_at DESC
     LIMIT ${limit}
-  `;
+  `) as McpActivityRow[];
 
-  return json(rows);
+  return json(
+    rows.map((row) => ({
+      ...row,
+      payload: row.payload ? JSON.parse(row.payload) : {},
+      result: row.result ? JSON.parse(row.result) : null,
+    })),
+  );
 };
 
 // ── POST ───────────────────────────────────────────────────────────────────
@@ -121,8 +141,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       payload, result, duration_ms, mcp_session_id, chat_id
     ) VALUES (
       ${tenant_id}, ${user_id}, ${op_type}, ${status},
-      ${JSON.stringify(payload)}::jsonb,
-      ${result ? JSON.stringify(result) : null}::jsonb,
+      ${JSON.stringify(payload)},
+      ${result ? JSON.stringify(result) : null},
       ${duration_ms}, ${mcp_session_id}, ${chat_id}
     )
     RETURNING id, created_at

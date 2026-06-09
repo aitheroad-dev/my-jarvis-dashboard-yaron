@@ -22,7 +22,7 @@
  *   DATABASE_URL=postgres://...   (the same Neon string set as the wrangler secret)
  */
 
-import { neon } from "@neondatabase/serverless";
+import { getD1Sql } from "./_d1";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { dirname, resolve, basename } from "node:path";
 
@@ -501,26 +501,19 @@ async function syncLive(
   memories: MemoryRow[],
   tickets: TicketRow[],
 ) {
-  const url = getDatabaseUrl();
-  if (!url) {
-    console.error(
-      "\n✗ DATABASE_URL not found. Provide the Neon connection string via:\n" +
-        "  • env:  DATABASE_URL=postgres://... bun scripts/sync-from-pai.ts\n" +
-        "  • file: echo 'DATABASE_URL=postgres://...' >> .dev.vars   (gitignored)\n" +
-        "Or run with --dry-run to preview without a database.\n",
-    );
-    process.exit(1);
-  }
-  const sql = neon(url);
+  // Writes to Cloudflare D1 via the REST API. Credentials come from env
+  // (CLOUDFLARE_ACCOUNT_ID, D1_DATABASE_ID, CLOUDFLARE_API_TOKEN); getD1Sql
+  // throws a clear error if any are missing. Use --dry-run to preview with no DB.
+  const sql = getD1Sql();
 
   // projects — upsert by slug (non-destructive to dashboard-native rows)
   for (const p of projects) {
     await sql`
       INSERT INTO projects (slug, name, mission, status, body, updated_at)
-      VALUES (${p.slug}, ${p.name}, ${p.mission}, ${p.status}, ${p.body}, NOW())
+      VALUES (${p.slug}, ${p.name}, ${p.mission}, ${p.status}, ${p.body}, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       ON CONFLICT (slug) DO UPDATE SET
         name = EXCLUDED.name, mission = EXCLUDED.mission,
-        status = EXCLUDED.status, body = EXCLUDED.body, updated_at = NOW()
+        status = EXCLUDED.status, body = EXCLUDED.body, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
     `;
   }
 
@@ -538,7 +531,7 @@ async function syncLive(
     if (match) {
       await sql`
         UPDATE goals SET title = ${g.title}, description = ${g.description},
-          status = 'active', updated_at = NOW()
+          status = 'active', updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
         WHERE id = ${match.id}
       `;
     } else if (lifeId) {
@@ -546,7 +539,7 @@ async function syncLive(
         INSERT INTO goals (slug, project_id, title, description, status)
         VALUES (${g.slug}, ${lifeId}, ${g.title}, ${g.description}, 'active')
         ON CONFLICT (slug) DO UPDATE SET
-          title = EXCLUDED.title, description = EXCLUDED.description, updated_at = NOW()
+          title = EXCLUDED.title, description = EXCLUDED.description, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
       `;
     }
   }
@@ -555,19 +548,19 @@ async function syncLive(
   for (const a of agents) {
     await sql`
       INSERT INTO agents (name, display_name, voice_kokoro, voice_mcp, color, identity_md, updated_at)
-      VALUES (${a.name}, ${a.display_name}, ${a.voice_kokoro}, NULL, ${a.color}, ${a.identity_md}, NOW())
+      VALUES (${a.name}, ${a.display_name}, ${a.voice_kokoro}, NULL, ${a.color}, ${a.identity_md}, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       ON CONFLICT (name) DO UPDATE SET
         display_name = EXCLUDED.display_name, voice_kokoro = EXCLUDED.voice_kokoro,
-        color = EXCLUDED.color, identity_md = EXCLUDED.identity_md, updated_at = NOW()
+        color = EXCLUDED.color, identity_md = EXCLUDED.identity_md, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
     `;
   }
 
   // memories — replace the PAI-sourced set wholesale (idempotent by source tag)
-  await sql`DELETE FROM memories WHERE metadata->>'source' = 'pai-auto-memory'`;
+  await sql`DELETE FROM memories WHERE json_extract(metadata, '$.source') = 'pai-auto-memory'`;
   for (const m of memories) {
     await sql`
       INSERT INTO memories (type, title, body, metadata, created_at)
-      VALUES (${m.type}, ${m.title}, ${m.body}, ${JSON.stringify(m.metadata)}::jsonb, ${m.created_at})
+      VALUES (${m.type}, ${m.title}, ${m.body}, ${JSON.stringify(m.metadata)}, ${m.created_at})
     `;
   }
 
@@ -586,7 +579,7 @@ async function syncLive(
         ${s.problem ?? null}, ${s.vision ?? null}, ${s.out_of_scope ?? null},
         ${s.principles ?? null}, ${s.constraints ?? null}, ${s.goal ?? null},
         ${s.test_strategy ?? null}, ${s.features ?? null}, ${s.decisions ?? null},
-        ${s.changelog ?? null}, ${s.verification ?? null}, ${JSON.stringify(t.iscs)}::jsonb, NOW()
+        ${s.changelog ?? null}, ${s.verification ?? null}, ${JSON.stringify(t.iscs)}, strftime('%Y-%m-%dT%H:%M:%SZ','now')
       )
       ON CONFLICT (slug) DO UPDATE SET
         title = EXCLUDED.title, status = EXCLUDED.status,
@@ -600,7 +593,7 @@ async function syncLive(
         test_strategy = EXCLUDED.test_strategy, features = EXCLUDED.features,
         decisions = EXCLUDED.decisions, changelog = EXCLUDED.changelog,
         verification = EXCLUDED.verification, iscs = EXCLUDED.iscs,
-        updated_at = NOW()
+        updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
       WHERE tickets.source = 'pai'
     `;
   }

@@ -21,7 +21,7 @@ type CalendarEventRow = {
  * Query: ?from=<iso>&to=<iso>&limit=<n>
  * Defaults: from = now - 1 hour, to = now + 7 days, limit = 100
  *
- * Reads directly from per-tenant Neon `calendar_events` table.
+ * Reads directly from the per-tenant D1 `calendar_events` table.
  * The worker keeps this table fresh via Google push notifications.
  */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
@@ -39,10 +39,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const from = fromParam
     ? new Date(fromParam)
-    : new Date(Date.now() - 60 * 60 * 1000);
+    : new Date(new Date().getTime() - 60 * 60 * 1000);
   const to = toParam
     ? new Date(toParam)
-    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    : new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
   const limitParsed: number = Number.parseInt(limitRaw ?? "", 10);
   const limit: number =
     !Number.isFinite(limitParsed) || limitParsed <= 0
@@ -60,8 +60,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
              start_time, end_time, status, bot_id,
              dispatched_at, organizer_email
         FROM calendar_events
-       WHERE start_time >= ${from.toISOString()}::timestamptz
-         AND start_time <= ${to.toISOString()}::timestamptz
+       WHERE start_time >= ${from.toISOString()}
+         AND start_time <= ${to.toISOString()}
        ORDER BY start_time ASC
        LIMIT ${limit}
     `) as CalendarEventRow[];

@@ -18,8 +18,7 @@ type IngestBody = {
   voice_id?: string | null;
   audio_url?: string | null;
   // Inline audio transport: base64 of the rendered Kokoro MP3. When present,
-  // the bytes are stored in voice_samples.audio_data and audio_url is set to
-  // this row's /api/voice/clip/<id> endpoint.
+  // the bytes are stored in R2 and audio_url is set to the public object URL.
   audio_b64?: string | null;
   audio_mime?: string | null;
   category?: string | null;
@@ -63,8 +62,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   // Decide audio transport. With inline bytes, generate the id up front so
-  // audio_url can point at this row's clip endpoint; decode(NULL,'base64')
-  // yields NULL, so the same INSERT covers the text-only path.
+  // the R2 object key and public audio_url use the same stable identifier.
   // Use the client-provided id when present (idempotent retries); else mint one.
   const clientId =
     typeof body.id === "string" && /^[0-9a-fA-F-]{36}$/.test(body.id) ? body.id : null;
@@ -76,9 +74,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (body.audio_b64.length <= MAX_AUDIO_B64_LEN) {
       audioB64 = body.audio_b64;
       audioMime = body.audio_mime ?? "audio/mpeg";
-      audioUrl = `/api/voice/clip/${id}`;
     }
     // oversize → fall through as a text-only row (audioUrl stays as given)
+  }
+
+  if (audioB64) {
+    try {
+      const bytes = Uint8Array.from(atob(audioB64), (c) => c.charCodeAt(0));
+      await env.VOICE_BUCKET.put(`${id}.mp3`, bytes, {
+        httpMetadata: { contentType: audioMime || "audio/mpeg" },
+      });
+      audioUrl = `${env.VOICE_PUBLIC_URL}/${id}.mp3`;
+    } catch {
+      // Keep the text row and any client-provided URL when R2 storage fails.
+    }
   }
 
   const sql = getDb(env);
@@ -89,21 +98,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       agent_name,
       text_content,
       audio_url,
-      audio_data,
-      audio_mime,
       title,
       duration_seconds,
       category,
       voice_id,
       created_at
     ) VALUES (
-      ${id}::uuid,
+      ${id},
       'aitheroad@gmail.com',
       ${body.agent_name},
       ${body.text_content},
       ${audioUrl},
-      decode(${audioB64}, 'base64'),
-      ${audioMime},
       ${body.title ?? null},
       ${body.duration_seconds != null ? Math.round(body.duration_seconds) : null},
       ${body.category ?? 'message'},
@@ -111,7 +116,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       ${body.created_at ?? new Date().toISOString()}
     )
     ON CONFLICT (id) DO NOTHING
-    RETURNING id::text AS id, created_at
+    RETURNING id, created_at
   `) as { id: string; created_at: string }[];
 
   // No row back → this id already landed. Idempotent success, not an error.

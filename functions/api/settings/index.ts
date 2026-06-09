@@ -2,7 +2,7 @@ import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env } from "../../_lib/auth";
 
-type SettingsRow = { data: Record<string, unknown> };
+type SettingsRow = { data: string | null };
 
 /**
  * GET /api/settings
@@ -24,7 +24,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const rows = (await sql/* sql */ `
       SELECT data FROM user_settings WHERE user_id = ${auth.userId}
     `) as SettingsRow[];
-    const data = rows[0]?.data ?? {};
+    const data = rows[0]?.data ? JSON.parse(rows[0].data as string) : {};
     return json({ data });
   } catch (err) {
     return json(
@@ -41,7 +41,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
  * PATCH /api/settings
  *
  * Body: partial JSON object. Shallow-merged into the user's existing
- * settings blob via `data || EXCLUDED.data`. Upserts on first write.
+ * settings blob via SQLite json_patch(). Upserts on first write.
  * Returns the full merged object so the client can resync its cache.
  */
 export const onRequestPatch: PagesFunction<Env> = async ({ request, env }) => {
@@ -68,13 +68,13 @@ export const onRequestPatch: PagesFunction<Env> = async ({ request, env }) => {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
       INSERT INTO user_settings (user_id, data, updated_at)
-      VALUES (${auth.userId}, ${JSON.stringify(patch)}::jsonb, now())
+      VALUES (${auth.userId}, ${JSON.stringify(patch)}, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       ON CONFLICT (user_id) DO UPDATE
-        SET data = user_settings.data || EXCLUDED.data,
-            updated_at = now()
+        SET data = json_patch(user_settings.data, ${JSON.stringify(patch)}),
+            updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
       RETURNING data
     `) as SettingsRow[];
-    const data = rows[0]?.data ?? {};
+    const data = rows[0]?.data ? JSON.parse(rows[0].data as string) : {};
     return json({ data });
   } catch (err) {
     return json(

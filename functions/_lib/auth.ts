@@ -1,5 +1,10 @@
 export interface Env {
-  DATABASE_URL: string;
+  /** Cloudflare D1 (SQLite) — the dashboard's data store. Replaces Neon. */
+  DB: D1Database;
+  /** Cloudflare R2 bucket holding voice-clip audio (replaces Postgres bytea). */
+  VOICE_BUCKET: R2Bucket;
+  /** Public base URL for the R2 voice bucket, e.g. https://pub-xxxx.r2.dev */
+  VOICE_PUBLIC_URL: string;
   TENANT_OWNER_EMAIL: string;
   CLOUDFLARE_API_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;

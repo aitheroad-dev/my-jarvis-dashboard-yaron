@@ -51,7 +51,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         FROM tickets t
         WHERE t.agent = a.name
           AND t.status IN ('todo','in_progress','review')
-      )::int AS in_flight_count,
+      ) AS in_flight_count,
       a.updated_at
     FROM agents a
     LEFT JOIN tickets ct ON ct.id = a.current_ticket_id

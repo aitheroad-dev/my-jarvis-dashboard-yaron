@@ -13,7 +13,7 @@ type ListRow = {
  *
  * Returns a flat list of page_content rows for the KB index page.
  * Each item: { page_slug, title, updated_at } where title is extracted from
- * the content jsonb (`content->>'title'`). Sorted alphabetically by slug.
+ * the content JSON (`json_extract(content,'$.title')`). Sorted by slug.
  *
  * Mirrors the lilach dashboard's /api/kb pattern. The dashboard's
  * BlockRenderer doctrine (MJOS-028) uses this as the fetch path for
@@ -41,7 +41,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const rows = (await sql/* sql */ `
       SELECT
         page_slug,
-        content->>'title' AS title,
+        json_extract(content,'$.title') AS title,
         updated_at
       FROM page_content
       ORDER BY page_slug ASC

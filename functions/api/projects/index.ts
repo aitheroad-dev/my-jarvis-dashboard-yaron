@@ -38,8 +38,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       p.name,
       p.mission,
       p.status,
-      (SELECT COUNT(*) FROM tickets t WHERE t.project_id = p.id)::int AS ticket_count,
-      (SELECT COUNT(*) FROM goals   g WHERE g.project_id = p.id)::int AS goal_count,
+      (SELECT COUNT(*) FROM tickets t WHERE t.project_id = p.id) AS ticket_count,
+      (SELECT COUNT(*) FROM goals   g WHERE g.project_id = p.id) AS goal_count,
       p.created_at,
       p.updated_at
     FROM projects p

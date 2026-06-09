@@ -33,7 +33,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const sql = getDb(env);
   const rows = (await sql/* sql */`
     SELECT
-      id::text AS id,
+      id,
       agent_name,
       text_content,
       audio_url,

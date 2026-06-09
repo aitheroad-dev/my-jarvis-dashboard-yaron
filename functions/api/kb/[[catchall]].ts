@@ -2,7 +2,7 @@ import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env } from "../../_lib/auth";
 
-type ContentRow = { content: unknown; updated_at: string };
+type ContentRow = { content: string | null; updated_at: string };
 
 /**
  * GET /api/kb/<slug...>
@@ -48,7 +48,8 @@ export const onRequestGet: PagesFunction<Env, "catchall"> = async ({
       return json({ error: "page not found", slug }, { status: 404 });
     }
 
-    return json({ content: rows[0].content, updated_at: rows[0].updated_at });
+    const content = rows[0].content ? JSON.parse(rows[0].content as string) : null;
+    return json({ content, updated_at: rows[0].updated_at });
   } catch (err) {
     return json(
       {

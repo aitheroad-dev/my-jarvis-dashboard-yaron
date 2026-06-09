@@ -4,7 +4,6 @@ import { json, type Env as AuthEnv } from "../../_lib/auth";
 interface Env extends AuthEnv {
   VOICE_API_KEY: string;
   VOICE_BUCKET: R2Bucket;
-  VOICE_PUBLIC_URL?: string;
 }
 
 const ALLOWED_CONTENT_TYPES = new Set([

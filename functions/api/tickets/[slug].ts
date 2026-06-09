@@ -33,6 +33,10 @@ type TicketDetail = {
   updated_at: string;
 };
 
+type TicketDetailRow = Omit<TicketDetail, "iscs"> & {
+  iscs: string | null;
+};
+
 type Movement = {
   kind: "commit" | "pivot" | "decision" | "milestone";
   ts: string | null;
@@ -139,14 +143,17 @@ export const onRequestGet: PagesFunction<Env, "slug"> = async ({
     LEFT JOIN projects p ON p.id = t.project_id
     LEFT JOIN goals    g ON g.id = t.goal_id
     WHERE t.slug = ${slug}
-  `) as TicketDetail[];
+  `) as TicketDetailRow[];
 
   if (rows.length === 0) {
     return json({ error: "ticket not found" }, { status: 404 });
   }
 
+  const iscs = rows[0].iscs ? JSON.parse(rows[0].iscs as string) : [];
+
   // Movement feed — the derived timeline (commits / pivots / decisions /
   // milestones). Dated entries first (chronological), then undated by sequence.
+  // ticket_movements is provisioned outside the consolidated D1 schema.
   const movements = (await sql/* sql */ `
     SELECT kind, ts, summary, ref, progress
     FROM ticket_movements
@@ -154,7 +161,7 @@ export const onRequestGet: PagesFunction<Env, "slug"> = async ({
     ORDER BY (ts IS NULL), ts ASC, seq ASC
   `) as Movement[];
 
-  return json({ ...rows[0], movements });
+  return json({ ...rows[0], iscs, movements });
 };
 
 export const onRequestPut: PagesFunction<Env, "slug"> = async ({
@@ -182,7 +189,7 @@ export const onRequestPut: PagesFunction<Env, "slug"> = async ({
   const sql = getDb(env);
 
   // Build a SET clause from whitelisted columns. We do this with explicit
-  // tagged-template fragments instead of dynamic strings so the Neon driver
+  // tagged-template fragments instead of dynamic strings so the D1 adapter
   // keeps every value parameterized.
   const updates: { col: string; value: string | null }[] = [];
 
@@ -243,7 +250,7 @@ export const onRequestPut: PagesFunction<Env, "slug"> = async ({
     }
   }
 
-  // iscs handled separately because it's jsonb (full array replace) ────────
+  // iscs handled separately because it's JSON (full array replace) ─────────
   let iscsReplace:
     | { id: string; text: string; done: boolean }[]
     | undefined;
@@ -340,7 +347,7 @@ export const onRequestPut: PagesFunction<Env, "slug"> = async ({
     const iscsJson = JSON.stringify(iscsReplace);
     await sql/* sql */ `
       UPDATE tickets
-      SET iscs = ${iscsJson}::jsonb
+      SET iscs = ${iscsJson}
       WHERE slug = ${slug}
     `;
   }
@@ -380,19 +387,19 @@ export const onRequestPut: PagesFunction<Env, "slug"> = async ({
     LEFT JOIN projects p ON p.id = t.project_id
     LEFT JOIN goals    g ON g.id = t.goal_id
     WHERE t.slug = ${slug}
-  `) as TicketDetail[];
+  `) as TicketDetailRow[];
 
   if (rows.length === 0) {
     return json({ error: "ticket not found after update" }, { status: 404 });
   }
-  return json(rows[0]);
+  const iscs = rows[0].iscs ? JSON.parse(rows[0].iscs as string) : [];
+  return json({ ...rows[0], iscs });
 };
 
 /**
  * PATCH /api/tickets/:slug
  * Targeted ISC flip — body: { isc_id: "ISC-2", done: true }.
- * Uses jsonb_set with a path resolved by id (not array index) so concurrent
- * edits to other ISCs can't clobber this one.
+ * Reads the JSON array, updates the matching id, and writes the array back.
  */
 export const onRequestPatch: PagesFunction<Env, "slug"> = async ({
   request,
@@ -421,18 +428,18 @@ export const onRequestPatch: PagesFunction<Env, "slug"> = async ({
 
   const sql = getDb(env);
 
-  // Fetch current iscs, find by id, mutate, write back. A direct
-  // jsonb_set keyed by id is awkward in pg; this read-modify-write is
-  // fine for our scale (single-digit ISCs per ticket).
+  // Fetch current iscs, find by id, mutate, write back. This read-modify-write
+  // is fine for our scale (single-digit ISCs per ticket).
   const cur = (await sql/* sql */ `
     SELECT iscs FROM tickets WHERE slug = ${slug}
-  `) as { iscs: { id: string; text: string; done: boolean }[] }[];
+  `) as { iscs: string | null }[];
 
   if (cur.length === 0) {
     return json({ error: "ticket not found" }, { status: 404 });
   }
 
-  const iscs = Array.isArray(cur[0].iscs) ? [...cur[0].iscs] : [];
+  const parsed = cur[0].iscs ? JSON.parse(cur[0].iscs as string) : [];
+  const iscs = Array.isArray(parsed) ? [...parsed] : [];
   const idx = iscs.findIndex((i) => i?.id === iscId);
   if (idx < 0) {
     return json({ error: `isc '${iscId}' not found` }, { status: 404 });
@@ -441,7 +448,7 @@ export const onRequestPatch: PagesFunction<Env, "slug"> = async ({
 
   const iscsJson = JSON.stringify(iscs);
   await sql/* sql */ `
-    UPDATE tickets SET iscs = ${iscsJson}::jsonb WHERE slug = ${slug}
+    UPDATE tickets SET iscs = ${iscsJson} WHERE slug = ${slug}
   `;
   return json({ slug, iscs });
 };

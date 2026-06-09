@@ -76,22 +76,24 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const summary = typeof body.summary === "string" ? body.summary : null;
 
   const sql = getDb(env);
+  const inserted = (await sql/* sql */ `
+    INSERT INTO sessions (client_id, scheduled_at, summary)
+    VALUES (${clientId}, ${scheduledAt}, ${summary})
+    RETURNING id, client_id, scheduled_at, summary, created_at, updated_at
+  `) as Omit<SessionRow, "client_name">[];
+
   const rows = (await sql/* sql */ `
-    WITH inserted AS (
-      INSERT INTO sessions (client_id, scheduled_at, summary)
-      VALUES (${clientId}::uuid, ${scheduledAt}::timestamptz, ${summary})
-      RETURNING id, client_id, scheduled_at, summary, created_at, updated_at
-    )
     SELECT
-      i.id,
-      i.client_id,
+      s.id,
+      s.client_id,
       c.name AS client_name,
-      i.scheduled_at,
-      i.summary,
-      i.created_at,
-      i.updated_at
-    FROM inserted i
-    LEFT JOIN clients c ON c.id = i.client_id
+      s.scheduled_at,
+      s.summary,
+      s.created_at,
+      s.updated_at
+    FROM sessions s
+    LEFT JOIN clients c ON c.id = s.client_id
+    WHERE s.id = ${inserted[0].id}
   `) as SessionRow[];
 
   return json(rows[0], { status: 201 });

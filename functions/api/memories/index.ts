@@ -14,7 +14,7 @@ type MemoryRow = {
     | "identity";
   title: string | null;
   body: string;
-  metadata: Record<string, unknown>;
+  metadata: string | null;
   created_at: string;
 };
 
@@ -47,11 +47,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       metadata,
       created_at
     FROM memories
-    WHERE (${agent}::text IS NULL OR agent = ${agent})
-      AND (${type}::text  IS NULL OR type  = ${type})
+    WHERE (${agent} IS NULL OR agent = ${agent})
+      AND (${type} IS NULL OR type = ${type})
     ORDER BY created_at DESC
     LIMIT ${limit}
   `) as MemoryRow[];
 
-  return json(rows);
+  return json(
+    rows.map((row) => ({
+      ...row,
+      metadata: row.metadata ? JSON.parse(row.metadata as string) : {},
+    })),
+  );
 };

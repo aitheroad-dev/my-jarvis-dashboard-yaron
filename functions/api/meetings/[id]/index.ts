@@ -112,7 +112,9 @@ export const onRequestPost: PagesFunction<Env, "id"> = async ({ request, env, pa
   }
   if (!row.bot_id) {
     await sql/* sql */ `
-      UPDATE meetings SET status = 'ended', ended_at = now() WHERE id = ${id}
+      UPDATE meetings
+      SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+      WHERE id = ${id}
     `;
     return json({ ok: true, no_bot: true });
   }
@@ -132,13 +134,17 @@ export const onRequestPost: PagesFunction<Env, "id"> = async ({ request, env, pa
     if (!workerRes.ok) {
       const detail = await workerRes.text().catch(() => "");
       await sql/* sql */ `
-        UPDATE meetings SET status = 'ended', ended_at = now() WHERE id = ${id}
+        UPDATE meetings
+        SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+        WHERE id = ${id}
       `;
       return json({ ok: true, worker_status: workerRes.status, worker_detail: detail });
     }
   } catch (err) {
     await sql/* sql */ `
-      UPDATE meetings SET status = 'ended', ended_at = now() WHERE id = ${id}
+      UPDATE meetings
+      SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+      WHERE id = ${id}
     `;
     return json({
       ok: true,
@@ -147,7 +153,9 @@ export const onRequestPost: PagesFunction<Env, "id"> = async ({ request, env, pa
   }
 
   await sql/* sql */ `
-    UPDATE meetings SET status = 'ended', ended_at = now() WHERE id = ${id}
+    UPDATE meetings
+    SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+    WHERE id = ${id}
   `;
   return json({ ok: true });
 };

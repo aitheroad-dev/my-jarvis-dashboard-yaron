@@ -114,7 +114,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const rows = (await sql/* sql */ `
       INSERT INTO meetings (title, meeting_url, status, started_at)
-      VALUES (${title}, ${meetingUrl}, 'starting', now())
+      VALUES (${title}, ${meetingUrl}, 'starting', strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       RETURNING id, title, meeting_url, bot_id, status, summary,
                 started_at, ended_at, created_at
     `) as MeetingRow[];
