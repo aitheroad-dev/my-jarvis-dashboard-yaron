@@ -37,6 +37,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         updated_at
       FROM page_content
       ORDER BY page_slug ASC
+      LIMIT 500
     `) as ListRow[];
 
     return json(

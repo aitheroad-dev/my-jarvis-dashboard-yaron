@@ -35,6 +35,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     FROM skills
     WHERE status <> 'archived'
     ORDER BY name ASC
+    LIMIT 500
   `) as SkillRow[];
 
   return json(rows);

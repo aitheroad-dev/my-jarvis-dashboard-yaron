@@ -33,6 +33,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     FROM sessions s
     LEFT JOIN clients c ON c.id = s.client_id
     ORDER BY s.scheduled_at DESC
+    LIMIT 500
   `) as SessionRow[];
 
   return json(rows);

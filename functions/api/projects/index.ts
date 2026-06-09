@@ -36,6 +36,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       p.updated_at
     FROM projects p
     ORDER BY p.created_at DESC
+    LIMIT 500
   `) as ProjectRow[];
 
   return json(rows);

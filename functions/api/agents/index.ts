@@ -48,6 +48,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     FROM agents a
     LEFT JOIN tickets ct ON ct.id = a.current_ticket_id
     ORDER BY a.display_name
+    LIMIT 500
   `) as AgentRow[];
 
   return json(rows);

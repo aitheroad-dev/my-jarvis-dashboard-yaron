@@ -39,6 +39,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     FROM goals g
     LEFT JOIN projects p ON p.id = g.project_id
     ORDER BY g.created_at DESC
+    LIMIT 500
   `) as GoalRow[];
 
   return json(rows);

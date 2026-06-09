@@ -116,18 +116,41 @@ export function VoiceChannelProvider({ children }: { children: ReactNode }) {
       }
     })();
 
-    void fetchFeed();
-    pollTimerRef.current = window.setInterval(() => {
-      if (!destroyedRef.current) void fetchFeed();
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      destroyedRef.current = true;
+    const startPolling = () => {
+      if (pollTimerRef.current !== null) return; // already polling
+      pollTimerRef.current = window.setInterval(() => {
+        if (!destroyedRef.current) void fetchFeed();
+      }, POLL_INTERVAL_MS);
+    };
+    const stopPolling = () => {
       if (pollTimerRef.current !== null) {
         window.clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
       }
+    };
+
+    // Pause polling while the tab is hidden. A dashboard left open in a
+    // background tab was the dominant Neon egress drain — a /api/voice/feed
+    // query every 5s, 24/7, even when nobody was looking. Resume (with one
+    // immediate catch-up fetch) when the tab becomes visible again.
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        void fetchFeed();
+        startPolling();
+      }
+    };
+
+    void fetchFeed();
+    if (!document.hidden) startPolling();
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      cancelled = true;
+      destroyedRef.current = true;
+      document.removeEventListener("visibilitychange", handleVisibility);
+      stopPolling();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

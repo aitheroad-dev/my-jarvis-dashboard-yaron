@@ -74,6 +74,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         WHEN 'archived'    THEN 5
       END,
       t.updated_at DESC
+    LIMIT 500
   `) as (TicketRow & { log: string | null })[];
 
   return json(rows);
