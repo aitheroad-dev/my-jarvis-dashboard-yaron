@@ -1,192 +1,56 @@
 ---
 project: my-jarvis-dashboard-yaron
-task: Eradicate v3 ticket system; build Situation Board replacement
-slug: situation-board
-effort: E3
-phase: complete
-progress: 48/48
+task: Standalone cloud meetings app — agent joins + transcribes, laptop-independent
+slug: dashboard-meetings-app
+effort: E4
+phase: think
+progress: 0/0
 mode: standard
-started: 2026-06-11T09:30:00+02:00
-updated: 2026-06-11T11:05:00+02:00
+started: 2026-06-11T10:15:00+02:00
+updated: 2026-06-11T10:55:00+02:00
 ---
 
-# Situation Board — Dashboard ISA
+# Dashboard Meetings App — ISA
+
+> Prior task (situation-board, 48/48 complete) archived in git at `61215f9`.
+> **PIVOT 2026-06-11 ~10:45** — Yaron: the local pai-meet system was a *reference only*. The dashboard meetings app must be fully cloud-standalone. Local-bridge build (Pulse module) was completed through curl-ready state, then rolled back cleanly on his instruction.
 
 ## Problem
 
-The v3 ticket system is dead weight: a team-coordination primitive (Kanban, assigned work-items, columns) bolted onto a solo operator whose work happens in terminal sessions. Its real-time mirror chain (TicketPush → AutoStub → AutoStubReaper → Neon) broke three separate ways (exec-bit silent no-op, unwired ISASync, Neon decommissioned 2026-06-09) and now fires uselessly at a dead database on every file edit. Meanwhile Yaron's actual need — *what happened yesterday, what happened this week, where are we, what's next, what's the big goal, per project* — is unanswered (TELOS C3: "no unified view of all my projects, this is the biggest").
+The dashboard's Meetings page is an unwired shell: the UI and D1 schema (meetings, meeting_transcript, meeting_actions) shipped with the template, but Yaron's Pages project has none of the `MEETINGS_WORKER_URL/TENANT_KEY/TENANT_SLUG` bindings, no tenant registered on the shared My Jarvis meetings Worker, and — since the Neon→D1 migration — no path for transcript segments to land in his database at all (the Neon-era worker wrote tenant Postgres directly). There is no way to create a meeting, send an agent into it, or read a transcript without Yaron's laptop.
 
 ## Vision
 
-Yaron opens one page and sees the whole portfolio breathing: every project a card with its goal, where it stands, what's next — and the stalled ones impossible to ignore. He clicks a project and reads the story of how it moved, in the same narrative voice his session wrap-ups already have, with a diagram tracing the path from start to now. He never wrote a ticket to get any of this — the work's own paper trail produced it.
+From any device, anywhere — laptop off — open the Meetings page, paste a meeting link (or create one), and an agent joins the call, listens, and transcribes. The transcript and summary appear in the dashboard as the meeting happens and stay forever. The system is so self-contained that Yaron's sister could be handed access and run her own meetings with it, without Yaron in the loop.
 
 ## Out of Scope
 
-- Kanban boards, drag-and-drop, columns, work-item assignment of any kind.
-- Real-time push hooks from PAI into the dashboard for situation data (batch harvest only; a session-end wrap-up writer may come later as a single additive hook, not in this slice).
-- Fine-grained ticket detail / per-ISC mirroring (the ISA on disk remains the only home for that).
-- Editing situation data from the dashboard UI (read-only view in v1; truth lives in PAI).
-- Neon anything — the platform is D1+R2, full stop.
-- Multi-tenant/template generalization (Yaron's fork only for now).
+- Local recording of in-person/this-Mac audio (pai-meet keeps that job; explicitly disconnected from this app).
+- Anything that requires Yaron's Mac to be powered on for the pipeline to work.
+- Editing/deleting meetings from the UI (v2).
+- Full multi-tenant provisioning product flow (sister-shareability informs the design; her onboarding is its own task).
 
 ## Constraints
 
-- Data layer is Cloudflare D1 + R2 (migrated 2026-06-09); no new external databases.
-- Truth stays in PAI on disk (ISAs, PROJECT.md, MEMORY/WORK, git history); the dashboard renders a derived view.
-- Minimize PAI-core changes: demolition only deletes from `~/.claude/hooks` + settings.json; the harvester lives in the dashboard repo (sibling of the old sync-from-pai.ts pattern).
-- CF Pages is direct-upload: deploy = wrangler via Node (`script -q /dev/null node .../wrangler.js pages deploy`), git push deploys nothing.
-- Pre-push gate: `bun run typecheck && bun run lint && bun run build` green.
-- bun/bunx + TypeScript everywhere.
+- Entirely cloud-resident: Cloudflare-first (Pages Functions + D1 + R2 + Workers) per the platform-consolidation decision.
+- Hebrew + English transcription are both required (his meetings are mostly Hebrew).
+- Transcript ingest must write his D1 — requires an authenticated ingest endpoint in his own `functions/` (external workers cannot reach D1 directly).
+- Dashboard deploy = wrangler direct-upload via node; pre-push gate `typecheck && lint && build`.
+- TS everywhere; bun for tooling.
+- Bot-service choice pending vendor research + Yaron's call (see Decisions) — architecture ISCs written after that decision.
 
 ## Goal
 
-The dashboard contains zero ticket-system code, routes, tables, or PAI-side automation (audited clean by named probes), and in its place a live Situation Board: a portfolio page of per-project cards (Goal / Now / Next / computed Health) backed by D1 tables filled by a deterministic harvester reading PAI's existing paper trail, with a per-project timeline of narrative events and a journey diagram — deployed and Interceptor-verified.
+A meeting created in the dashboard from any device causes a cloud agent to join the call and stream its transcript into Yaron's D1, visible live and permanently on the Meetings page — with zero dependency on any local machine.
 
 ## Criteria
 
-### Demolition — PAI side
-- [x] ISC-1: `~/.claude/hooks/TicketPush.hook.ts` no longer exists
-- [x] ISC-2: `~/.claude/hooks/AutoStub.hook.ts` no longer exists
-- [x] ISC-3: `~/.claude/hooks/AutoStubReaper.hook.ts` no longer exists
-- [x] ISC-4: `~/.claude/hooks/lib/ticket-push.ts` and `lib/auto-stub.ts` no longer exist
-- [x] ISC-5: `ticket-push.selftest.ts` and `auto-stub.selftest.ts` no longer exist
-- [x] ISC-6: `rg -i "ticketpush|autostub" ~/.claude/settings.json` returns zero hits
-- [x] ISC-7: settings.json still parses as valid JSON after hook deregistration
-- [x] ISC-8: `ISASync.hook.ts` survives and imports nothing from ticket-push/auto-stub
-- [x] ISC-9: Anti: no remaining file under `~/.claude/hooks/` matches `rg -li "pushTicketFromISA|ticket"` (ISA-utils false positives reviewed and excluded)
-- [x] ISC-10: Anti: no launchd plist, Hetzner timer, or CF cron references ticket sync (`launchctl list`, wrangler.toml crons, box timers checked)
-
-### Demolition — dashboard repo
-- [x] ISC-11: `src/components/atomic-crm/tickets/` directory no longer exists
-- [x] ISC-12: No `/tickets` route or Tickets nav entry in CRM.tsx / nav-items.tsx
-- [x] ISC-13: `functions/api/tickets/` no longer exists
-- [x] ISC-14: Ticket references in goals/projects/agents pages+endpoints removed (counts, links, joins)
-- [x] ISC-15: `scripts/sync-from-pai.ts` (Neon batch reconciler) removed
-- [x] ISC-16: `rg -i "ticket" src/ functions/ scripts/` returns zero hits (docs/sql archives exempt, reviewed)
-- [x] ISC-17: Pre-push gate green after demolition (typecheck + lint + build)
-
-### Demolition — D1
-- [x] ISC-18: Live D1 has no `tickets` / `ticket_movements` (or other `ticket%`) tables — verified by `wrangler d1 execute ... "SELECT name FROM sqlite_master"`
-- [x] ISC-19: `sql/d1/schema.sql` contains no ticket tables
-
-### Situation Board — data
-- [x] ISC-20: D1 has `situation_projects` (slug, name, goal, now_text, health, last_activity) and `situation_events` (id, project_slug, ts, kind, title, detail, source) and `situation_next` (project_slug, position, text) tables
-- [x] ISC-21: Harvester `scripts/harvest-situation.ts` runs end-to-end on this Mac and exits 0
-- [x] ISC-22: Harvester ingests git commits from project repos — repo list *derived from* `USER/PROJECTS/PROJECTS.md` (system of record), not a hand-maintained config
-- [x] ISC-23: Harvester ingests ISA Changelog/Decisions dated entries and MEMORY/WORK session wrap-ups as narrative events
-- [x] ISC-24: Harvester is idempotent — second run inserts zero duplicate events (stable event IDs)
-- [x] ISC-25: Health computed at harvest: active (<7d movement), stalled (≥14d), quiet (7–14d) — stored per project
-- [x] ISC-26: ≥5 real projects present in `situation_projects` after first harvest, each with ≥1 event
-
-### Situation Board — API + UI
-- [x] ISC-27: `GET /api/situation` returns portfolio JSON (projects + health + last event) with LIMIT caps
-- [x] ISC-28: `GET /api/situation/:slug` returns one project's card + events timeline + next list
-- [x] ISC-29: Sidebar shows "Situation" entry; `/situation` renders the portfolio: one card per project with Goal / Now / Next / Health
-- [x] ISC-30: Portfolio sorted by last movement; stalled projects visually flagged
-- [x] ISC-31: Project detail view renders the event timeline newest-first with day/week grouping
-- [x] ISC-32: Antecedent: timeline events render as readable narrative sentences (wrap-up voice), not raw commit hashes — spot-checked on a real project
-- [x] ISC-33: Journey diagram renders per project — milestone path from first event to now, derived from events (kind=milestone/deploy/pivot)
-- [x] ISC-34: Anti: Situation pages make zero requests to any Neon host (network tab clean)
-
-### Anti-R1 guards (from CausalLoop analysis)
-- [x] ISC-37: `/situation` renders `last_harvest` timestamp on the page itself — a dead harvester is visible at the point of consumption
-- [x] ISC-38: Projects with zero harvested events render as a visible anomaly card, never a silent absence
-- [x] ISC-39: Harvester prints per-source status (ok/fail/count) and a partial harvest exits non-zero — no silent source-skip
-
-### Ship
-- [x] ISC-35: Deployed live via wrangler; `/situation` Interceptor-verified (screenshot, console clean) and Interceptor tabs closed after
-- [x] ISC-36: Repo pushed to origin; memory + project docs updated (tickets memory marked demolished, resume pointer current)
-
-## Test Strategy
-
-| isc | type | check | tool |
-|---|---|---|---|
-| 1–5 | fs | files absent | Bash test -f |
-| 6–7 | config | zero grep hits + `bun -e JSON.parse` ok | rg / bun |
-| 8–9 | code | no ticket imports in survivors | rg |
-| 10 | infra | crons/timers/plists clean | launchctl, rg wrangler.toml, ssh box |
-| 11–16 | fs/code | dirs absent, zero grep hits | Bash, rg |
-| 17 | build | gate exits 0 | bun run |
-| 18 | db | sqlite_master has no ticket% | wrangler d1 execute |
-| 19 | fs | schema.sql clean | rg |
-| 20 | db | tables exist with expected columns | wrangler d1 execute |
-| 21–26 | cli | harvester run output + SELECT counts | bun run + wrangler d1 |
-| 27–28 | api | curl status 200 + JSON shape | curl |
-| 29–33 | ui | live screenshots at routes | Interceptor |
-| 34 | net | interceptor net log no neon.tech | Interceptor |
-| 35 | deploy | live URL screenshot + console | Interceptor |
-| 36 | git | origin/main contains HEAD; memory files updated | git, Read |
-
-## Features
-
-| name | description | satisfies | depends_on | parallelizable |
-|---|---|---|---|---|
-| demolish-pai | delete 3 hooks + 2 libs + 2 selftests, deregister in settings.json | ISC-1..10 | — | yes |
-| demolish-dashboard | remove tickets pages/routes/API/sync script + refs | ISC-11..17 | — | yes |
-| demolish-d1 | drop ticket tables live + from schema.sql | ISC-18..19 | — | yes |
-| situation-schema | create situation_* tables in D1 + schema.sql | ISC-20 | demolish-d1 | no |
-| harvester | scripts/harvest-situation.ts: git+ISA+WORK → D1, idempotent | ISC-21..26 | situation-schema | no |
-| situation-api | /api/situation + /api/situation/:slug Pages functions | ISC-27..28 | situation-schema | yes |
-| situation-ui | portfolio cards + project timeline + journey diagram | ISC-29..33 | situation-api | no |
-| ship | gate, deploy, Interceptor verify, push, memory update | ISC-34..36 | all | no |
+> Authored after the bot-backend decision (see Decisions, OPEN item). The superseded local-bridge criteria set (35 ISCs, none verified) was retired wholesale with the pivot — git history preserves it.
 
 ## Decisions
 
-- 2026-06-11: Reframe locked with Yaron — model the *story* (situation + timeline), not work-items. Plain Next list (no drag/drop), wrap-up-quality narrative events, journey diagram wanted. Full demolition of v3 including all automation, audited clean.
-- 2026-06-11: Harvester lives in dashboard repo (not PAI core) per minimize-PAI-changes feedback; batch + deterministic, no real-time hooks — three hook breakages in v3 are the refutation of real-time mirroring.
-- 2026-06-11: Delegation floor show-your-math: surgical demolition in one repo + one settings.json — parallel write-agents would re-create the concurrent-edit conflicts memory warns about. Forge covers the second delegation slot as post-build auditor.
-- 2026-06-11: Tier E3 by classifier on both turns (first was a parse-failure fail-safe, second confirmed by real classification).
-- 2026-06-11: CausalLoop verdict — v3 was Fixes-That-Fail: every coverage-gap patch added always-on machinery with silent failure modes (R1 ratchet), while off-board health signals let detection lag weeks (R2 trust spiral). Guards adopted as ISC-37/38/39: staleness on the board, absence is loud, no silent source-skip. Any future real-time wrap-up hook is gated on end-to-end verified delivery.
-- 2026-06-11 (v2): Yaron reframed mid-day: situation page = day-to-day WORK (journal), per-project story belongs on the project pages. Forge quota returned same day; Forge audit (GPT-5.5) verdict "concerns" — demolition clean, harvester had 3 critical completeness gaps (all fixed in v2, see ISC-44..47). Audit also confirmed: no SQL injection, no XSS, PAI demolition clean. Full report: MEMORY/WORK/situation-board/forge-final.txt.
-- 2026-06-11 (v2): Timezone trap found live — memory events stamped T12:00Z are "future" at 09:30 CEST, so the naive future-filter ate today's work; fixed by comparing calendar dates, not instants.
-- 2026-06-11: Forge invoked per E3 auto-include — hard-blocked: ChatGPT-account codex quota exhausted until 2026-07-08. Forge verified independently, refused silent fallback, left clean workspace. Harvester written by primary instead; OPEN DECISION for Yaron: `codex login --api-key` switch (persistent, billed, re-routes Cato too) vs wait vs provision Anvil.
-- 2026-06-11: D1 `tickets`/`ticket_movements` dropped WITHOUT backup — intentional: both were derived mirrors of ISAs on PAI disk (the system of record); no original data lived there. agents.current_ticket_id column dropped first to clear the FK.
-- 2026-06-11: Advisor gap-check run post-deploy; all 6 checklist items closed with live evidence (voice feed alive in screenshots, requireUser on new routes, /tickets→/home verified, no dangling hook consumers).
-- 2026-06-11: Skipped EnterPlanMode despite E3 — Yaron explicitly approved demolition + build this turn ("we want to eradicate completely... let's start"), and plan-mode feedback memory reserves it for unapproved risky work.
-
-### v2 — Work Journal reframe (2026-06-11, same day)
-- [x] ISC-40: /situation is a day-grouped Work Journal across ALL streams (projects + standalone repos/sessions), not a project list
-- [x] ISC-41: "Moved today" + "Needs a look" pulse strip renders from live data
-- [x] ISC-42: Per-project story (health, Now/Next, journey diagram, timeline) renders on /projects/:slug above mission/goals
-- [x] ISC-43: Projects list shows Now / Health / Last movement joined from situation data; enrichment failure cannot blank the list
-- [x] ISC-44: Harvester ingests ISA Changelog/Decisions dated lines (Forge F2) and all unmapped streams under their own slugs (F3)
-- [x] ISC-45: All event timestamps UTC-normalized (F7); upsert moves remapped events (F4); write path guarded + reported (F6)
-- [x] ISC-46: Next-steps merge across memory files, URL-safe splitting (F1); memory-source failure never wipes situation_next (F5)
-- [x] ISC-47: Lines mentioning future dates are not events (calendar-date compare — today's work survives morning harvests); leading date prefixes stripped from titles
-- [x] ISC-48: Anti: /situation/:slug route removed; journal stream headers link to /projects/:slug via slug-containment resolution
-
-## Changelog
-
-- **conjectured:** a real-time hook mirror could keep the dashboard faithful to PAI work-items (v1–v3 of the ticket system).
-  **refuted by:** three independent silent failures (exec-bit no-op, unwired registration, Neon decommission) — the always-on patch chain generated the gaps it patched (CausalLoop R1, Fixes-That-Fail).
-  **learned:** for a fast-mutating solo-operator source, coarse-grained batch derivation with failure rendered at the point of consumption beats fine-grained real-time mirroring.
-  **criterion now:** ISC-37/38/39 — staleness on the board, absence is loud, no silent source-skip.
-
-## Verification
-
-- ISC-1..5: Bash rm + ls — "CLEAN: no ticket/stub files left"
-- ISC-6..7: rg zero hits; `bun -e JSON.parse` → "settings.json VALID"
-- ISC-8: `echo '{}' | bun ISASync.hook.ts` → `{"continue":true}` exit 0 after excision
-- ISC-9: rg sweep hooks/ → "HOOKS DIR FULLY CLEAN"; movements.ts deleted; PAI TOOLS/Pulse/prompts swept — no dangling consumers
-- ISC-10: launchctl clean, wrangler.toml no crons, Hetzner timers clean (ssh probe)
-- ISC-11..15: git rm of tickets/, functions/api/tickets/, sync-from-pai.ts, gen-seed.mjs; nav/routes/Layout edited
-- ISC-16: rg src/ functions/ scripts/ → only smoke.mjs (Clerk auth-ticket, different word sense — reviewed exempt)
-- ISC-17: typecheck + lint (0 errors) + build green at commit 839b602
-- ISC-18: live D1 sqlite_master → situation_* only, no ticket% tables
-- ISC-19: rg schema.sql → 0 hits
-- ISC-20: D1 REST verified 4 situation tables created
-- ISC-21..26: harvest run → 10 projects, 151 events (29 git + 57 work + 65 memory), 11 next items; second run identical counts (idempotent); health stored, observed on cards
-- ISC-27..31: live page render via Interceptor (real Chrome) — portfolio cards w/ health pills + sorted by movement; detail timeline day-grouped; screenshots /tmp/situation-{portfolio,detail}.png
-- ISC-32: memory-narrative events render as prose sentences on live cards (observed: NL Supermarkets "PHASE 3 list SHIPPED LIVE…")
-- ISC-33: journey SVG live — eval probe {journeySvg:true, stops:14} on /situation/nl-supermarkets + screenshot
-- ISC-34: `interceptor net log --filter neon` → [] (zero Neon requests)
-- ISC-35: deployed 51bc4f8c.my-jarvis-dashboard-yaron.pages.dev; verified at production URL; Interceptor tabs closed
-- ISC-36: origin/main = 64cdaf5 (push verified); memory files updated this session
-- ISC-37: "last harvest: 6/11/2026, 8:55 AM" rendered on /situation (screenshot)
-- ISC-38: anomaly-card code path verified by inspection; no zero-event project currently exists to observe live (all 10 harvested ≥1 event)
-- ISC-39: per-source status table in harvester stdout (observed both runs); failed-source→exit 1 path verified by inspection
-
-- **conjectured (v2):** a portfolio of project cards answers "what's happening" (v1 Situation page).
-  **refuted by:** Yaron's first real use — the cards duplicated the Projects page and said nothing about the day-to-day; "it doesn't really give me any big benefits."
-  **learned:** the unit of the situation view is the DAY, not the project — "what did we work on today/yesterday" — and per-project story belongs with the project entity. Mapping gaps became a feature: standalone streams ARE his work, not noise to filter.
-  **criterion now:** ISC-40..48 (journal day-grouping, all-stream coverage, story on /projects/:slug).
+- 2026-06-11 10:15 — [SUPERSEDED by pivot] Local bridge = Pulse module at `/api/meet`; built, curl-stage tested, then **rolled back** when Yaron clarified the system must be laptop-independent. Pulse restored to pre-task state (health 200 verified post-revert).
+- 2026-06-11 10:55 — Pivot recorded: cloud-standalone, agent-joins-the-call architecture. Local pai-meet was reference material only, stays untouched and disconnected.
+- 2026-06-11 10:55 — Facts established: shared My Jarvis meetings Worker is live (`my-jarvis-meetings-worker.myjarvis.workers.dev`); Yaron's Pages project lacks all three `MEETINGS_*` bindings; no transcript-ingest endpoint exists in his `functions/`; D1 meetings schema already present (`sql/d1/schema.sql`).
+- 2026-06-11 10:55 — OPEN (Yaron's call, options researched in background): (A) register tenant on the shared company Worker + add D1 ingest endpoint — needs Erez coordination; (B) own meetings Worker on his CF account + hosted bot API (Vexa Cloud or similar) — fully self-owned, new vendor cost; (C) self-host bot stack (Vexa/Attendee) on Hetzner — independent but heaviest ops. Criteria authored after this lands.
+- 2026-06-11 10:55 — E4 per classifier on the pivot; Cato audit binds at VERIFY once build happens.
