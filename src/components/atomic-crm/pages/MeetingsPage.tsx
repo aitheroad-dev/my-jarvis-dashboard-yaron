@@ -2,150 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "@/lib/api";
 
-const WORKER_URL = "https://my-jarvis-meetings-worker.myjarvis.workers.dev";
-
-type CalendarStatus =
-  | { connected: false }
-  | { connected: true; oauth_email: string; channel_expires_at?: string };
-
-function ConnectCalendarCard({ T, FONT }: { T: Record<string, string>; FONT: string }) {
-  const api = useApi();
-  const [status, setStatus] = useState<CalendarStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [disconnecting, setDisconnecting] = useState(false);
-
-  const loadStatus = useCallback(async () => {
-    try {
-      const res = await api("/api/calendar");
-      if (!res.ok) {
-        setError(`Failed (${res.status})`);
-        return;
-      }
-      const data = (await res.json()) as CalendarStatus;
-      setStatus(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, [api]);
-
-  useEffect(() => {
-    void loadStatus();
-  }, [loadStatus]);
-
-  const connectUrl = `${WORKER_URL}/calendar/oauth/start?tenant=erez&return=${encodeURIComponent(window.location.href)}`;
-
-  const handleDisconnect = async () => {
-    if (!confirm("Disconnect Google Calendar? Past transcripts are kept; future meetings won't auto-record.")) return;
-    setDisconnecting(true);
-    try {
-      const res = await api("/api/calendar/disconnect", { method: "POST" });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error || `Failed (${res.status})`);
-      }
-      await loadStatus();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setDisconnecting(false);
-    }
-  };
-
-  return (
-    <div
-      style={{
-        padding: 20,
-        background: T.white,
-        border: `1px solid ${T.line}`,
-        borderRadius: 12,
-        marginBottom: 24,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 24,
-      }}
-    >
-      <div style={{ flex: 1 }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            color: T.peachDark,
-            textTransform: "uppercase",
-            marginBottom: 6,
-          }}
-        >
-          Google Calendar
-        </div>
-        {status === null && !error && (
-          <div style={{ fontSize: 14, color: T.ink3 }}>Checking status…</div>
-        )}
-        {error && (
-          <div style={{ fontSize: 13.5, color: T.red }}>{error}</div>
-        )}
-        {status && status.connected && (
-          <div style={{ fontSize: 14.5, color: T.ink2 }}>
-            Connected · <strong style={{ color: T.ink }}>{status.oauth_email}</strong>
-            {status.channel_expires_at && (
-              <span style={{ fontSize: 12, color: T.ink3, marginLeft: 8 }}>
-                channel renews automatically
-              </span>
-            )}
-          </div>
-        )}
-        {status && !status.connected && (
-          <div style={{ fontSize: 14, color: T.ink2 }}>
-            Connect once. Every future meeting on your calendar gets a Jarvis bot automatically.
-          </div>
-        )}
-      </div>
-      {status && status.connected ? (
-        <button
-          type="button"
-          onClick={handleDisconnect}
-          disabled={disconnecting}
-          style={{
-            padding: "8px 16px",
-            background: T.white,
-            color: T.ink2,
-            border: `1px solid ${T.line}`,
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: FONT,
-            cursor: disconnecting ? "wait" : "pointer",
-            opacity: disconnecting ? 0.6 : 1,
-          }}
-        >
-          {disconnecting ? "Disconnecting…" : "Disconnect"}
-        </button>
-      ) : status && !status.connected ? (
-        <a
-          href={connectUrl}
-          style={{
-            padding: "10px 18px",
-            background: T.peachDark,
-            color: T.white,
-            border: `1px solid ${T.peachDark}`,
-            borderRadius: 8,
-            fontSize: 13.5,
-            fontWeight: 600,
-            fontFamily: FONT,
-            textDecoration: "none",
-            cursor: "pointer",
-            transition: "all 0.15s",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Connect Google Calendar
-        </a>
-      ) : null}
-    </div>
-  );
-}
-
 const T = {
   bg: "#FDF7F2",
   ink: "#1C1917",
@@ -275,6 +131,7 @@ function fmtDate(iso: string | null): string {
 export function MeetingsPage() {
   const api = useApi();
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
+  const [configured, setConfigured] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -297,8 +154,9 @@ export function MeetingsPage() {
         setLoadError(`Failed to load meetings (${res.status})`);
         return;
       }
-      const data = (await res.json()) as { meetings: Meeting[] };
+      const data = (await res.json()) as { meetings: Meeting[]; configured?: boolean };
       setMeetings(data.meetings);
+      setConfigured(data.configured !== false);
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err));
@@ -391,7 +249,7 @@ export function MeetingsPage() {
                 margin: 0,
               }}
             >
-              Recordings, transcripts, and Jarvis live in the room.
+              Send a notetaker into any meeting, from anywhere.
             </h1>
           </div>
           <button
@@ -415,7 +273,24 @@ export function MeetingsPage() {
           </button>
         </div>
 
-        <ConnectCalendarCard T={T as unknown as Record<string, string>} FONT={FONT} />
+        {!configured && (
+          <div
+            style={{
+              padding: "14px 18px",
+              background: T.blueSoft,
+              color: T.blue,
+              borderRadius: 10,
+              fontSize: 13.5,
+              lineHeight: 1.5,
+              marginBottom: 20,
+            }}
+          >
+            <strong>Almost there:</strong> the meeting agent isn't connected yet —
+            the <code style={{ fontFamily: MONO }}>VEXA_API_KEY</code> secret is
+            missing on this deployment. Past meetings still show below; creating
+            new ones will work the moment the key is added.
+          </div>
+        )}
 
         {showForm && (
           <form
@@ -561,16 +436,14 @@ export function MeetingsPage() {
               >
                 <option value="he">Hebrew (עברית)</option>
                 <option value="en">English</option>
-                <option value="multi">
-                  Multi (English / Spanish / French / German / + 25 more — no Hebrew)
-                </option>
+                <option value="auto">Auto-detect (any language, per segment)</option>
                 <option value="es">Spanish</option>
                 <option value="fr">French</option>
                 <option value="de">German</option>
               </select>
               <span style={{ fontSize: 11.5, color: T.ink3, lineHeight: 1.4, marginTop: 2 }}>
-                Deepgram doesn't yet code-switch Hebrew with other languages —
-                pick the dominant language for the meeting.
+                Pick the dominant language of the meeting — it pins the
+                transcriber and avoids per-segment language flapping.
               </span>
             </label>
             {submitError && (
@@ -643,8 +516,8 @@ export function MeetingsPage() {
               No meetings yet.
             </div>
             Click <em>New meeting</em>, paste a Meet, Zoom, or Teams URL, and
-            Jarvis joins as a silent recorder. The transcript lands here in
-            real time.
+            a notetaker agent joins the call. The transcript lands here in
+            real time and stays forever.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

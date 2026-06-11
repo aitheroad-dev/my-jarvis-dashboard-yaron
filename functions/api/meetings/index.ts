@@ -1,22 +1,17 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env as AuthEnv } from "../../_lib/auth";
+import { createBot, vexaConfigured, type VexaEnv } from "../../_lib/vexa";
+import { parseMeetingUrl } from "../../_lib/meeting-url";
 
-interface Env extends AuthEnv {
-  // Base URL of the shared meetings Worker (no trailing slash).
-  // e.g. https://my-jarvis-meetings.<account>.workers.dev
-  MEETINGS_WORKER_URL: string;
-  // Per-tenant bearer this dashboard uses to call the meetings Worker.
-  // The Worker validates this against the DO config registered for this tenant.
-  MEETINGS_TENANT_KEY: string;
-  // Tenant slug — the Worker keys its DO by this. Same value the Worker stored at registration.
-  MEETINGS_TENANT_SLUG: string;
-}
+interface Env extends AuthEnv, VexaEnv {}
 
 type MeetingRow = {
   id: number;
   title: string;
   meeting_url: string;
+  platform: string | null;
+  native_meeting_id: string | null;
   bot_id: string | null;
   status: string;
   summary: string | null;
@@ -25,11 +20,7 @@ type MeetingRow = {
   created_at: string;
 };
 
-/**
- * GET /api/meetings — list meetings, newest first.
- * The org_id check in requireUser() is the access boundary; per-tenant DB
- * already isolates the rows.
- */
+/** GET /api/meetings — list meetings, newest first. */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
     await requireUser(request, env);
@@ -49,13 +40,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
-      SELECT id, title, meeting_url, bot_id, status, summary,
-             started_at, ended_at, created_at
+      SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status,
+             summary, started_at, ended_at, created_at
         FROM meetings
        ORDER BY created_at DESC
        LIMIT ${limit}
     `) as MeetingRow[];
-    return json({ meetings: rows });
+    return json({ meetings: rows, configured: vexaConfigured(env) });
   } catch (err) {
     return json(
       { error: "list failed", detail: err instanceof Error ? err.message : String(err) },
@@ -65,12 +56,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 };
 
 /**
- * POST /api/meetings — create a meeting and start the Recall bot.
- * Body: { title, meeting_url }.
- * Steps: INSERT row → call Worker /meeting/bot → UPDATE row with bot_id.
- * If the Worker call fails the row is kept in 'failed' status so the caller
- * can retry; we don't roll back the DB write because partial state is more
- * recoverable than missing state.
+ * POST /api/meetings — create a meeting and send the Vexa bot into it.
+ * Body: { title, meeting_url, language?, passcode? }.
+ * INSERT row → POST Vexa /bots → UPDATE row with bot ref. On vendor failure
+ * the row is kept in 'failed' status (partial state beats missing state).
  */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -80,7 +69,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     throw res;
   }
 
-  let body: { title?: unknown; meeting_url?: unknown; language?: unknown };
+  let body: { title?: unknown; meeting_url?: unknown; language?: unknown; passcode?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -94,17 +83,24 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     typeof body.language === "string" && body.language.trim().length > 0
       ? body.language.trim()
       : "he";
-  if (!title) return json({ error: "title is required" }, { status: 400 });
-  if (!meetingUrl) {
-    return json({ error: "meeting_url is required" }, { status: 400 });
-  }
-  if (!/^https?:\/\//i.test(meetingUrl)) {
-    return json({ error: "meeting_url must be http(s)" }, { status: 400 });
-  }
+  const bodyPasscode =
+    typeof body.passcode === "string" && body.passcode.trim().length > 0
+      ? body.passcode.trim()
+      : undefined;
 
-  if (!env.MEETINGS_WORKER_URL || !env.MEETINGS_TENANT_KEY || !env.MEETINGS_TENANT_SLUG) {
+  if (!title) return json({ error: "title is required" }, { status: 400 });
+  if (!meetingUrl) return json({ error: "meeting_url is required" }, { status: 400 });
+
+  const parsed = parseMeetingUrl(meetingUrl);
+  if (!parsed.ok) return json({ error: parsed.error }, { status: 400 });
+
+  if (!vexaConfigured(env)) {
     return json(
-      { error: "server misconfigured: meetings worker bindings missing" },
+      {
+        error: "not configured",
+        detail:
+          "VEXA_API_KEY is not set on this deployment — add it as a Pages secret to enable meeting bots.",
+      },
       { status: 500 },
     );
   }
@@ -113,10 +109,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   let inserted: MeetingRow;
   try {
     const rows = (await sql/* sql */ `
-      INSERT INTO meetings (title, meeting_url, status, started_at)
-      VALUES (${title}, ${meetingUrl}, 'starting', strftime('%Y-%m-%dT%H:%M:%SZ','now'))
-      RETURNING id, title, meeting_url, bot_id, status, summary,
-                started_at, ended_at, created_at
+      INSERT INTO meetings (title, meeting_url, platform, native_meeting_id, status, started_at)
+      VALUES (${title}, ${meetingUrl}, ${parsed.platform}, ${parsed.nativeMeetingId},
+              'starting', strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+      RETURNING id, title, meeting_url, platform, native_meeting_id, bot_id, status,
+                summary, started_at, ended_at, created_at
     `) as MeetingRow[];
     if (!rows[0]) throw new Error("insert returned no row");
     inserted = rows[0];
@@ -127,70 +124,36 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     );
   }
 
-  let botId: string | null = null;
-  try {
-    const workerRes = await fetch(`${env.MEETINGS_WORKER_URL}/meeting/bot`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.MEETINGS_TENANT_KEY}`,
-        "X-Tenant": env.MEETINGS_TENANT_SLUG,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        meeting_url: meetingUrl,
-        title,
-        meeting_id: inserted.id,
-        language,
-      }),
-    });
-    if (!workerRes.ok) {
-      const detail = await workerRes.text().catch(() => "");
-      await sql/* sql */ `
-        UPDATE meetings SET status = 'failed' WHERE id = ${inserted.id}
-      `;
-      return json(
-        {
-          error: "worker bot create failed",
-          status: workerRes.status,
-          detail,
-          meeting_id: inserted.id,
-        },
-        { status: 502 },
-      );
-    }
-    const out = (await workerRes.json()) as { bot_id?: string };
-    botId = typeof out.bot_id === "string" ? out.bot_id : null;
-  } catch (err) {
-    await sql/* sql */ `
-      UPDATE meetings SET status = 'failed' WHERE id = ${inserted.id}
-    `;
+  const bot = await createBot(env, {
+    platform: parsed.platform,
+    nativeMeetingId: parsed.nativeMeetingId,
+    // 'auto' = omit the field; Vexa then language-detects per segment.
+    language: language === "auto" ? undefined : language,
+    passcode: parsed.passcode ?? bodyPasscode,
+    botName: "Notetaker",
+  });
+
+  if (!bot.ok) {
+    await sql/* sql */ `UPDATE meetings SET status = 'failed' WHERE id = ${inserted.id}`;
     return json(
       {
-        error: "worker bot create errored",
-        detail: err instanceof Error ? err.message : String(err),
+        error: "bot create failed",
+        status: bot.status,
+        detail: bot.detail,
         meeting_id: inserted.id,
       },
       { status: 502 },
     );
   }
 
-  if (!botId) {
-    await sql/* sql */ `
-      UPDATE meetings SET status = 'failed' WHERE id = ${inserted.id}
-    `;
-    return json(
-      { error: "worker did not return bot_id", meeting_id: inserted.id },
-      { status: 502 },
-    );
-  }
-
+  const botRef = bot.data?.id != null ? String(bot.data.id) : parsed.nativeMeetingId;
   const updated = (await sql/* sql */ `
     UPDATE meetings
-       SET bot_id = ${botId}, status = 'live'
+       SET bot_id = ${botRef}, status = 'live'
      WHERE id = ${inserted.id}
-   RETURNING id, title, meeting_url, bot_id, status, summary,
-             started_at, ended_at, created_at
+   RETURNING id, title, meeting_url, platform, native_meeting_id, bot_id, status,
+             summary, started_at, ended_at, created_at
   `) as MeetingRow[];
 
-  return json({ meeting: updated[0] ?? { ...inserted, bot_id: botId, status: "live" } });
+  return json({ meeting: updated[0] ?? { ...inserted, bot_id: botRef, status: "live" } });
 };

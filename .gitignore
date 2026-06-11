@@ -24,3 +24,4 @@ dist-ssr
 .playwright-mcp
 *.playwright
 lilach-*.png
+.secrets/
