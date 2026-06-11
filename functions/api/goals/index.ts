@@ -10,7 +10,6 @@ type GoalRow = {
   title: string;
   description: string | null;
   status: "active" | "paused" | "done" | "archived";
-  ticket_count: number;
   created_at: string;
   updated_at: string;
 };
@@ -41,7 +40,6 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       g.title,
       g.description,
       g.status,
-      (SELECT COUNT(*) FROM tickets t WHERE t.goal_id = g.id) AS ticket_count,
       g.created_at,
       g.updated_at
     FROM goals g

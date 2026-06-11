@@ -107,44 +107,6 @@ CREATE TABLE IF NOT EXISTS goals (
 );
 CREATE INDEX IF NOT EXISTS goals_project_idx ON goals(project_id);
 
-CREATE TABLE IF NOT EXISTS tickets (
-  id              TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)))||'-'||lower(hex(randomblob(2)))||'-4'||substr(lower(hex(randomblob(2))),2)||'-'||substr('89ab',abs(random())%4+1,1)||substr(lower(hex(randomblob(2))),2)||'-'||lower(hex(randomblob(6)))),
-  slug            TEXT NOT NULL UNIQUE,
-  project_id      TEXT REFERENCES projects(id) ON DELETE SET NULL,
-  goal_id         TEXT REFERENCES goals(id) ON DELETE SET NULL,
-  parent_id       TEXT REFERENCES tickets(id) ON DELETE SET NULL,
-  agent           TEXT,
-  title           TEXT NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'todo'
-                  CHECK (status IN ('todo','in_progress','review','done','archived')),
-  current_step    TEXT,
-  tier            TEXT,
-  isa_path        TEXT,
-  progress        TEXT,
-  next            TEXT,
-  source          TEXT NOT NULL DEFAULT 'manual'
-                  CHECK (source IN ('pai','manual')),
-  problem         TEXT,
-  vision          TEXT,
-  out_of_scope    TEXT,
-  principles      TEXT,
-  constraints     TEXT,
-  goal            TEXT,
-  test_strategy   TEXT,
-  features        TEXT,
-  decisions       TEXT,
-  changelog       TEXT,
-  verification    TEXT,
-  iscs            TEXT NOT NULL DEFAULT '[]',
-  log             TEXT,
-  created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
-  updated_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
-);
-CREATE INDEX IF NOT EXISTS tickets_project_idx ON tickets(project_id);
-CREATE INDEX IF NOT EXISTS tickets_goal_idx ON tickets(goal_id);
-CREATE INDEX IF NOT EXISTS tickets_agent_status_ix ON tickets(agent, status);
-CREATE INDEX IF NOT EXISTS tickets_source_ix ON tickets(source);
-
 CREATE TABLE IF NOT EXISTS agents (
   name              TEXT PRIMARY KEY,
   display_name      TEXT NOT NULL,
@@ -153,7 +115,6 @@ CREATE TABLE IF NOT EXISTS agents (
   color             TEXT,
   identity_md       TEXT,
   principles_md     TEXT,
-  current_ticket_id TEXT REFERENCES tickets(id) ON DELETE SET NULL,
   updated_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 );
 
@@ -224,4 +185,40 @@ CREATE TABLE IF NOT EXISTS portfolio_holdings (
   flags        TEXT,
   updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
   UNIQUE (ticker, exchange)
+);
+
+-- Situation Board (replaced the Kanban work-item system, 2026-06-11).
+-- Read-only derived view of PAI's paper trail; sole writer is
+-- scripts/harvest-situation.ts (batch, idempotent).
+CREATE TABLE IF NOT EXISTS situation_projects (
+  slug          TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  goal          TEXT,
+  now_text      TEXT,
+  health        TEXT NOT NULL DEFAULT 'quiet',
+  last_activity TEXT,
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS situation_events (
+  id           TEXT PRIMARY KEY,
+  project_slug TEXT NOT NULL,
+  ts           TEXT NOT NULL,
+  kind         TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  detail       TEXT,
+  source       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS situation_events_proj_ts ON situation_events(project_slug, ts DESC);
+
+CREATE TABLE IF NOT EXISTS situation_next (
+  project_slug TEXT NOT NULL,
+  position     INTEGER NOT NULL,
+  text         TEXT NOT NULL,
+  PRIMARY KEY (project_slug, position)
+);
+
+CREATE TABLE IF NOT EXISTS situation_meta (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
 );

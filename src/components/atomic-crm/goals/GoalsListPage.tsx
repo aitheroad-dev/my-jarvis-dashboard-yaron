@@ -19,7 +19,6 @@ type GoalRow = {
   title: string;
   description: string | null;
   status: "active" | "paused" | "done" | "archived";
-  ticket_count: number;
   created_at: string;
   updated_at: string;
 };
@@ -67,10 +66,6 @@ const COLUMNS: ColumnDef<GoalRow>[] = [
   {
     key: "project_name", label: "Project", width: "160px",
     render: (g) => <span style={{ color: T.ink2 }}>{g.project_name ?? "—"}</span>,
-  },
-  {
-    key: "ticket_count", label: "Tickets", width: "80px",
-    render: (g) => <span style={{ color: T.ink2 }}>{g.ticket_count}</span>,
   },
   {
     key: "status", label: "Status", width: "100px",

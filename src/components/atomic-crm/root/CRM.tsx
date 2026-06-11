@@ -6,8 +6,8 @@ import { ProjectsListPage } from "../projects-dashboard/ProjectsListPage";
 import { ProjectDetailPage } from "../projects-dashboard/ProjectDetailPage";
 import { GoalsListPage } from "../goals/GoalsListPage";
 import { GoalDetailPage } from "../goals/GoalDetailPage";
-import { TicketsKanbanPage } from "../tickets/TicketsKanbanPage";
-import { TicketDetailPage } from "../tickets/TicketDetailPage";
+import { SituationPage } from "../situation/SituationPage";
+import { SituationDetailPage } from "../situation/SituationDetailPage";
 import { AgentsPage } from "../agents/AgentsPage";
 import { MemoryPage } from "../memory/MemoryPage";
 import { SkillsPage } from "../skills/SkillsPage";
@@ -26,10 +26,10 @@ import { SettingsPage } from "../pages/SettingsPage";
 // Template baseline (MJOS-074).
 //
 // Top-level slugs that ship with every fresh tenant:
-//   /home  /goals(-list)  /projects(-list)  /tickets  /agents
+//   /home  /goals(-list)  /projects(-list)  /situation  /agents
 //   /skills  /memory  /knowledge-base
 // Plus catchall renderers: /kb-doc/*, /pitch-doc/*.
-// Plus detail patterns: /tickets/:slug, /goals/:slug, /projects/:slug, /skills/:slug.
+// Plus detail patterns: /situation/:slug, /goals/:slug, /projects/:slug, /skills/:slug.
 // Plus structured Meetings (route registered, sidebar entry off by default — flip
 // it on per-tenant in nav-items.tsx when the user wants meetings).
 // Plus /settings, reached via the sidebar account dropdown.
@@ -57,9 +57,9 @@ export const CRM = () => (
       <Route path="/projects-list" element={<ProjectsListPage />} />
       <Route path="/projects/:slug" element={<ProjectDetailPage />} />
 
-      {/* Tickets (Kanban list + Knowledge — Classic detail from ISA-12). */}
-      <Route path="/tickets" element={<TicketsKanbanPage />} />
-      <Route path="/tickets/:slug" element={<TicketDetailPage />} />
+      {/* Situation Board — portfolio of project stories (replaced the Kanban board, 2026-06-11). */}
+      <Route path="/situation" element={<SituationPage />} />
+      <Route path="/situation/:slug" element={<SituationDetailPage />} />
 
       {/* Agents (Structured). */}
       <Route path="/agents" element={<AgentsPage />} />

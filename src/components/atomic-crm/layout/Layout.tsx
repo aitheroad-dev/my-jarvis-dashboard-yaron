@@ -24,7 +24,7 @@ const SKY_BLUE_BG = "#F2F7FD";
 
 const SKY_BLUE_ROUTES = [
   "/dashboard-architecture",
-  "/tickets",
+  "/situation",
   "/agents",
   "/skills",
   "/projects",
@@ -49,7 +49,6 @@ const SKY_BLUE_ROUTES = [
 // - default: centered, `max-w-6xl` (1152px) clamp with responsive padding.
 //   The catch-all for typical detail / list pages.
 const FULL_WIDTH_ROUTES = [
-  "/tickets",
   "/agents",
 ];
 

@@ -17,7 +17,6 @@ type ProjectRow = {
   name: string;
   mission: string | null;
   status: "active" | "paused" | "done" | "archived";
-  ticket_count: number;
   goal_count: number;
   created_at: string;
   updated_at: string;
@@ -66,10 +65,6 @@ const COLUMNS: ColumnDef<ProjectRow>[] = [
   {
     key: "goal_count", label: "Goals", width: "80px",
     render: (p) => <span style={{ color: T.ink2 }}>{p.goal_count}</span>,
-  },
-  {
-    key: "ticket_count", label: "Tickets", width: "80px",
-    render: (p) => <span style={{ color: T.ink2 }}>{p.ticket_count}</span>,
   },
   {
     key: "status", label: "Status", width: "100px",
@@ -126,7 +121,7 @@ export function ProjectsListPage() {
             fontSize: 16, color: T.ink2, lineHeight: 1.65,
             maxWidth: 720, margin: "0 auto",
           }}>
-            Coordinated bodies of work. Each project carries an ISA at project scope and owns child tickets. Months-long horizon.
+            Coordinated bodies of work. Each project carries an ISA at project scope. Months-long horizon.
           </p>
         </div>
 

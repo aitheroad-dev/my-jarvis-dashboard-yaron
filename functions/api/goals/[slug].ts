@@ -14,15 +14,6 @@ type GoalDetail = {
   project_name: string | null;
   created_at: string;
   updated_at: string;
-  tickets: {
-    id: string;
-    slug: string;
-    title: string;
-    status: string;
-    tier: string | null;
-    current_step: string | null;
-    agent: string | null;
-  }[];
 };
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
@@ -46,17 +37,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     LEFT JOIN projects p ON p.id = g.project_id
     WHERE g.slug = ${slug}
     LIMIT 1
-  `) as Omit<GoalDetail, "tickets">[];
+  `) as GoalDetail[];
 
   if (rows.length === 0) return new Response("not found", { status: 404 });
   const goal = rows[0];
 
-  const tickets = (await sql/* sql */ `
-    SELECT id, slug, title, status, tier, current_step, agent
-    FROM tickets
-    WHERE goal_id = ${goal.id}
-    ORDER BY slug ASC
-  `) as GoalDetail["tickets"];
-
-  return json({ ...goal, tickets });
+  return json({ ...goal });
 };

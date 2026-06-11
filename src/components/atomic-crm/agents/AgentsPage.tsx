@@ -14,7 +14,6 @@ type AgentRow = {
   voice_kokoro: string;
   voice_mcp: string | null;
   color: string | null;
-  current_ticket_id: string | null;
 };
 
 export function AgentsPage() {

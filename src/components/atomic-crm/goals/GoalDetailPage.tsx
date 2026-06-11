@@ -2,8 +2,7 @@
 //
 // Renders a goal as a BlockRenderer recipe stored in `goals.body`, matching
 // the SkillDetailPage canonical pattern. Page chrome (hero from columns)
-// wraps the body. Tickets bound to the goal render below the body as a
-// dynamic table. No react-markdown fallback (per AC-4).
+// wraps the body. No react-markdown fallback (per AC-4).
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -27,15 +26,6 @@ type GoalDetail = {
   project_name: string | null;
   created_at: string;
   updated_at: string;
-  tickets: {
-    id: string;
-    slug: string;
-    title: string;
-    status: string;
-    tier: string | null;
-    current_step: string | null;
-    agent: string | null;
-  }[];
 };
 
 function parseRecipe(body: string): Block[] | null {
@@ -48,35 +38,6 @@ function parseRecipe(body: string): Block[] | null {
     return null;
   }
   return null;
-}
-
-function buildTicketsRecipe(g: GoalDetail): Block[] {
-  const blocks: Block[] = [
-    { type: "Divider", props: {} },
-    {
-      type: "SectionHeader",
-      props: { eyebrow: "TICKETS", title: `Tickets pursuing this goal (${g.tickets.length})` },
-    },
-  ];
-  if (g.tickets.length === 0) {
-    blocks.push({ type: "P", props: { body: "*No tickets bound to this goal yet.*" } });
-  } else {
-    blocks.push({
-      type: "DataTable",
-      props: {
-        headers: ["Slug", "Title", "Agent", "Tier", "Phase", "Status"],
-        rows: g.tickets.map(t => [
-          `[${t.slug}](/tickets/${t.slug})`,
-          t.title,
-          t.agent ?? "—",
-          t.tier ?? "—",
-          t.current_step ?? "—",
-          t.status,
-        ]),
-      },
-    });
-  }
-  return blocks;
 }
 
 const STATUS_TONE: Record<GoalDetail["status"], { fg: string; bg: string; bd: string }> = {
@@ -112,7 +73,6 @@ export function GoalDetailPage() {
   }, [slug]);
 
   const bodyRecipe = useMemo(() => goal ? parseRecipe(goal.body) : null, [goal]);
-  const ticketsRecipe = useMemo(() => goal ? buildTicketsRecipe(goal) : null, [goal]);
 
   return (
     <div style={{
@@ -182,10 +142,6 @@ export function GoalDetailPage() {
 
             {bodyRecipe ? (
               <BlockRenderer config={architectureConfig} blocks={bodyRecipe} />
-            ) : null}
-
-            {ticketsRecipe ? (
-              <BlockRenderer config={architectureConfig} blocks={ticketsRecipe} />
             ) : null}
 
             <div style={{

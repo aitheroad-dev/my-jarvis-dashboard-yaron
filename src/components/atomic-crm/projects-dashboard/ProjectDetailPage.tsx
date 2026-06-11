@@ -31,15 +31,6 @@ type ProjectDetail = {
     description: string | null;
     status: string;
   }[];
-  tickets: {
-    id: string;
-    slug: string;
-    title: string;
-    status: string;
-    tier: string | null;
-    current_step: string | null;
-    agent: string | null;
-  }[];
 };
 
 // Parse a markdown body into block recipe entries.
@@ -114,28 +105,6 @@ function buildRecipe(p: ProjectDetail): Block[] {
           `[${g.title}](/goals/${g.slug})`,
           g.description ?? "—",
           g.status,
-        ]),
-      },
-    });
-  }
-
-  // 04 — TICKETS
-  blocks.push({ type: "Divider", props: {} });
-  blocks.push({ type: "SectionHeader", props: { eyebrow: "04 — TICKETS", title: `Tickets in flight (${p.tickets.length})` } });
-  if (p.tickets.length === 0) {
-    blocks.push({ type: "P", props: { body: "*No tickets under this project yet.*" } });
-  } else {
-    blocks.push({
-      type: "DataTable",
-      props: {
-        headers: ["Slug", "Title", "Agent", "Tier", "Phase", "Status"],
-        rows: p.tickets.map(t => [
-          `[${t.slug}](/tickets/${t.slug})`,
-          t.title,
-          t.agent ?? "—",
-          t.tier ?? "—",
-          t.current_step ?? "—",
-          t.status,
         ]),
       },
     });

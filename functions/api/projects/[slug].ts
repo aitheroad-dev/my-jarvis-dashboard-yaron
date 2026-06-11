@@ -18,15 +18,6 @@ type ProjectDetail = {
     description: string | null;
     status: string;
   }[];
-  tickets: {
-    id: string;
-    slug: string;
-    title: string;
-    status: string;
-    tier: string | null;
-    current_step: string | null;
-    agent: string | null;
-  }[];
 };
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
@@ -46,7 +37,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     FROM projects
     WHERE slug = ${slug}
     LIMIT 1
-  `) as Omit<ProjectDetail, "goals" | "tickets">[];
+  `) as Omit<ProjectDetail, "goals">[];
 
   if (rows.length === 0) return new Response("not found", { status: 404 });
   const project = rows[0];
@@ -58,12 +49,5 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     ORDER BY created_at DESC
   `) as ProjectDetail["goals"];
 
-  const tickets = (await sql/* sql */ `
-    SELECT id, slug, title, status, tier, current_step, agent
-    FROM tickets
-    WHERE project_id = ${project.id}
-    ORDER BY slug ASC
-  `) as ProjectDetail["tickets"];
-
-  return json({ ...project, goals, tickets });
+  return json({ ...project, goals });
 };
