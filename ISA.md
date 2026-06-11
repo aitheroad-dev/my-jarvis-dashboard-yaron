@@ -3,11 +3,11 @@ project: my-jarvis-dashboard-yaron
 task: Standalone cloud meetings app — agent joins + transcribes, laptop-independent
 slug: dashboard-meetings-app
 effort: E4
-phase: think
-progress: 0/0
+phase: execute
+progress: 32/50
 mode: standard
 started: 2026-06-11T10:15:00+02:00
-updated: 2026-06-11T10:55:00+02:00
+updated: 2026-06-11T11:45:00+02:00
 ---
 
 # Dashboard Meetings App — ISA
@@ -48,67 +48,70 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 > Numbering restarts post-pivot (prior set retired wholesale, see Decisions). E4 ISC soft floor (128) under-shot deliberately — show-your-math in Decisions.
 
 ### Vendor adapter (functions/_lib/vexa.ts)
-- [ ] ISC-1: adapter module exists exporting `createBot`, `stopBot`, `fetchTranscript`
-- [ ] ISC-2: adapter reads `VEXA_API_BASE` (default `https://api.cloud.vexa.ai`) and `VEXA_API_KEY` from env — self-host later = base-URL swap only
-- [ ] ISC-3: auth sent as `X-API-Key` header
-- [ ] ISC-4: createBot posts `platform`, `native_meeting_id`, `language`, optional `passcode`, `bot_name`
-- [ ] ISC-5: stopBot issues `DELETE /bots/{platform}/{native_meeting_id}`
-- [ ] ISC-6: fetchTranscript GETs `/transcripts/{platform}/{native_meeting_id}` and returns typed segments
-- [ ] ISC-7: Anti: adapter never throws raw — all vendor errors surface as typed `{ok:false,status,detail}`
+- [x] ISC-1: adapter module exists exporting `createBot`, `stopBot`, `fetchTranscript`
+- [x] ISC-2: adapter reads `VEXA_API_BASE` (default `https://api.cloud.vexa.ai`) and `VEXA_API_KEY` from env — self-host later = base-URL swap only
+- [x] ISC-3: auth sent as `X-API-Key` header
+- [x] ISC-4: createBot posts `platform`, `native_meeting_id`, `language`, optional `passcode`, `bot_name`
+- [x] ISC-5: stopBot issues `DELETE /bots/{platform}/{native_meeting_id}`
+- [x] ISC-6: fetchTranscript GETs `/transcripts/{platform}/{native_meeting_id}` and returns typed segments
+- [x] ISC-7: Anti: adapter never throws raw — all vendor errors surface as typed `{ok:false,status,detail}`
 
 ### Meeting-URL parsing (server-side)
-- [ ] ISC-8: server parses Meet/Zoom/Teams URLs to `{platform, native_meeting_id, passcode?}` (same regex family as the UI's)
-- [ ] ISC-9: unsupported/invalid URL → 400 with explanatory error
-- [ ] ISC-10: Zoom `pwd` query param captured as passcode
+- [x] ISC-8: server parses Meet/Zoom/Teams URLs to `{platform, native_meeting_id, passcode?}` (same regex family as the UI's)
+- [x] ISC-9: unsupported/invalid URL → 400 with explanatory error
+- [x] ISC-10: Zoom `pwd` query param captured as passcode
 
 ### Create flow (POST /api/meetings)
-- [ ] ISC-11: D1 row inserted with `platform` + `native_meeting_id` columns (new migration applied to live D1)
-- [ ] ISC-12: Vexa createBot called; meeting status → `live`, bot id stored
-- [ ] ISC-13: vendor failure → row kept, status `failed`, error relayed with detail
-- [ ] ISC-14: missing `VEXA_API_KEY` → 500 "not configured" without crashing
-- [ ] ISC-15: `language` from body persisted and passed to the bot (default `he`)
-- [ ] ISC-16: Anti: no `MEETINGS_WORKER_URL`/`TENANT_KEY`/`TENANT_SLUG` references remain anywhere in the repo
+- [x] ISC-11: D1 row inserted with `platform` + `native_meeting_id` columns (new migration applied to live D1)
+- [DEFERRED-VERIFY] ISC-12: Vexa createBot called; meeting status → `live`, bot id stored
+- [DEFERRED-VERIFY] ISC-13: vendor failure → row kept, status `failed`, error relayed with detail
+- [x] ISC-14: missing `VEXA_API_KEY` → 500 "not configured" without crashing
+- [DEFERRED-VERIFY] ISC-15: `language` from body persisted and passed to the bot (default `he`)
+- [x] ISC-16: Anti: no `MEETINGS_WORKER_URL`/`TENANT_KEY`/`TENANT_SLUG` references remain anywhere in the repo
 
 ### Transcript ingest (pull-on-view)
-- [ ] ISC-17: GET /api/meetings/:id pulls fresh segments from Vexa for non-ended meetings and upserts into `meeting_transcript`
-- [ ] ISC-18: upsert is idempotent — unique index `(meeting_id, start_ts, speaker_name)`, ON CONFLICT updates text/completed
-- [ ] ISC-19: segments persist in D1 — transcript readable after the Vexa 12-month window, laptop off, vendor down
-- [ ] ISC-20: ended meetings serve from D1 only (no vendor call)
-- [ ] ISC-21: stop action calls Vexa stopBot, does a final transcript pull, sets status `ended` + `ended_at`
-- [ ] ISC-22: Anti: a Vexa outage degrades to cached D1 segments, never a 500 on the detail page
+- [DEFERRED-VERIFY] ISC-17: GET /api/meetings/:id pulls fresh segments from Vexa for non-ended meetings and upserts into `meeting_transcript`
+- [x] ISC-18: upsert is idempotent — unique index `(meeting_id, start_ts, speaker_name)`, ON CONFLICT updates text/completed
+- [DEFERRED-VERIFY] ISC-19: segments persist in D1 — transcript readable after the Vexa 12-month window, laptop off, vendor down
+- [DEFERRED-VERIFY] ISC-20: ended meetings serve from D1 only (no vendor call)
+- [DEFERRED-VERIFY] ISC-21: stop action calls Vexa stopBot, does a final transcript pull, sets status `ended` + `ended_at`
+- [DEFERRED-VERIFY] ISC-22: Anti: a Vexa outage degrades to cached D1 segments, never a 500 on the detail page
 
 ### Erez-infra eradication
-- [ ] ISC-23: ConnectCalendarCard removed from MeetingsPage (no `my-jarvis-meetings-worker.myjarvis.workers.dev` reference in src/)
-- [ ] ISC-24: `functions/api/calendar/*` deleted (worker-OAuth flow) and no src caller references `/api/calendar`
-- [ ] ISC-25: Anti: zero `tenant=erez` strings in the repo
-- [ ] ISC-26: Anti: zero fetches to any `*.myjarvis.workers.dev` host in src/ or functions/
+- [x] ISC-23: ConnectCalendarCard removed from MeetingsPage (no `my-jarvis-meetings-worker.myjarvis.workers.dev` reference in src/)
+- [x] ISC-24: `functions/api/calendar/*` deleted (worker-OAuth flow) and no src caller references `/api/calendar`
+- [x] ISC-25: Anti: zero `tenant=erez` strings in the repo
+- [x] ISC-26: Anti: zero fetches to any `*.myjarvis.workers.dev` host in src/ or functions/
 
 ### UI
-- [ ] ISC-27: MeetingsPage create form works against the new backend (title, URL, language incl. Hebrew)
-- [ ] ISC-28: meetings list renders from D1 with status badges
-- [ ] ISC-29: MeetingDetailPage shows live transcript segments (existing 1s poll, hidden-tab guard preserved)
-- [ ] ISC-30: stop button on a live meeting works from the detail page
-- [ ] ISC-31: clear unconfigured state — if backend reports "not configured", UI explains the missing key instead of a raw error
-- [ ] ISC-32: copy updated — no Deepgram/Jarvis-bot claims that no longer hold
+- [DEFERRED-VERIFY] ISC-27: MeetingsPage create form works against the new backend (title, URL, language incl. Hebrew)
+- [x] ISC-28: meetings list renders from D1 with status badges
+- [DEFERRED-VERIFY] ISC-29: MeetingDetailPage shows live transcript segments (existing 1s poll, hidden-tab guard preserved)
+- [DEFERRED-VERIFY] ISC-30: stop button on a live meeting works from the detail page
+- [x] ISC-31: clear unconfigured state — if backend reports "not configured", UI explains the missing key instead of a raw error
+- [x] ISC-32: copy updated — no Deepgram/Jarvis-bot claims that no longer hold
 
 ### Quality gates + deploy
-- [ ] ISC-33: `bun run typecheck` exits 0
-- [ ] ISC-34: `bun run lint` exits 0
-- [ ] ISC-35: `bun run build` exits 0
-- [ ] ISC-36: D1 migration applied to the live database (columns + unique index verified via query)
-- [ ] ISC-37: deployed via wrangler; live URL serves the new bundle
-- [ ] ISC-38: `VEXA_API_KEY` set as a Pages secret (via handoff file, never in chat/git)
-- [ ] ISC-39: Anti: no secret value appears in git, chat, or client bundle
+- [x] ISC-33: `bun run typecheck` exits 0
+- [x] ISC-34: `bun run lint` exits 0
+- [x] ISC-35: `bun run build` exits 0
+- [x] ISC-36: D1 migration applied to the live database (columns + unique index verified via query)
+- [x] ISC-37: deployed via wrangler; live URL serves the new bundle
+- [DEFERRED-VERIFY] ISC-38: `VEXA_API_KEY` set as a Pages secret (via handoff file, never in chat/git)
+- [DEFERRED-VERIFY] ISC-39: Anti: no secret value appears in git, chat, or client bundle
 
 ### Live verification (E2E)
-- [ ] ISC-40: Interceptor: live /meetings page renders create form + list in real Chrome
-- [ ] ISC-41: E2E: real meeting created from the dashboard, Vexa bot joins the call
-- [ ] ISC-42: E2E: Hebrew speech in the test call produces Hebrew transcript segments in the dashboard
-- [ ] ISC-43: E2E: laptop-independence — transcript continues landing in D1 with no local process involved (pipeline is Pages+Vexa only; verified by architecture + live segments while no local poller runs)
-- [ ] ISC-44: E2E: stop from dashboard removes the bot from the call
-- [ ] ISC-45: detail page still shows the full transcript after meeting end (served from D1)
-- [ ] ISC-46: Anti: pai-meet untouched — `git -C` n/a, `pai-meet list` still exits 0 and no PaiMeet file modified
-- [ ] ISC-47: Antecedent: sister-shareability — backend keyed by env-config (not Yaron-specific hardcodes) so a second deployment/user space needs only its own key + DB
+- [x] ISC-40: Interceptor: live /meetings page renders create form + list in real Chrome
+- [DEFERRED-VERIFY] ISC-41: E2E: real meeting created from the dashboard, Vexa bot joins the call
+- [DEFERRED-VERIFY] ISC-42: E2E: Hebrew speech in the test call produces Hebrew transcript segments in the dashboard
+- [DEFERRED-VERIFY] ISC-43: E2E: laptop-independence — transcript continues landing in D1 with no local process involved (pipeline is Pages+Vexa only; verified by architecture + live segments while no local poller runs)
+- [DEFERRED-VERIFY] ISC-44: E2E: stop from dashboard removes the bot from the call
+- [DEFERRED-VERIFY] ISC-45: detail page still shows the full transcript after meeting end (served from D1)
+- [x] ISC-46: Anti: pai-meet untouched — `git -C` n/a, `pai-meet list` still exits 0 and no PaiMeet file modified
+- [x] ISC-48: session-boundary filter — segments with absolute_start_time before this row's started_at (60s grace) are skipped, so reused Meet codes can't bleed prior-session transcript
+- [x] ISC-49: create idempotency — POST for a platform+native_meeting_id already live/starting returns 409, one bot per meeting
+- [x] ISC-50: orphaned-bot safeguard — live meetings older than 12h auto-flip to ended with best-effort bot stop
+- [x] ISC-47: Antecedent: sister-shareability — backend keyed by env-config (not Yaron-specific hardcodes) so a second deployment/user space needs only its own key + DB
 
 ## Decisions
 
@@ -122,3 +125,22 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - 2026-06-11 11:10 — **Ingest = pull-on-view**, not webhooks: the detail page's existing 1s poll hits our function, which pulls Vexa transcripts and upserts D1 (idempotent). No cron Worker, no public webhook surface. Accepted cost: ~1 vendor call/s only while someone watches a live meeting. Revisit if Vexa rate-limits bite.
 - 2026-06-11 11:10 — Show-your-math, ISC floor: 47 ISCs vs E4's soft 128. The app reuses an existing tested UI + schema; inflating count with per-style-token probes would be ceremony. Granularity rule satisfied — every ISC has a single-tool probe.
 - 2026-06-11 11:10 — Broader "self-host everything in the dashboard" (beyond meetings) logged as follow-up audit task, not this build. Remaining known company touchpoints after this task: none in wrangler.toml (D1+R2+CF Access already his); WorkOS-era code in `_lib/auth.ts` worth a look later.
+
+## Verification
+
+- ISC-11/36: D1 query — pragma_table_info shows `platform`, `native_meeting_id`; sqlite_master shows `idx_transcript_dedupe` (remote, mjd-yaron-db)
+- ISC-14/31: live probe — GET /api/meetings returned `{"meetings":[],"configured":false}`; banner rendered in real Chrome
+- ISC-16/23-26: `rg MEETINGS_WORKER_URL|MEETINGS_TENANT|tenant=erez|myjarvis.workers.dev src functions` → zero hits; functions/api/calendar git-rm'd
+- ISC-33-35: typecheck 0 errors, lint 0 errors (36 pre-existing warnings), vite build ✓ (twice, incl. hardening pass)
+- ISC-37: wrangler deploys e0ddb9b0 + 33d95767 live; /meetings serves new header/banner
+- ISC-40: Interceptor — header "Send a notetaker into any meeting", form fields e15-e18 (Title/URL/Language he-default/guarded submit), tab closed after
+- ISC-46: `pai-meet list` exit 0
+- ISC-48-50: code probes — filter/409/auto-expire present, typecheck clean; live behavior folds into E2E-VEXA-001
+- DEFERRED-VERIFY follow-up: **E2E-VEXA-001** — after VEXA_API_KEY lands: real Meet call, Hebrew speech, bot join/stop, transcript persistence, laptop-off check
+
+## Changelog
+
+- conjectured: the dashboard's existing Vexa-shaped meetings UI+schema needed only tenant keys to work for Yaron
+- refuted by: CF API + code reading — no tenant registration path on his side, and the worker's ingest wrote tenant Neon, decommissioned 2026-06-09; even with keys, transcripts had nowhere to land
+- learned: in single-owner stacks, vendor-direct from Pages Functions with D1-owned ingest beats reviving a multi-tenant middleman; the eradication request made this the only coherent shape
+- criterion now: ISC-16 (zero shared-worker bindings) + ISC-19 (transcripts permanent in own D1)
