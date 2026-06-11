@@ -120,7 +120,9 @@ export function MeetingDetailPage() {
   useEffect(() => {
     if (!meeting || meeting.status !== "live") return;
     const handle = window.setInterval(() => {
-      if (!stopRef.current) void load();
+      // Skip the poll while the tab is hidden — a live meeting left open in a
+      // background tab polls /api/meetings every 1s, 24/7, for nobody.
+      if (!stopRef.current && !document.hidden) void load();
     }, 1000);
     return () => window.clearInterval(handle);
   }, [meeting, load]);
