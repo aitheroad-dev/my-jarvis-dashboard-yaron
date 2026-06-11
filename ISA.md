@@ -3,11 +3,11 @@ project: my-jarvis-dashboard-yaron
 task: Eradicate v3 ticket system; build Situation Board replacement
 slug: situation-board
 effort: E3
-phase: execute
-progress: 10/39
+phase: complete
+progress: 39/39
 mode: standard
 started: 2026-06-11T09:30:00+02:00
-updated: 2026-06-11T09:30:00+02:00
+updated: 2026-06-11T11:05:00+02:00
 ---
 
 # Situation Board — Dashboard ISA
@@ -57,45 +57,45 @@ The dashboard contains zero ticket-system code, routes, tables, or PAI-side auto
 - [x] ISC-10: Anti: no launchd plist, Hetzner timer, or CF cron references ticket sync (`launchctl list`, wrangler.toml crons, box timers checked)
 
 ### Demolition — dashboard repo
-- [ ] ISC-11: `src/components/atomic-crm/tickets/` directory no longer exists
-- [ ] ISC-12: No `/tickets` route or Tickets nav entry in CRM.tsx / nav-items.tsx
-- [ ] ISC-13: `functions/api/tickets/` no longer exists
-- [ ] ISC-14: Ticket references in goals/projects/agents pages+endpoints removed (counts, links, joins)
-- [ ] ISC-15: `scripts/sync-from-pai.ts` (Neon batch reconciler) removed
-- [ ] ISC-16: `rg -i "ticket" src/ functions/ scripts/` returns zero hits (docs/sql archives exempt, reviewed)
-- [ ] ISC-17: Pre-push gate green after demolition (typecheck + lint + build)
+- [x] ISC-11: `src/components/atomic-crm/tickets/` directory no longer exists
+- [x] ISC-12: No `/tickets` route or Tickets nav entry in CRM.tsx / nav-items.tsx
+- [x] ISC-13: `functions/api/tickets/` no longer exists
+- [x] ISC-14: Ticket references in goals/projects/agents pages+endpoints removed (counts, links, joins)
+- [x] ISC-15: `scripts/sync-from-pai.ts` (Neon batch reconciler) removed
+- [x] ISC-16: `rg -i "ticket" src/ functions/ scripts/` returns zero hits (docs/sql archives exempt, reviewed)
+- [x] ISC-17: Pre-push gate green after demolition (typecheck + lint + build)
 
 ### Demolition — D1
-- [ ] ISC-18: Live D1 has no `tickets` / `ticket_movements` (or other `ticket%`) tables — verified by `wrangler d1 execute ... "SELECT name FROM sqlite_master"`
-- [ ] ISC-19: `sql/d1/schema.sql` contains no ticket tables
+- [x] ISC-18: Live D1 has no `tickets` / `ticket_movements` (or other `ticket%`) tables — verified by `wrangler d1 execute ... "SELECT name FROM sqlite_master"`
+- [x] ISC-19: `sql/d1/schema.sql` contains no ticket tables
 
 ### Situation Board — data
-- [ ] ISC-20: D1 has `situation_projects` (slug, name, goal, now_text, health, last_activity) and `situation_events` (id, project_slug, ts, kind, title, detail, source) and `situation_next` (project_slug, position, text) tables
-- [ ] ISC-21: Harvester `scripts/harvest-situation.ts` runs end-to-end on this Mac and exits 0
-- [ ] ISC-22: Harvester ingests git commits from project repos — repo list *derived from* `USER/PROJECTS/PROJECTS.md` (system of record), not a hand-maintained config
-- [ ] ISC-23: Harvester ingests ISA Changelog/Decisions dated entries and MEMORY/WORK session wrap-ups as narrative events
-- [ ] ISC-24: Harvester is idempotent — second run inserts zero duplicate events (stable event IDs)
-- [ ] ISC-25: Health computed at harvest: active (<7d movement), stalled (≥14d), quiet (7–14d) — stored per project
-- [ ] ISC-26: ≥5 real projects present in `situation_projects` after first harvest, each with ≥1 event
+- [x] ISC-20: D1 has `situation_projects` (slug, name, goal, now_text, health, last_activity) and `situation_events` (id, project_slug, ts, kind, title, detail, source) and `situation_next` (project_slug, position, text) tables
+- [x] ISC-21: Harvester `scripts/harvest-situation.ts` runs end-to-end on this Mac and exits 0
+- [x] ISC-22: Harvester ingests git commits from project repos — repo list *derived from* `USER/PROJECTS/PROJECTS.md` (system of record), not a hand-maintained config
+- [x] ISC-23: Harvester ingests ISA Changelog/Decisions dated entries and MEMORY/WORK session wrap-ups as narrative events
+- [x] ISC-24: Harvester is idempotent — second run inserts zero duplicate events (stable event IDs)
+- [x] ISC-25: Health computed at harvest: active (<7d movement), stalled (≥14d), quiet (7–14d) — stored per project
+- [x] ISC-26: ≥5 real projects present in `situation_projects` after first harvest, each with ≥1 event
 
 ### Situation Board — API + UI
-- [ ] ISC-27: `GET /api/situation` returns portfolio JSON (projects + health + last event) with LIMIT caps
-- [ ] ISC-28: `GET /api/situation/:slug` returns one project's card + events timeline + next list
-- [ ] ISC-29: Sidebar shows "Situation" entry; `/situation` renders the portfolio: one card per project with Goal / Now / Next / Health
-- [ ] ISC-30: Portfolio sorted by last movement; stalled projects visually flagged
-- [ ] ISC-31: Project detail view renders the event timeline newest-first with day/week grouping
-- [ ] ISC-32: Antecedent: timeline events render as readable narrative sentences (wrap-up voice), not raw commit hashes — spot-checked on a real project
-- [ ] ISC-33: Journey diagram renders per project — milestone path from first event to now, derived from events (kind=milestone/deploy/pivot)
-- [ ] ISC-34: Anti: Situation pages make zero requests to any Neon host (network tab clean)
+- [x] ISC-27: `GET /api/situation` returns portfolio JSON (projects + health + last event) with LIMIT caps
+- [x] ISC-28: `GET /api/situation/:slug` returns one project's card + events timeline + next list
+- [x] ISC-29: Sidebar shows "Situation" entry; `/situation` renders the portfolio: one card per project with Goal / Now / Next / Health
+- [x] ISC-30: Portfolio sorted by last movement; stalled projects visually flagged
+- [x] ISC-31: Project detail view renders the event timeline newest-first with day/week grouping
+- [x] ISC-32: Antecedent: timeline events render as readable narrative sentences (wrap-up voice), not raw commit hashes — spot-checked on a real project
+- [x] ISC-33: Journey diagram renders per project — milestone path from first event to now, derived from events (kind=milestone/deploy/pivot)
+- [x] ISC-34: Anti: Situation pages make zero requests to any Neon host (network tab clean)
 
 ### Anti-R1 guards (from CausalLoop analysis)
-- [ ] ISC-37: `/situation` renders `last_harvest` timestamp on the page itself — a dead harvester is visible at the point of consumption
-- [ ] ISC-38: Projects with zero harvested events render as a visible anomaly card, never a silent absence
-- [ ] ISC-39: Harvester prints per-source status (ok/fail/count) and a partial harvest exits non-zero — no silent source-skip
+- [x] ISC-37: `/situation` renders `last_harvest` timestamp on the page itself — a dead harvester is visible at the point of consumption
+- [x] ISC-38: Projects with zero harvested events render as a visible anomaly card, never a silent absence
+- [x] ISC-39: Harvester prints per-source status (ok/fail/count) and a partial harvest exits non-zero — no silent source-skip
 
 ### Ship
-- [ ] ISC-35: Deployed live via wrangler; `/situation` Interceptor-verified (screenshot, console clean) and Interceptor tabs closed after
-- [ ] ISC-36: Repo pushed to origin; memory + project docs updated (tickets memory marked demolished, resume pointer current)
+- [x] ISC-35: Deployed live via wrangler; `/situation` Interceptor-verified (screenshot, console clean) and Interceptor tabs closed after
+- [x] ISC-36: Repo pushed to origin; memory + project docs updated (tickets memory marked demolished, resume pointer current)
 
 ## Test Strategy
 
@@ -137,4 +137,38 @@ The dashboard contains zero ticket-system code, routes, tables, or PAI-side auto
 - 2026-06-11: Delegation floor show-your-math: surgical demolition in one repo + one settings.json — parallel write-agents would re-create the concurrent-edit conflicts memory warns about. Forge covers the second delegation slot as post-build auditor.
 - 2026-06-11: Tier E3 by classifier on both turns (first was a parse-failure fail-safe, second confirmed by real classification).
 - 2026-06-11: CausalLoop verdict — v3 was Fixes-That-Fail: every coverage-gap patch added always-on machinery with silent failure modes (R1 ratchet), while off-board health signals let detection lag weeks (R2 trust spiral). Guards adopted as ISC-37/38/39: staleness on the board, absence is loud, no silent source-skip. Any future real-time wrap-up hook is gated on end-to-end verified delivery.
+- 2026-06-11: Forge invoked per E3 auto-include — hard-blocked: ChatGPT-account codex quota exhausted until 2026-07-08. Forge verified independently, refused silent fallback, left clean workspace. Harvester written by primary instead; OPEN DECISION for Yaron: `codex login --api-key` switch (persistent, billed, re-routes Cato too) vs wait vs provision Anvil.
+- 2026-06-11: D1 `tickets`/`ticket_movements` dropped WITHOUT backup — intentional: both were derived mirrors of ISAs on PAI disk (the system of record); no original data lived there. agents.current_ticket_id column dropped first to clear the FK.
+- 2026-06-11: Advisor gap-check run post-deploy; all 6 checklist items closed with live evidence (voice feed alive in screenshots, requireUser on new routes, /tickets→/home verified, no dangling hook consumers).
 - 2026-06-11: Skipped EnterPlanMode despite E3 — Yaron explicitly approved demolition + build this turn ("we want to eradicate completely... let's start"), and plan-mode feedback memory reserves it for unapproved risky work.
+
+## Changelog
+
+- **conjectured:** a real-time hook mirror could keep the dashboard faithful to PAI work-items (v1–v3 of the ticket system).
+  **refuted by:** three independent silent failures (exec-bit no-op, unwired registration, Neon decommission) — the always-on patch chain generated the gaps it patched (CausalLoop R1, Fixes-That-Fail).
+  **learned:** for a fast-mutating solo-operator source, coarse-grained batch derivation with failure rendered at the point of consumption beats fine-grained real-time mirroring.
+  **criterion now:** ISC-37/38/39 — staleness on the board, absence is loud, no silent source-skip.
+
+## Verification
+
+- ISC-1..5: Bash rm + ls — "CLEAN: no ticket/stub files left"
+- ISC-6..7: rg zero hits; `bun -e JSON.parse` → "settings.json VALID"
+- ISC-8: `echo '{}' | bun ISASync.hook.ts` → `{"continue":true}` exit 0 after excision
+- ISC-9: rg sweep hooks/ → "HOOKS DIR FULLY CLEAN"; movements.ts deleted; PAI TOOLS/Pulse/prompts swept — no dangling consumers
+- ISC-10: launchctl clean, wrangler.toml no crons, Hetzner timers clean (ssh probe)
+- ISC-11..15: git rm of tickets/, functions/api/tickets/, sync-from-pai.ts, gen-seed.mjs; nav/routes/Layout edited
+- ISC-16: rg src/ functions/ scripts/ → only smoke.mjs (Clerk auth-ticket, different word sense — reviewed exempt)
+- ISC-17: typecheck + lint (0 errors) + build green at commit 839b602
+- ISC-18: live D1 sqlite_master → situation_* only, no ticket% tables
+- ISC-19: rg schema.sql → 0 hits
+- ISC-20: D1 REST verified 4 situation tables created
+- ISC-21..26: harvest run → 10 projects, 151 events (29 git + 57 work + 65 memory), 11 next items; second run identical counts (idempotent); health stored, observed on cards
+- ISC-27..31: live page render via Interceptor (real Chrome) — portfolio cards w/ health pills + sorted by movement; detail timeline day-grouped; screenshots /tmp/situation-{portfolio,detail}.png
+- ISC-32: memory-narrative events render as prose sentences on live cards (observed: NL Supermarkets "PHASE 3 list SHIPPED LIVE…")
+- ISC-33: journey SVG live — eval probe {journeySvg:true, stops:14} on /situation/nl-supermarkets + screenshot
+- ISC-34: `interceptor net log --filter neon` → [] (zero Neon requests)
+- ISC-35: deployed 51bc4f8c.my-jarvis-dashboard-yaron.pages.dev; verified at production URL; Interceptor tabs closed
+- ISC-36: origin/main = 64cdaf5 (push verified); memory files updated this session
+- ISC-37: "last harvest: 6/11/2026, 8:55 AM" rendered on /situation (screenshot)
+- ISC-38: anomaly-card code path verified by inspection; no zero-event project currently exists to observe live (all 10 harvested ≥1 event)
+- ISC-39: per-source status table in harvester stdout (observed both runs); failed-source→exit 1 path verified by inspection
