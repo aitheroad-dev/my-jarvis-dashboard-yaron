@@ -4,7 +4,7 @@ task: Eradicate v3 ticket system; build Situation Board replacement
 slug: situation-board
 effort: E3
 phase: complete
-progress: 39/39
+progress: 48/48
 mode: standard
 started: 2026-06-11T09:30:00+02:00
 updated: 2026-06-11T11:05:00+02:00
@@ -137,10 +137,23 @@ The dashboard contains zero ticket-system code, routes, tables, or PAI-side auto
 - 2026-06-11: Delegation floor show-your-math: surgical demolition in one repo + one settings.json — parallel write-agents would re-create the concurrent-edit conflicts memory warns about. Forge covers the second delegation slot as post-build auditor.
 - 2026-06-11: Tier E3 by classifier on both turns (first was a parse-failure fail-safe, second confirmed by real classification).
 - 2026-06-11: CausalLoop verdict — v3 was Fixes-That-Fail: every coverage-gap patch added always-on machinery with silent failure modes (R1 ratchet), while off-board health signals let detection lag weeks (R2 trust spiral). Guards adopted as ISC-37/38/39: staleness on the board, absence is loud, no silent source-skip. Any future real-time wrap-up hook is gated on end-to-end verified delivery.
+- 2026-06-11 (v2): Yaron reframed mid-day: situation page = day-to-day WORK (journal), per-project story belongs on the project pages. Forge quota returned same day; Forge audit (GPT-5.5) verdict "concerns" — demolition clean, harvester had 3 critical completeness gaps (all fixed in v2, see ISC-44..47). Audit also confirmed: no SQL injection, no XSS, PAI demolition clean. Full report: MEMORY/WORK/situation-board/forge-final.txt.
+- 2026-06-11 (v2): Timezone trap found live — memory events stamped T12:00Z are "future" at 09:30 CEST, so the naive future-filter ate today's work; fixed by comparing calendar dates, not instants.
 - 2026-06-11: Forge invoked per E3 auto-include — hard-blocked: ChatGPT-account codex quota exhausted until 2026-07-08. Forge verified independently, refused silent fallback, left clean workspace. Harvester written by primary instead; OPEN DECISION for Yaron: `codex login --api-key` switch (persistent, billed, re-routes Cato too) vs wait vs provision Anvil.
 - 2026-06-11: D1 `tickets`/`ticket_movements` dropped WITHOUT backup — intentional: both were derived mirrors of ISAs on PAI disk (the system of record); no original data lived there. agents.current_ticket_id column dropped first to clear the FK.
 - 2026-06-11: Advisor gap-check run post-deploy; all 6 checklist items closed with live evidence (voice feed alive in screenshots, requireUser on new routes, /tickets→/home verified, no dangling hook consumers).
 - 2026-06-11: Skipped EnterPlanMode despite E3 — Yaron explicitly approved demolition + build this turn ("we want to eradicate completely... let's start"), and plan-mode feedback memory reserves it for unapproved risky work.
+
+### v2 — Work Journal reframe (2026-06-11, same day)
+- [x] ISC-40: /situation is a day-grouped Work Journal across ALL streams (projects + standalone repos/sessions), not a project list
+- [x] ISC-41: "Moved today" + "Needs a look" pulse strip renders from live data
+- [x] ISC-42: Per-project story (health, Now/Next, journey diagram, timeline) renders on /projects/:slug above mission/goals
+- [x] ISC-43: Projects list shows Now / Health / Last movement joined from situation data; enrichment failure cannot blank the list
+- [x] ISC-44: Harvester ingests ISA Changelog/Decisions dated lines (Forge F2) and all unmapped streams under their own slugs (F3)
+- [x] ISC-45: All event timestamps UTC-normalized (F7); upsert moves remapped events (F4); write path guarded + reported (F6)
+- [x] ISC-46: Next-steps merge across memory files, URL-safe splitting (F1); memory-source failure never wipes situation_next (F5)
+- [x] ISC-47: Lines mentioning future dates are not events (calendar-date compare — today's work survives morning harvests); leading date prefixes stripped from titles
+- [x] ISC-48: Anti: /situation/:slug route removed; journal stream headers link to /projects/:slug via slug-containment resolution
 
 ## Changelog
 
@@ -172,3 +185,8 @@ The dashboard contains zero ticket-system code, routes, tables, or PAI-side auto
 - ISC-37: "last harvest: 6/11/2026, 8:55 AM" rendered on /situation (screenshot)
 - ISC-38: anomaly-card code path verified by inspection; no zero-event project currently exists to observe live (all 10 harvested ≥1 event)
 - ISC-39: per-source status table in harvester stdout (observed both runs); failed-source→exit 1 path verified by inspection
+
+- **conjectured (v2):** a portfolio of project cards answers "what's happening" (v1 Situation page).
+  **refuted by:** Yaron's first real use — the cards duplicated the Projects page and said nothing about the day-to-day; "it doesn't really give me any big benefits."
+  **learned:** the unit of the situation view is the DAY, not the project — "what did we work on today/yesterday" — and per-project story belongs with the project entity. Mapping gaps became a feature: standalone streams ARE his work, not noise to filter.
+  **criterion now:** ISC-40..48 (journal day-grouping, all-stream coverage, story on /projects/:slug).
