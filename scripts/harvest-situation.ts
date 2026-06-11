@@ -98,6 +98,8 @@ function stripMd(s: string): string {
     .replace(/`([^`]*)`/g, "$1")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^[-*>\s]+/, "")
+    .replace(/^[#\s]+/, "") // heading markers bleed ugly into card text
+    .replace(/^[^\p{L}\p{N}"'(]+/u, "") // leading emoji/symbol junk
     .trim();
 }
 
