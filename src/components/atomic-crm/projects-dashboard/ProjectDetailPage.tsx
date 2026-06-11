@@ -14,6 +14,19 @@ import {
   architectureT as T,
 } from "../blueprint/ArchitectureBlocks";
 import { BlockRenderer, type Block } from "../blueprint/BlockRenderer";
+import { type SituationEvent, relativeLabel } from "../situation/situation-shared";
+import { EventTimeline, HealthPill, JourneyDiagram } from "../situation/StoryBlocks";
+
+type ProjectStory = {
+  slug: string;
+  name: string;
+  goal: string | null;
+  now_text: string | null;
+  health: string;
+  last_activity: string | null;
+  next_steps: string[];
+  events: SituationEvent[];
+};
 
 type ProjectDetail = {
   id: string;
@@ -145,6 +158,25 @@ export function ProjectDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
+  // The project's living story — harvested situation data. Best-effort: a
+  // project with no harvested stream simply shows no story section.
+  const [story, setStory] = useState<ProjectStory | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!slug) return;
+    setStory(null);
+    (async () => {
+      try {
+        const res = await api(`/api/situation/${slug}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as ProjectStory;
+        if (!cancelled) setStory(data);
+      } catch { /* story is optional chrome */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   const recipe = useMemo(() => project ? buildRecipe(project) : null, [project]);
 
   return (
@@ -212,6 +244,45 @@ export function ProjectDetailPage() {
                 </span>
               </div>
             </div>
+
+            {story ? (
+              <div style={{ marginBottom: 40 }}>
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  margin: "0 0 12px 2px",
+                }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
+                    color: T.skyDark, textTransform: "uppercase",
+                  }}>
+                    00 — THE STORY
+                  </div>
+                  <HealthPill health={story.health} suffix={`last movement ${relativeLabel(story.last_activity)}`} />
+                </div>
+                {story.now_text || story.next_steps.length > 0 ? (
+                  <div style={{
+                    background: "#fff", border: `1px solid ${T.line}`, borderRadius: 12,
+                    padding: "14px 18px", marginBottom: 14, fontSize: 13, lineHeight: 1.6, color: T.ink2,
+                  }}>
+                    {story.now_text ? (
+                      <div><span style={{ fontWeight: 700, color: T.ink }}>Now: </span>{story.now_text}</div>
+                    ) : null}
+                    {story.next_steps.length > 0 ? (
+                      <div style={{ marginTop: story.now_text ? 8 : 0 }}>
+                        <span style={{ fontWeight: 700, color: T.ink }}>Next:</span>
+                        <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                          {story.next_steps.map((s, i) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                <JourneyDiagram events={story.events} />
+                <div style={{ marginTop: 14 }}>
+                  <EventTimeline events={story.events} maxDays={7} />
+                </div>
+              </div>
+            ) : null}
 
             {recipe ? (
               <BlockRenderer config={architectureConfig} blocks={recipe} />

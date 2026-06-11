@@ -7,7 +7,6 @@ import { ProjectDetailPage } from "../projects-dashboard/ProjectDetailPage";
 import { GoalsListPage } from "../goals/GoalsListPage";
 import { GoalDetailPage } from "../goals/GoalDetailPage";
 import { SituationPage } from "../situation/SituationPage";
-import { SituationDetailPage } from "../situation/SituationDetailPage";
 import { AgentsPage } from "../agents/AgentsPage";
 import { MemoryPage } from "../memory/MemoryPage";
 import { SkillsPage } from "../skills/SkillsPage";
@@ -57,9 +56,9 @@ export const CRM = () => (
       <Route path="/projects-list" element={<ProjectsListPage />} />
       <Route path="/projects/:slug" element={<ProjectDetailPage />} />
 
-      {/* Situation Board — portfolio of project stories (replaced the Kanban board, 2026-06-11). */}
+      {/* Situation — the Work Journal: day-by-day account of all work streams.
+          Per-project stories live on /projects/:slug (v2 reframe, 2026-06-11). */}
       <Route path="/situation" element={<SituationPage />} />
-      <Route path="/situation/:slug" element={<SituationDetailPage />} />
 
       {/* Agents (Structured). */}
       <Route path="/agents" element={<AgentsPage />} />

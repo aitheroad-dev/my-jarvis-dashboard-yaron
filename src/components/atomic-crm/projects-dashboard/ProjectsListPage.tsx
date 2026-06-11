@@ -8,6 +8,8 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useApi } from "@/lib/api";
+import { relativeLabel } from "../situation/situation-shared";
+import { HealthPill } from "../situation/StoryBlocks";
 import { architectureT as T } from "../blueprint/ArchitectureBlocks";
 import { SortableTable, RowLink, type ColumnDef } from "../blueprint/SortableTable";
 
@@ -20,6 +22,21 @@ type ProjectRow = {
   goal_count: number;
   created_at: string;
   updated_at: string;
+  // Joined client-side from /api/situation (harvested, optional).
+  health?: string;
+  last_activity?: string | null;
+  now_text?: string | null;
+};
+
+type SituationSummary = {
+  projects: {
+    slug: string;
+    name: string;
+    now_text: string | null;
+    health: string;
+    last_activity: string | null;
+    link_slug: string | null;
+  }[];
 };
 
 const STATUS_TONE: Record<ProjectRow["status"], { fg: string; bg: string; bd: string }> = {
@@ -45,34 +62,36 @@ function StatusPill({ status }: { status: ProjectRow["status"] }) {
 
 const COLUMNS: ColumnDef<ProjectRow>[] = [
   {
-    key: "slug", label: "Slug", width: "120px",
-    render: (p) => (
-      <code style={{
-        background: T.skySoft, color: T.accent,
-        fontFamily: "ui-monospace, Menlo, monospace",
-        fontSize: 12, padding: "2px 8px", borderRadius: 4,
-      }}>{p.slug}</code>
-    ),
-  },
-  {
-    key: "name", label: "Name",
+    key: "name", label: "Project", width: "220px",
     render: (p) => <RowLink to={`/projects/${p.slug}`}>{p.name}</RowLink>,
   },
   {
-    key: "mission", label: "Mission", sortable: false,
-    render: (p) => <span style={{ color: T.ink2 }}>{p.mission ?? "—"}</span>,
+    key: "now_text", label: "Now", sortable: false,
+    render: (p) => (
+      <span style={{ color: T.ink2, fontSize: 12.5, lineHeight: 1.45, display: "inline-block" }}>
+        {p.now_text ?? p.mission ?? "—"}
+      </span>
+    ),
   },
   {
-    key: "goal_count", label: "Goals", width: "80px",
+    key: "health", label: "Health", width: "110px",
+    render: (p) => p.health ? <HealthPill health={p.health} /> : <span style={{ color: T.ink3 }}>—</span>,
+  },
+  {
+    key: "last_activity", label: "Last movement", width: "130px",
+    render: (p) => (
+      <span style={{ color: T.ink2, fontSize: 12 }}>
+        {p.last_activity !== undefined ? relativeLabel(p.last_activity ?? null) : "—"}
+      </span>
+    ),
+  },
+  {
+    key: "goal_count", label: "Goals", width: "70px",
     render: (p) => <span style={{ color: T.ink2 }}>{p.goal_count}</span>,
   },
   {
     key: "status", label: "Status", width: "100px",
     render: (p) => <StatusPill status={p.status} />,
-  },
-  {
-    key: "updated_at", label: "Updated", width: "120px",
-    render: (p) => <span style={{ color: T.ink3, fontSize: 12 }}>{new Date(p.updated_at).toLocaleDateString()}</span>,
   },
 ];
 
@@ -85,10 +104,24 @@ export function ProjectsListPage() {
     let cancelled = false;
     (async () => {
       try {
+        // Projects are the spine; situation data is optional enrichment —
+        // a failed situation fetch must never blank the list.
         const res = await api("/api/projects");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as ProjectRow[];
-        if (!cancelled) setRows(data);
+        let situation: SituationSummary | null = null;
+        try {
+          const sres = await api("/api/situation");
+          if (sres.ok) situation = (await sres.json()) as SituationSummary;
+        } catch { /* enrichment only */ }
+        const enriched = data.map((p) => {
+          const s = situation?.projects.find(
+            (c) => c.link_slug === p.slug || c.slug === p.slug,
+          );
+          return s ? { ...p, health: s.health, last_activity: s.last_activity, now_text: s.now_text } : p;
+        });
+        enriched.sort((a, b) => (b.last_activity ?? "").localeCompare(a.last_activity ?? ""));
+        if (!cancelled) setRows(enriched);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
       }
@@ -121,7 +154,7 @@ export function ProjectsListPage() {
             fontSize: 16, color: T.ink2, lineHeight: 1.65,
             maxWidth: 720, margin: "0 auto",
           }}>
-            Coordinated bodies of work. Each project carries an ISA at project scope. Months-long horizon.
+            Coordinated bodies of work, sorted by movement — where each one stands and when it last moved.
           </p>
         </div>
 

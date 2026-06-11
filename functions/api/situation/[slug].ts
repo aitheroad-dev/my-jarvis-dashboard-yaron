@@ -17,21 +17,33 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   if (!slug) return new Response("missing slug", { status: 400 });
 
   const sql = getDb(env);
-  const rows = (await sql/* sql */ `
+  // Exact slug first; fall back to containment so dashboard project slugs that
+  // drifted from PROJECTS.md dir names still resolve (mji-max-security ↔
+  // max-security). Tables are tiny; LIKE is fine.
+  let rows = (await sql/* sql */ `
     SELECT slug, name, goal, now_text, health, last_activity
     FROM situation_projects WHERE slug = ${slug} LIMIT 1
   `) as Record<string, unknown>[];
+  if (rows.length === 0) {
+    rows = (await sql/* sql */ `
+      SELECT slug, name, goal, now_text, health, last_activity
+      FROM situation_projects
+      WHERE instr(${slug}, slug) > 0 OR instr(slug, ${slug}) > 0
+      ORDER BY length(slug) DESC LIMIT 1
+    `) as Record<string, unknown>[];
+  }
   if (rows.length === 0) return new Response("not found", { status: 404 });
+  const resolved = String(rows[0].slug);
 
   const events = (await sql/* sql */ `
     SELECT id, ts, kind, title, detail, source
-    FROM situation_events WHERE project_slug = ${slug}
+    FROM situation_events WHERE project_slug = ${resolved}
     ORDER BY ts DESC LIMIT 200
   `) as Record<string, unknown>[];
 
   const next = (await sql/* sql */ `
     SELECT position, text FROM situation_next
-    WHERE project_slug = ${slug} ORDER BY position LIMIT 10
+    WHERE project_slug = ${resolved} ORDER BY position LIMIT 10
   `) as { position: number; text: string }[];
 
   const meta = (await sql/* sql */ `
