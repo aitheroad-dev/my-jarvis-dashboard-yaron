@@ -30,13 +30,20 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       ? 50
       : Math.min(limitParsed, 1000);
 
+  // Audio retention: R2 objects expire after 90 days (lifecycle rule
+  // 'expire-audio-90d' on the voice bucket), so mask audio_url for older rows
+  // at read time — text stays forever, but we never hand the UI a play button
+  // whose object has aged out. '' is the established "no audio" value
+  // (ingest stores it for text-only clips).
+  const audioCutoff = new Date(Date.now() - 90 * 86_400_000).toISOString();
+
   const sql = getDb(env);
   const rows = (await sql/* sql */`
     SELECT
       id,
       agent_name,
       text_content,
-      audio_url,
+      CASE WHEN created_at >= ${audioCutoff} THEN audio_url ELSE '' END AS audio_url,
       title,
       duration_seconds,
       category,
