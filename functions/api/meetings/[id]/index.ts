@@ -61,9 +61,20 @@ async function syncTranscript(
     meeting.native_meeting_id,
   );
   if (!res.ok) return;
+  // Session boundary: Vexa scopes transcripts by platform+meeting code, so a
+  // reused Meet code (personal rooms!) can return segments from an earlier
+  // session. Only ingest segments that started after this row was created,
+  // with 60s grace for clock skew.
+  const sessionStart = meeting.started_at
+    ? Date.parse(meeting.started_at) - 60_000
+    : null;
   for (const seg of res.data) {
     const text = (seg.text ?? "").trim();
     if (!text) continue;
+    if (sessionStart !== null && seg.absolute_start_time) {
+      const t = Date.parse(seg.absolute_start_time);
+      if (Number.isFinite(t) && t < sessionStart) continue;
+    }
     // '' not NULL: SQLite treats NULLs as distinct in unique indexes, which
     // would let speakerless segments duplicate on every re-pull.
     const speaker = seg.speaker ?? "";
@@ -105,6 +116,23 @@ export const onRequestGet: PagesFunction<Env, "id"> = async ({ request, env, par
     `) as MeetingRow[];
     const meeting = meetings[0];
     if (!meeting) return json({ error: "not found" }, { status: 404 });
+
+    // Orphaned-bot safeguard: nothing legitimately runs 12h+. Flip it ended
+    // (best-effort bot stop) so a forgotten tab can't burn vendor hours.
+    if (
+      (meeting.status === "live" || meeting.status === "starting") &&
+      meeting.started_at &&
+      Date.now() - Date.parse(meeting.started_at) > 12 * 3600_000
+    ) {
+      if (vexaConfigured(env) && meeting.platform && meeting.native_meeting_id) {
+        await stopBot(env, meeting.platform as Platform, meeting.native_meeting_id);
+      }
+      await sql/* sql */ `
+        UPDATE meetings SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+         WHERE id = ${meeting.id}
+      `;
+      meeting.status = "ended";
+    }
 
     // Live/starting meetings refresh from the vendor on every view; ended and
     // failed meetings are served purely from D1 (the permanent record).

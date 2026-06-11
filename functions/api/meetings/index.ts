@@ -106,6 +106,23 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const sql = getDb(env);
+
+  // Idempotency: one bot per meeting. A double-click or retry must not send
+  // a second notetaker into the same call.
+  const existing = (await sql/* sql */ `
+    SELECT id FROM meetings
+     WHERE platform = ${parsed.platform}
+       AND native_meeting_id = ${parsed.nativeMeetingId}
+       AND status IN ('live','starting')
+     LIMIT 1
+  `) as { id: number }[];
+  if (existing[0]) {
+    return json(
+      { error: "a bot is already in this meeting", meeting_id: existing[0].id },
+      { status: 409 },
+    );
+  }
+
   let inserted: MeetingRow;
   try {
     const rows = (await sql/* sql */ `
