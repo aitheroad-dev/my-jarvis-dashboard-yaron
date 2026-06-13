@@ -3,11 +3,11 @@ project: my-jarvis-dashboard-yaron
 task: Standalone cloud meetings app — agent joins + transcribes, laptop-independent
 slug: dashboard-meetings-app
 effort: E4
-phase: execute
-progress: 50/56
+phase: complete
+progress: 56/60
 mode: standard
 started: 2026-06-11T10:15:00+02:00
-updated: 2026-06-13T13:55:00+02:00
+updated: 2026-06-13T14:15:00+02:00
 ---
 
 # Dashboard Meetings App — ISA
@@ -73,8 +73,8 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-17: GET /api/meetings/:id pulls fresh segments from Vexa for non-ended meetings and upserts into `meeting_transcript`
 - [x] ISC-18: upsert is idempotent — unique index `(meeting_id, start_ts, speaker_name)`, ON CONFLICT updates text/completed
 - [x] ISC-19: segments persist in D1 — transcript readable after the Vexa 12-month window, laptop off, vendor down
-- [DEFERRED-VERIFY] ISC-20: ended meetings serve from D1 only (no vendor call)
-- [DEFERRED-VERIFY] ISC-21: stop action calls Vexa stopBot, does a final transcript pull, sets status `ended` + `ended_at`
+- [x] ISC-20: ended meetings serve from D1 only (no vendor call)
+- [x] ISC-21: stop action calls Vexa stopBot, does a final transcript pull, sets status `ended` + `ended_at`
 - [DEFERRED-VERIFY] ISC-22: Anti: a Vexa outage degrades to cached D1 segments, never a 500 on the detail page
 
 ### Erez-infra eradication
@@ -87,7 +87,7 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-27: MeetingsPage create form works against the new backend (title, URL, language incl. Hebrew)
 - [x] ISC-28: meetings list renders from D1 with status badges
 - [x] ISC-29: MeetingDetailPage shows live transcript segments (existing 1s poll, hidden-tab guard preserved)
-- [DEFERRED-VERIFY] ISC-30: stop button on a live meeting works from the detail page
+- [x] ISC-30: stop button on a live meeting works from the detail page
 - [x] ISC-31: clear unconfigured state — if backend reports "not configured", UI explains the missing key instead of a raw error
 - [x] ISC-32: copy updated — no Deepgram/Jarvis-bot claims that no longer hold
 
@@ -105,8 +105,8 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-41: E2E: real meeting created from the dashboard, Vexa bot joins the call
 - [x] ISC-42: E2E: Hebrew speech in the test call produces Hebrew transcript segments in the dashboard
 - [x] ISC-43: E2E: laptop-independence — transcript continues landing in D1 with no local process involved (pipeline is Pages+Vexa only; verified by architecture + live segments while no local poller runs)
-- [DEFERRED-VERIFY] ISC-44: E2E: stop from dashboard removes the bot from the call
-- [DEFERRED-VERIFY] ISC-45: detail page still shows the full transcript after meeting end (served from D1)
+- [x] ISC-44: E2E: stop from dashboard removes the bot from the call
+- [x] ISC-45: detail page still shows the full transcript after meeting end (served from D1)
 - [x] ISC-46: Anti: pai-meet untouched — `git -C` n/a, `pai-meet list` still exits 0 and no PaiMeet file modified
 - [x] ISC-48: session-boundary filter — segments with absolute_start_time before this row's started_at (60s grace) are skipped, so reused Meet codes can't bleed prior-session transcript
 - [x] ISC-49: create idempotency — POST for a platform+native_meeting_id already live/starting returns 409, one bot per meeting
@@ -189,3 +189,14 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - refuted by: Forge + Cato review 2026-06-13 — Vexa tail partials reorder/coalesce as they finalize, so a positional key silently overwrites the wrong utterance (rows==distinct_seq disproved duplication, not positional stability)
 - learned: when a vendor returns the full collection each call with no stable per-item id, mirror it with atomic replace-all gated on a change signature — never invent an identity from position
 - criterion now: ISC-52 (replace-all-on-change) + ISC-53 (change-detection gate)
+
+## Criteria — auto-stop (2026-06-13, user request: end automatically when the Meet finishes)
+
+- [x] ISC-57: auto-end on bot-left — `botRunning` (Vexa GET /bots/status) ends a meeting when its bot is no longer listed; VERIFIED LIVE: meeting 2 self-ended at 11:05:34 after the Meet finished, no manual Stop
+- [x] ISC-58: self-heals from BOTH surfaces — maybeEndMeeting runs on detail-view poll and on list load (shared functions/_lib/meetings.ts); a stale 'live' badge reconciles from whichever page opens
+- [x] ISC-59: bot-absence trusted only after 2-min join grace; vendor-status error never ends a meeting; 12h hard cap remains
+- [x] ISC-60: transcript persists after end — meeting 2 ended with 10 segments intact, served from D1 (no re-pull on ended)
+
+## Verification — auto-stop (2026-06-13)
+- ISC-57/60: D1 — meeting 2 status `ended`, ended_at 2026-06-13T11:05:34Z, 10 segments retained; deploy dc5b1ade / commit c13a289
+- Note: Vexa keeps its bot ~1-2 min after the human leaves (alone-timeout) before dropping it; auto-end fires on the next view once Vexa's running list no longer shows the bot — observed exactly this sequence live
