@@ -200,3 +200,54 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 ## Verification — auto-stop (2026-06-13)
 - ISC-57/60: D1 — meeting 2 status `ended`, ended_at 2026-06-13T11:05:34Z, 10 segments retained; deploy dc5b1ade / commit c13a289
 - Note: Vexa keeps its bot ~1-2 min after the human leaves (alone-timeout) before dropping it; auto-end fires on the next view once Vexa's running list no longer shows the bot — observed exactly this sequence live
+
+---
+
+# Calendar Auto-Join — ISA extension (2026-06-13)
+
+## Problem
+Meetings still require a manual "New meeting" + paste-link in the dashboard. Yaron wants the bot to join scheduled meetings on its own, reading the link from his calendar, laptop off.
+
+## Vision
+Connect Google Calendar once. Upcoming meetings with a Meet link appear in the dashboard; flip "auto-join" on the ones that matter. When such a meeting starts, the notetaker is already there — nobody created anything, nobody clicked join.
+
+## Out of Scope (v1)
+- Auto-joining EVERY meeting (chosen: opt-in per meeting).
+- Zoom/Teams calendar links (v1 = Google Meet links on Google Calendar; extend later).
+- Multi-account calendar (single owner's primary calendar first).
+
+## Constraints
+- Cloudflare-only: Pages Functions + D1 + a cron Worker (Pages has no cron). Worker is a thin per-minute trigger; dispatch logic lives in Pages Functions beside the existing Vexa/D1 code.
+- Google refresh token encrypted at rest (AES-GCM, key in Pages secret).
+- Reuses the existing meetings pipeline (createBot, maybeEndMeeting, replace-all transcript).
+- Owner-only (requireUser) on all UI endpoints; the dispatch endpoint authes via a shared CRON_SECRET, not user session.
+
+## Goal
+A meeting on Yaron's Google Calendar that he flagged auto-join gets a Vexa bot dispatched at its start time by a Cloudflare cron Worker, with zero manual action and no local machine.
+
+## Criteria
+- [ ] CAL-1: GET /api/calendar reports connection status (connected email | not connected)
+- [ ] CAL-2: GET /api/calendar/connect redirects to Google consent (calendar.readonly + calendar.events)
+- [ ] CAL-3: GET /api/calendar/callback exchanges code, stores ENCRYPTED refresh token + email in D1
+- [ ] CAL-4: POST /api/calendar/disconnect clears the connection
+- [ ] CAL-5: GET /api/calendar/events lists upcoming events that have a Meet link, newest-window first, with auto_join flag
+- [ ] CAL-6: events sync resolves each Meet link to platform+native_meeting_id (reuses parseMeetingUrl)
+- [ ] CAL-7: POST /api/calendar/events/:gid/autojoin toggles the opt-in flag, persisted in D1
+- [ ] CAL-8: POST /api/calendar/dispatch (CRON_SECRET auth) dispatches bots for auto_join events starting within the window, not already dispatched
+- [ ] CAL-9: dispatch is idempotent — an event dispatched once is never double-dispatched (dispatched_meeting_id set; one-bot-per-code guard)
+- [ ] CAL-10: dispatch creates a meetings row + Vexa bot via the existing createBot path
+- [ ] CAL-11: cron Worker hits /api/calendar/dispatch every minute with the shared secret
+- [ ] CAL-12: Anti: /api/calendar/dispatch without the correct CRON_SECRET returns 401
+- [ ] CAL-13: Anti: a meeting NOT flagged auto_join is never dispatched
+- [ ] CAL-14: Anti: Google token refresh failure degrades gracefully (status shows reconnect needed; no crash)
+- [ ] CAL-15: UI — Connect Calendar card (our own, not the deleted Erez one) shows status + connect/disconnect
+- [ ] CAL-16: UI — upcoming meetings list with per-meeting auto-join toggle
+- [ ] CAL-17: typecheck + lint + build green
+- [ ] CAL-18: D1 migration applied live (calendar_connection + calendar_events tables)
+- [ ] CAL-19: deployed; cron Worker deployed with crons trigger
+- [ ] CAL-20: E2E — a calendar meeting flagged auto-join gets the bot at start time (live)
+
+## Decisions
+- 2026-06-13 — Vexa has NO native calendar auto-join (verified docs); building it. Opt-in per meeting + CF Worker cron (Yaron's calls).
+- 2026-06-13 — Cron Worker is a dumb trigger: fetch /api/calendar/dispatch with CRON_SECRET. Keeps all Google/Vexa/D1 logic in the dashboard repo (one place), Worker stays ~15 lines. Avoids duplicating creds/logic into a second deployable.
+- 2026-06-13 — Refresh token AES-GCM encrypted at rest (long-lived calendar access); key = Pages secret CAL_TOKEN_KEY.
