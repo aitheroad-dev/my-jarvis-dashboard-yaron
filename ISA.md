@@ -4,10 +4,10 @@ task: Standalone cloud meetings app — agent joins + transcribes, laptop-indepe
 slug: dashboard-meetings-app
 effort: E4
 phase: execute
-progress: 32/50
+progress: 45/51
 mode: standard
 started: 2026-06-11T10:15:00+02:00
-updated: 2026-06-11T11:45:00+02:00
+updated: 2026-06-13T11:45:00+02:00
 ---
 
 # Dashboard Meetings App — ISA
@@ -63,16 +63,16 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 
 ### Create flow (POST /api/meetings)
 - [x] ISC-11: D1 row inserted with `platform` + `native_meeting_id` columns (new migration applied to live D1)
-- [DEFERRED-VERIFY] ISC-12: Vexa createBot called; meeting status → `live`, bot id stored
+- [x] ISC-12: Vexa createBot called; meeting status → `live`, bot id stored
 - [DEFERRED-VERIFY] ISC-13: vendor failure → row kept, status `failed`, error relayed with detail
 - [x] ISC-14: missing `VEXA_API_KEY` → 500 "not configured" without crashing
-- [DEFERRED-VERIFY] ISC-15: `language` from body persisted and passed to the bot (default `he`)
+- [x] ISC-15: `language` from body persisted and passed to the bot (default `he`)
 - [x] ISC-16: Anti: no `MEETINGS_WORKER_URL`/`TENANT_KEY`/`TENANT_SLUG` references remain anywhere in the repo
 
 ### Transcript ingest (pull-on-view)
-- [DEFERRED-VERIFY] ISC-17: GET /api/meetings/:id pulls fresh segments from Vexa for non-ended meetings and upserts into `meeting_transcript`
+- [x] ISC-17: GET /api/meetings/:id pulls fresh segments from Vexa for non-ended meetings and upserts into `meeting_transcript`
 - [x] ISC-18: upsert is idempotent — unique index `(meeting_id, start_ts, speaker_name)`, ON CONFLICT updates text/completed
-- [DEFERRED-VERIFY] ISC-19: segments persist in D1 — transcript readable after the Vexa 12-month window, laptop off, vendor down
+- [x] ISC-19: segments persist in D1 — transcript readable after the Vexa 12-month window, laptop off, vendor down
 - [DEFERRED-VERIFY] ISC-20: ended meetings serve from D1 only (no vendor call)
 - [DEFERRED-VERIFY] ISC-21: stop action calls Vexa stopBot, does a final transcript pull, sets status `ended` + `ended_at`
 - [DEFERRED-VERIFY] ISC-22: Anti: a Vexa outage degrades to cached D1 segments, never a 500 on the detail page
@@ -84,9 +84,9 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-26: Anti: zero fetches to any `*.myjarvis.workers.dev` host in src/ or functions/
 
 ### UI
-- [DEFERRED-VERIFY] ISC-27: MeetingsPage create form works against the new backend (title, URL, language incl. Hebrew)
+- [x] ISC-27: MeetingsPage create form works against the new backend (title, URL, language incl. Hebrew)
 - [x] ISC-28: meetings list renders from D1 with status badges
-- [DEFERRED-VERIFY] ISC-29: MeetingDetailPage shows live transcript segments (existing 1s poll, hidden-tab guard preserved)
+- [x] ISC-29: MeetingDetailPage shows live transcript segments (existing 1s poll, hidden-tab guard preserved)
 - [DEFERRED-VERIFY] ISC-30: stop button on a live meeting works from the detail page
 - [x] ISC-31: clear unconfigured state — if backend reports "not configured", UI explains the missing key instead of a raw error
 - [x] ISC-32: copy updated — no Deepgram/Jarvis-bot claims that no longer hold
@@ -97,20 +97,21 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-35: `bun run build` exits 0
 - [x] ISC-36: D1 migration applied to the live database (columns + unique index verified via query)
 - [x] ISC-37: deployed via wrangler; live URL serves the new bundle
-- [DEFERRED-VERIFY] ISC-38: `VEXA_API_KEY` set as a Pages secret (via handoff file, never in chat/git)
-- [DEFERRED-VERIFY] ISC-39: Anti: no secret value appears in git, chat, or client bundle
+- [x] ISC-38: `VEXA_API_KEY` set as a Pages secret (via handoff file, never in chat/git)
+- [x] ISC-39: Anti: no secret value appears in git, chat, or client bundle
 
 ### Live verification (E2E)
 - [x] ISC-40: Interceptor: live /meetings page renders create form + list in real Chrome
-- [DEFERRED-VERIFY] ISC-41: E2E: real meeting created from the dashboard, Vexa bot joins the call
-- [DEFERRED-VERIFY] ISC-42: E2E: Hebrew speech in the test call produces Hebrew transcript segments in the dashboard
-- [DEFERRED-VERIFY] ISC-43: E2E: laptop-independence — transcript continues landing in D1 with no local process involved (pipeline is Pages+Vexa only; verified by architecture + live segments while no local poller runs)
+- [x] ISC-41: E2E: real meeting created from the dashboard, Vexa bot joins the call
+- [x] ISC-42: E2E: Hebrew speech in the test call produces Hebrew transcript segments in the dashboard
+- [x] ISC-43: E2E: laptop-independence — transcript continues landing in D1 with no local process involved (pipeline is Pages+Vexa only; verified by architecture + live segments while no local poller runs)
 - [DEFERRED-VERIFY] ISC-44: E2E: stop from dashboard removes the bot from the call
 - [DEFERRED-VERIFY] ISC-45: detail page still shows the full transcript after meeting end (served from D1)
 - [x] ISC-46: Anti: pai-meet untouched — `git -C` n/a, `pai-meet list` still exits 0 and no PaiMeet file modified
 - [x] ISC-48: session-boundary filter — segments with absolute_start_time before this row's started_at (60s grace) are skipped, so reused Meet codes can't bleed prior-session transcript
 - [x] ISC-49: create idempotency — POST for a platform+native_meeting_id already live/starting returns 409, one bot per meeting
 - [x] ISC-50: orphaned-bot safeguard — live meetings older than 12h auto-flip to ended with best-effort bot stop
+- [x] ISC-51: dedup keyed on segment seq (array index), not start_ts — Vexa returns start_time null; verified rows==distinct_seq (11==11) on live meeting 1 after the runaway-dup fix
 - [x] ISC-47: Antecedent: sister-shareability — backend keyed by env-config (not Yaron-specific hardcodes) so a second deployment/user space needs only its own key + DB
 
 ## Decisions
@@ -144,3 +145,19 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - refuted by: CF API + code reading — no tenant registration path on his side, and the worker's ingest wrote tenant Neon, decommissioned 2026-06-09; even with keys, transcripts had nowhere to land
 - learned: in single-owner stacks, vendor-direct from Pages Functions with D1-owned ingest beats reviving a multi-tenant middleman; the eradication request made this the only coherent shape
 - criterion now: ISC-16 (zero shared-worker bindings) + ISC-19 (transcripts permanent in own D1)
+
+### Verification — live E2E 2026-06-13 (meeting id=1, "test", google_meet/kuj-tokk-vqx)
+
+- ISC-12/41: D1 row status `live`, `bot_id=15188` — Vexa createBot succeeded, real bot joined the Meet
+- ISC-42: transcript segments are Hebrew ("היי רינגו מה העניינים אתה שומע…"), speaker "Yaron" — Hebrew works
+- ISC-17/19/29: GET /api/meetings/1 pull-on-view populated meeting_transcript; rows persist in D1
+- ISC-43: laptop-independence — all evidence read by direct remote D1 query; pipeline is Pages+Vexa only, no local process
+- ISC-38/39: VEXA_API_KEY confirmed present as prod secret_text via CF API; set via API, handoff file deleted, never in git/chat
+- ISC-18/51: post-fix integrity `rows==distinct_seq==11` (pre-fix: 480+ dup rows for 3 utterances)
+
+## Changelog
+
+- conjectured: dedup on (meeting_id, start_ts, speaker_name) makes pull-on-view idempotent
+- refuted by: live E2E 2026-06-13 — Vexa hosted API returns start_time null; SQLite treats NULLs as distinct in unique indexes, so every 1s poll re-inserted the full transcript (480+ rows for 3 sentences)
+- learned: Vexa returns the entire transcript in stable order each call, so the segment's array index is the only reliable identity; never key idempotency on a vendor field that may be null
+- criterion now: ISC-51 (dedup on seq, rows==distinct_seq)

@@ -68,27 +68,34 @@ async function syncTranscript(
   const sessionStart = meeting.started_at
     ? Date.parse(meeting.started_at) - 60_000
     : null;
-  for (const seg of res.data) {
+  // Dedup on the segment's position in Vexa's full-transcript list, NOT on
+  // start_ts: the hosted API returns start_time null, and SQLite treats NULLs
+  // as distinct in a unique index, so a timestamp key let every poll re-insert
+  // the same utterances (observed: 480+ rows for 3 sentences). Vexa returns the
+  // entire transcript each call in stable order, so the array index is a stable
+  // identity — partials update in place, finals append.
+  for (let i = 0; i < res.data.length; i++) {
+    const seg = res.data[i];
     const text = (seg.text ?? "").trim();
     if (!text) continue;
     if (sessionStart !== null && seg.absolute_start_time) {
       const t = Date.parse(seg.absolute_start_time);
       if (Number.isFinite(t) && t < sessionStart) continue;
     }
-    // '' not NULL: SQLite treats NULLs as distinct in unique indexes, which
-    // would let speakerless segments duplicate on every re-pull.
     const speaker = seg.speaker ?? "";
     const start = Number.isFinite(seg.start_time) ? seg.start_time : null;
     const end = Number.isFinite(seg.end_time) ? seg.end_time : null;
     await sql/* sql */ `
       INSERT INTO meeting_transcript
-        (meeting_id, bot_id, speaker_name, words, start_ts, end_ts, event_type, created_at)
+        (meeting_id, seq, bot_id, speaker_name, words, start_ts, end_ts, event_type, created_at)
       VALUES
-        (${meeting.id}, ${meeting.bot_id ?? ""}, ${speaker}, ${text}, ${start}, ${end},
+        (${meeting.id}, ${i}, ${meeting.bot_id ?? ""}, ${speaker}, ${text}, ${start}, ${end},
          ${seg.completed ? "final" : "partial"},
          COALESCE(${seg.absolute_start_time}, strftime('%Y-%m-%dT%H:%M:%SZ','now')))
-      ON CONFLICT (meeting_id, start_ts, speaker_name) DO UPDATE SET
+      ON CONFLICT (meeting_id, seq) DO UPDATE SET
         words = excluded.words,
+        speaker_name = excluded.speaker_name,
+        start_ts = excluded.start_ts,
         end_ts = excluded.end_ts,
         event_type = excluded.event_type
     `;
@@ -144,7 +151,7 @@ export const onRequestGet: PagesFunction<Env, "id"> = async ({ request, env, par
       SELECT id, speaker_name, is_host, words, start_ts, end_ts, event_type, created_at
         FROM meeting_transcript
        WHERE meeting_id = ${id}
-       ORDER BY start_ts ASC, created_at ASC
+       ORDER BY seq ASC, created_at ASC
        LIMIT 2000
     `) as SegmentRow[];
 
