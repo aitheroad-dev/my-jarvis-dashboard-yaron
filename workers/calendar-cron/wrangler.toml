@@ -1,0 +1,20 @@
+name = "my-jarvis-calendar-cron"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+
+# Fire every minute; the handler dispatches bots for opt-in meetings whose
+# start time has arrived. Shares the dashboard's D1 + the same _lib code.
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mjd-yaron-db"
+database_id = "bede39da-5d58-4a2d-9198-89f9f6e2804c"
+
+[vars]
+VEXA_API_BASE = "https://api.cloud.vexa.ai"
+
+# Secrets set out-of-band (wrangler secret / API), never committed:
+#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CAL_TOKEN_KEY, VEXA_API_KEY, TRIGGER_SECRET

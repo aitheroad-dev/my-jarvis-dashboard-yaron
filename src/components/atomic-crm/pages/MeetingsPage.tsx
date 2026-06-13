@@ -34,6 +34,215 @@ type Meeting = {
   created_at: string;
 };
 
+type CalStatus = { configured: boolean; connected: boolean; email?: string | null };
+type CalEvent = {
+  google_event_id: string;
+  title: string;
+  start_time: string | null;
+  meeting_url: string | null;
+  platform: string | null;
+  auto_join: number;
+  dispatched_meeting_id: number | null;
+};
+
+function fmtWhen(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Google Calendar connection + opt-in auto-join. Connect once; flip the toggle
+ * on the meetings you want the bot to join automatically at their start time.
+ */
+function CalendarSection() {
+  const api = useApi();
+  const [status, setStatus] = useState<CalStatus | null>(null);
+  const [events, setEvents] = useState<CalEvent[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+
+  const loadStatus = useCallback(async () => {
+    try {
+      const res = await api("/api/calendar");
+      if (res.ok) setStatus((await res.json()) as CalStatus);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+  }, [api]);
+
+  const loadEvents = useCallback(async () => {
+    try {
+      const res = await api("/api/calendar/events");
+      if (!res.ok) return;
+      const data = (await res.json()) as { connected: boolean; events: CalEvent[] };
+      setEvents(data.events ?? []);
+    } catch {
+      /* leave last-known list */
+    }
+  }, [api]);
+
+  useEffect(() => {
+    void loadStatus();
+  }, [loadStatus]);
+  useEffect(() => {
+    if (status?.connected) void loadEvents();
+  }, [status?.connected, loadEvents]);
+
+  const toggle = async (gid: string, on: boolean) => {
+    setEvents((evs) =>
+      evs.map((e) => (e.google_event_id === gid ? { ...e, auto_join: on ? 1 : 0 } : e)),
+    );
+    try {
+      await api(`/api/calendar/events/${encodeURIComponent(gid)}`, {
+        method: "POST",
+        body: JSON.stringify({ auto_join: on }),
+      });
+    } catch {
+      void loadEvents(); // revert to server truth on failure
+    }
+  };
+
+  const disconnect = async () => {
+    if (!confirm("Disconnect Google Calendar? Past transcripts are kept.")) return;
+    await api("/api/calendar", { method: "POST" });
+    setEvents([]);
+    void loadStatus();
+  };
+
+  if (!status) return null;
+  if (!status.configured) return null; // calendar not wired on this deployment
+
+  return (
+    <div
+      style={{
+        padding: 20,
+        background: T.white,
+        border: `1px solid ${T.line}`,
+        borderRadius: 12,
+        marginBottom: 24,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              color: T.peachDark,
+              textTransform: "uppercase",
+              marginBottom: 6,
+            }}
+          >
+            Google Calendar
+          </div>
+          {status.connected ? (
+            <div style={{ fontSize: 14.5, color: T.ink2 }}>
+              Connected · <strong style={{ color: T.ink }}>{status.email}</strong> — flip a
+              meeting on and the notetaker joins it automatically.
+            </div>
+          ) : (
+            <div style={{ fontSize: 14, color: T.ink2 }}>
+              Connect once. Then choose which upcoming meetings the bot should join on its own.
+            </div>
+          )}
+        </div>
+        {status.connected ? (
+          <button
+            type="button"
+            onClick={disconnect}
+            style={{
+              padding: "8px 16px",
+              background: T.white,
+              color: T.ink2,
+              border: `1px solid ${T.line}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: FONT,
+              cursor: "pointer",
+            }}
+          >
+            Disconnect
+          </button>
+        ) : (
+          <a
+            href="/api/calendar/connect"
+            style={{
+              padding: "10px 18px",
+              background: T.peachDark,
+              color: T.white,
+              border: `1px solid ${T.peachDark}`,
+              borderRadius: 8,
+              fontSize: 13.5,
+              fontWeight: 600,
+              fontFamily: FONT,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Connect Google Calendar
+          </a>
+        )}
+      </div>
+
+      {err && <div style={{ fontSize: 13, color: T.red, marginTop: 10 }}>{err}</div>}
+
+      {status.connected && (
+        <div style={{ marginTop: 18 }}>
+          {events.length === 0 ? (
+            <div style={{ fontSize: 13.5, color: T.ink3 }}>
+              No upcoming meetings with a Meet link in the next 24 hours.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {events.map((e) => (
+                <div
+                  key={e.google_event_id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto",
+                    gap: 12,
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    background: T.bg,
+                    border: `1px solid ${T.line}`,
+                    borderRadius: 10,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink }}>{e.title}</div>
+                    <div style={{ fontSize: 12.5, color: T.ink3 }}>
+                      {fmtWhen(e.start_time)}
+                      {e.dispatched_meeting_id ? " · bot dispatched" : ""}
+                    </div>
+                  </div>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <span style={{ fontSize: 12.5, color: e.auto_join ? T.green : T.ink3, fontWeight: 600 }}>
+                      {e.auto_join ? "Auto-join on" : "Auto-join"}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={e.auto_join === 1}
+                      onChange={(ev) => void toggle(e.google_event_id, ev.target.checked)}
+                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: T.peachDark }}
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; fg: string; label: string }> = {
     live: { bg: T.greenSoft, fg: T.green, label: "Live" },
@@ -272,6 +481,8 @@ export function MeetingsPage() {
             {showForm ? "Cancel" : "+ New meeting"}
           </button>
         </div>
+
+        <CalendarSection />
 
         {!configured && (
           <div
