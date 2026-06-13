@@ -4,10 +4,10 @@ task: Standalone cloud meetings app — agent joins + transcribes, laptop-indepe
 slug: dashboard-meetings-app
 effort: E4
 phase: execute
-progress: 45/51
+progress: 49/56
 mode: standard
 started: 2026-06-11T10:15:00+02:00
-updated: 2026-06-13T11:45:00+02:00
+updated: 2026-06-13T13:30:00+02:00
 ---
 
 # Dashboard Meetings App — ISA
@@ -111,7 +111,7 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-48: session-boundary filter — segments with absolute_start_time before this row's started_at (60s grace) are skipped, so reused Meet codes can't bleed prior-session transcript
 - [x] ISC-49: create idempotency — POST for a platform+native_meeting_id already live/starting returns 409, one bot per meeting
 - [x] ISC-50: orphaned-bot safeguard — live meetings older than 12h auto-flip to ended with best-effort bot stop
-- [x] ISC-51: dedup keyed on segment seq (array index), not start_ts — Vexa returns start_time null; verified rows==distinct_seq (11==11) on live meeting 1 after the runaway-dup fix
+- [ ] ISC-51: [SUPERSEDED 2026-06-13 — seq-positional dedup replaced by replace-all-on-change; see ISC-52..55] dedup keyed on segment seq (array index), not start_ts — Vexa returns start_time null; verified rows==distinct_seq (11==11) on live meeting 1 after the runaway-dup fix
 - [x] ISC-47: Antecedent: sister-shareability — backend keyed by env-config (not Yaron-specific hardcodes) so a second deployment/user space needs only its own key + DB
 
 ## Decisions
@@ -168,3 +168,24 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - Empirical check: `absolute_start_time` IS populated (microsecond ISO, spread across meeting); only `start_time` is null. So the session-boundary privacy filter (Forge F5) is live, not dead — reused-Meet-code protection works.
 - **Fix decided:** whole-transcript **replace-all on change** — gate each pull on a payload signature (skip when unchanged → kills Forge F2 write-amplification: ~2.1M writes/hr meeting → ~1/utterance), and when changed do an **atomic `env.DB.batch` delete-all+insert-all** (immune to reorder/merge/shrink → fixes F1, no orphan tails). Concurrency-safe via D1 batch atomicity + client in-flight guard (F3).
 - Also fixing: auto-end on no-activity (F6), Stop button for `starting` + stale-starting flip (F4), strip Zoom `pwd` from stored/echoed URL (F8 passcode), Teams id char-cap (F8), stale "MeetingDO/5s" comments (cross-cutting). F7 (stop is code-addressed not bot-addressed) = documented, no change.
+
+## Criteria — post-review hardening (2026-06-13)
+
+- [x] ISC-52: transcript ingest is replace-all-on-change (atomic env.DB.batch delete+insert) — immune to Vexa tail re-segmentation; verified by construction + typecheck/lint/build green at 617f32d
+- [x] ISC-53: change-detection gate — syncTranscript skips all writes when payload signature unchanged (kills 1s-poll write amplification)
+- [x] ISC-54: auto-end on no-activity — VERIFIED LIVE: meeting 1 self-flipped to `ended` past the 20-min threshold and stopBot was invoked (lingering bot stopped)
+- [x] ISC-55: Zoom `pwd` stripped from stored/echoed meeting_url (redactMeetingUrl); Teams id length-capped
+- [ ] ISC-56: [DEFERRED-VERIFY E2E-VEXA-002] replace-all populates a NEW live meeting with zero duplication under the new code (meeting 1 ended before re-pull; needs one fresh test call)
+
+## Verification — post-review (2026-06-13)
+
+- ISC-54: D1 query — meeting 1 status `ended`, rows 0 (ended serves from D1, no re-pull); auto-end path ran stopBot + UPDATE
+- ISC-52/53/55: typecheck 0 errors, lint clean, build ✓, deployed 41d15cb9 / commit 617f32d; migration 004 applied live (last_segment_sig + last_activity_at columns, seq unique index dropped)
+- Forge findings disposition: F1 fixed (ISC-52), F2 fixed (ISC-53), F3 fixed (client in-flight guard), F4 fixed (Stop for starting + auto-end), F5 confirmed-working (absolute_start_time populated), F6 fixed+verified (ISC-54), F7 documented, F8 fixed (ISC-55 + Teams cap)
+
+## Changelog
+
+- conjectured: array-index (seq) is a stable per-segment identity for idempotent upsert
+- refuted by: Forge + Cato review 2026-06-13 — Vexa tail partials reorder/coalesce as they finalize, so a positional key silently overwrites the wrong utterance (rows==distinct_seq disproved duplication, not positional stability)
+- learned: when a vendor returns the full collection each call with no stable per-item id, mirror it with atomic replace-all gated on a change signature — never invent an identity from position
+- criterion now: ISC-52 (replace-all-on-change) + ISC-53 (change-detection gate)
