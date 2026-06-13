@@ -3,22 +3,9 @@ import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env as AuthEnv } from "../../_lib/auth";
 import { createBot, vexaConfigured, type VexaEnv } from "../../_lib/vexa";
 import { parseMeetingUrl, redactMeetingUrl } from "../../_lib/meeting-url";
+import { maybeEndMeeting, type MeetingRow } from "../../_lib/meetings";
 
 interface Env extends AuthEnv, VexaEnv {}
-
-type MeetingRow = {
-  id: number;
-  title: string;
-  meeting_url: string;
-  platform: string | null;
-  native_meeting_id: string | null;
-  bot_id: string | null;
-  status: string;
-  summary: string | null;
-  started_at: string | null;
-  ended_at: string | null;
-  created_at: string;
-};
 
 /** GET /api/meetings — list meetings, newest first. */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
@@ -46,6 +33,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
        ORDER BY created_at DESC
        LIMIT ${limit}
     `) as MeetingRow[];
+
+    // Self-heal stale 'live'/'starting' rows: if the Meet has ended (Vexa bot
+    // gone), flip them here so just opening the list reflects reality without a
+    // manual Stop. changed=false → maybeEndMeeting probes bot status. Bounded to
+    // the few non-terminal rows; vendor errors leave status untouched.
+    await Promise.all(
+      rows.map(async (m) => {
+        if (m.status === "live" || m.status === "starting") {
+          m.status = await maybeEndMeeting(env, sql, m, false);
+        }
+      }),
+    );
+
     return json({ meetings: rows, configured: vexaConfigured(env) });
   } catch (err) {
     return json(

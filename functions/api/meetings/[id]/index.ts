@@ -9,29 +9,9 @@ import {
   type VexaEnv,
   type VexaSegment,
 } from "../../../_lib/vexa";
-
-// A live meeting with no new transcript for this long is treated as over and
-// auto-ended (backstop for "nobody clicked Stop"). 12h is the hard ceiling.
-const NO_ACTIVITY_END_MS = 20 * 60_000;
-const HARD_CAP_MS = 12 * 3600_000;
+import { maybeEndMeeting, type MeetingRow } from "../../../_lib/meetings";
 
 interface Env extends AuthEnv, VexaEnv {}
-
-type MeetingRow = {
-  id: number;
-  title: string;
-  meeting_url: string;
-  platform: string | null;
-  native_meeting_id: string | null;
-  bot_id: string | null;
-  status: string;
-  summary: string | null;
-  started_at: string | null;
-  ended_at: string | null;
-  created_at: string;
-  last_segment_sig: string | null;
-  last_activity_at: string | null;
-};
 
 type SegmentRow = {
   id: number;
@@ -74,6 +54,8 @@ function transcriptSig(segs: VexaSegment[]): string {
 interface SyncResult {
   /** epoch ms of the last time this meeting's transcript actually changed */
   lastActivityAt: number | null;
+  /** did this pull write new transcript? (bot is obviously present if so) */
+  changed: boolean;
 }
 
 /**
@@ -90,10 +72,10 @@ async function syncTranscript(
 ): Promise<SyncResult> {
   const priorActivity = meeting.last_activity_at ? Date.parse(meeting.last_activity_at) : null;
   if (!vexaConfigured(env) || !meeting.platform || !meeting.native_meeting_id) {
-    return { lastActivityAt: priorActivity };
+    return { lastActivityAt: priorActivity, changed: false };
   }
   const res = await fetchTranscript(env, meeting.platform as Platform, meeting.native_meeting_id);
-  if (!res.ok) return { lastActivityAt: priorActivity };
+  if (!res.ok) return { lastActivityAt: priorActivity, changed: false };
 
   // Session boundary: Vexa keys transcripts by platform+meeting code, so a
   // reused Meet code (personal rooms) can return a prior session's segments.
@@ -112,7 +94,7 @@ async function syncTranscript(
   const sig = transcriptSig(kept);
   if (sig === meeting.last_segment_sig) {
     // No new transcript since last pull — nothing to write.
-    return { lastActivityAt: priorActivity };
+    return { lastActivityAt: priorActivity, changed: false };
   }
 
   const nowIso = new Date().toISOString();
@@ -143,7 +125,7 @@ async function syncTranscript(
   // D1 batch runs as one atomic transaction, so two concurrent polls can't
   // interleave a half-deleted transcript.
   await env.DB.batch(stmts);
-  return { lastActivityAt: Date.parse(nowIso) };
+  return { lastActivityAt: Date.parse(nowIso), changed: true };
 }
 
 /** GET /api/meetings/:id — meeting + transcript (synced from Vexa while live). */
@@ -171,27 +153,8 @@ export const onRequestGet: PagesFunction<Env, "id"> = async ({ request, env, par
     // Live/starting meetings refresh from the vendor on every view; ended and
     // failed meetings are served purely from D1 (the permanent record).
     if (meeting.status === "live" || meeting.status === "starting") {
-      const { lastActivityAt } = await syncTranscript(env, meeting);
-
-      // Auto-end backstop for "nobody clicked Stop": end when the transcript
-      // has been quiet for NO_ACTIVITY_END_MS, or after the 12h hard cap. Use
-      // started_at as the activity baseline when nothing has transcribed yet.
-      const baseline = lastActivityAt ?? (meeting.started_at ? Date.parse(meeting.started_at) : null);
-      const started = meeting.started_at ? Date.parse(meeting.started_at) : null;
-      const now = Date.now();
-      const stale =
-        (baseline !== null && now - baseline > NO_ACTIVITY_END_MS) ||
-        (started !== null && now - started > HARD_CAP_MS);
-      if (stale) {
-        if (vexaConfigured(env) && meeting.platform && meeting.native_meeting_id) {
-          await stopBot(env, meeting.platform as Platform, meeting.native_meeting_id);
-        }
-        await sql/* sql */ `
-          UPDATE meetings SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
-           WHERE id = ${meeting.id}
-        `;
-        meeting.status = "ended";
-      }
+      const { changed } = await syncTranscript(env, meeting);
+      meeting.status = await maybeEndMeeting(env, sql, meeting, changed);
     }
 
     const segments = (await sql/* sql */ `

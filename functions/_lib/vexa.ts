@@ -105,6 +105,31 @@ export function stopBot(
   return call(env, "DELETE", `/bots/${platform}/${encodeURIComponent(nativeMeetingId)}`);
 }
 
+interface RunningBot {
+  platform?: string;
+  native_meeting_id?: string;
+}
+
+/**
+ * Is a bot currently running for this meeting? Vexa's GET /bots/status lists
+ * live bot containers; a meeting whose bot is no longer listed has ended (the
+ * call finished or everyone left, so Vexa's bot left too). Returns ok:false on
+ * vendor error so callers can refuse to end a meeting on uncertainty.
+ */
+export async function botRunning(
+  env: VexaEnv,
+  platform: Platform,
+  nativeMeetingId: string,
+): Promise<VexaResult<boolean>> {
+  const res = await call<{ running_bots?: RunningBot[] }>(env, "GET", "/bots/status");
+  if (!res.ok) return res;
+  const bots = Array.isArray(res.data?.running_bots) ? res.data.running_bots : [];
+  const found = bots.some(
+    (b) => b.platform === platform && b.native_meeting_id === nativeMeetingId,
+  );
+  return { ok: true, data: found };
+}
+
 /** Full transcript so far for a meeting (Vexa returns all segments each call). */
 export async function fetchTranscript(
   env: VexaEnv,
