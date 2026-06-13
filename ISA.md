@@ -161,3 +161,10 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - refuted by: live E2E 2026-06-13 — Vexa hosted API returns start_time null; SQLite treats NULLs as distinct in unique indexes, so every 1s poll re-inserted the full transcript (480+ rows for 3 sentences)
 - learned: Vexa returns the entire transcript in stable order each call, so the segment's array index is the only reliable identity; never key idempotency on a vendor field that may be null
 - criterion now: ISC-51 (dedup on seq, rows==distinct_seq)
+
+## Decisions — post-review (2026-06-13)
+
+- Forge + Cato both flagged **seq-as-array-index identity (HIGH)**: Vexa tail partials mutate/reorder/coalesce as they finalize, so a positional index overwrites row i with a different utterance — silent corruption (the rows==distinct_seq probe only disproved duplication, not positional stability).
+- Empirical check: `absolute_start_time` IS populated (microsecond ISO, spread across meeting); only `start_time` is null. So the session-boundary privacy filter (Forge F5) is live, not dead — reused-Meet-code protection works.
+- **Fix decided:** whole-transcript **replace-all on change** — gate each pull on a payload signature (skip when unchanged → kills Forge F2 write-amplification: ~2.1M writes/hr meeting → ~1/utterance), and when changed do an **atomic `env.DB.batch` delete-all+insert-all** (immune to reorder/merge/shrink → fixes F1, no orphan tails). Concurrency-safe via D1 batch atomicity + client in-flight guard (F3).
+- Also fixing: auto-end on no-activity (F6), Stop button for `starting` + stale-starting flip (F4), strip Zoom `pwd` from stored/echoed URL (F8 passcode), Teams id char-cap (F8), stale "MeetingDO/5s" comments (cross-cutting). F7 (stop is code-addressed not bot-addressed) = documented, no change.
