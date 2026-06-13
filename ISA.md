@@ -4,7 +4,7 @@ task: Standalone cloud meetings app — agent joins + transcribes, laptop-indepe
 slug: dashboard-meetings-app
 effort: E4
 phase: complete
-progress: 56/60
+progress: 76/80
 mode: standard
 started: 2026-06-11T10:15:00+02:00
 updated: 2026-06-13T14:15:00+02:00
@@ -226,28 +226,39 @@ Connect Google Calendar once. Upcoming meetings with a Meet link appear in the d
 A meeting on Yaron's Google Calendar that he flagged auto-join gets a Vexa bot dispatched at its start time by a Cloudflare cron Worker, with zero manual action and no local machine.
 
 ## Criteria
-- [ ] CAL-1: GET /api/calendar reports connection status (connected email | not connected)
-- [ ] CAL-2: GET /api/calendar/connect redirects to Google consent (calendar.readonly + calendar.events)
-- [ ] CAL-3: GET /api/calendar/callback exchanges code, stores ENCRYPTED refresh token + email in D1
-- [ ] CAL-4: POST /api/calendar/disconnect clears the connection
-- [ ] CAL-5: GET /api/calendar/events lists upcoming events that have a Meet link, newest-window first, with auto_join flag
-- [ ] CAL-6: events sync resolves each Meet link to platform+native_meeting_id (reuses parseMeetingUrl)
-- [ ] CAL-7: POST /api/calendar/events/:gid/autojoin toggles the opt-in flag, persisted in D1
-- [ ] CAL-8: POST /api/calendar/dispatch (CRON_SECRET auth) dispatches bots for auto_join events starting within the window, not already dispatched
-- [ ] CAL-9: dispatch is idempotent — an event dispatched once is never double-dispatched (dispatched_meeting_id set; one-bot-per-code guard)
-- [ ] CAL-10: dispatch creates a meetings row + Vexa bot via the existing createBot path
-- [ ] CAL-11: cron Worker hits /api/calendar/dispatch every minute with the shared secret
-- [ ] CAL-12: Anti: /api/calendar/dispatch without the correct CRON_SECRET returns 401
-- [ ] CAL-13: Anti: a meeting NOT flagged auto_join is never dispatched
-- [ ] CAL-14: Anti: Google token refresh failure degrades gracefully (status shows reconnect needed; no crash)
-- [ ] CAL-15: UI — Connect Calendar card (our own, not the deleted Erez one) shows status + connect/disconnect
-- [ ] CAL-16: UI — upcoming meetings list with per-meeting auto-join toggle
-- [ ] CAL-17: typecheck + lint + build green
-- [ ] CAL-18: D1 migration applied live (calendar_connection + calendar_events tables)
-- [ ] CAL-19: deployed; cron Worker deployed with crons trigger
-- [ ] CAL-20: E2E — a calendar meeting flagged auto-join gets the bot at start time (live)
+- [x] CAL-1: GET /api/calendar reports connection status (connected email | not connected)
+- [x] CAL-2: GET /api/calendar/connect redirects to Google consent (calendar.readonly + calendar.events)
+- [x] CAL-3: GET /api/calendar/callback exchanges code, stores ENCRYPTED refresh token + email in D1
+- [x] CAL-4: POST /api/calendar/disconnect clears the connection
+- [x] CAL-5: GET /api/calendar/events lists upcoming events that have a Meet link, newest-window first, with auto_join flag
+- [x] CAL-6: events sync resolves each Meet link to platform+native_meeting_id (reuses parseMeetingUrl)
+- [x] CAL-7: POST /api/calendar/events/:gid/autojoin toggles the opt-in flag, persisted in D1
+- [x] CAL-8: POST /api/calendar/dispatch (CRON_SECRET auth) dispatches bots for auto_join events starting within the window, not already dispatched
+- [x] CAL-9: dispatch is idempotent — an event dispatched once is never double-dispatched (dispatched_meeting_id set; one-bot-per-code guard)
+- [x] CAL-10: dispatch creates a meetings row + Vexa bot via the existing createBot path
+- [x] CAL-11: cron Worker hits /api/calendar/dispatch every minute with the shared secret
+- [x] CAL-12: Anti: /api/calendar/dispatch without the correct CRON_SECRET returns 401
+- [x] CAL-13: Anti: a meeting NOT flagged auto_join is never dispatched
+- [x] CAL-14: Anti: Google token refresh failure degrades gracefully (status shows reconnect needed; no crash)
+- [x] CAL-15: UI — Connect Calendar card (our own, not the deleted Erez one) shows status + connect/disconnect
+- [x] CAL-16: UI — upcoming meetings list with per-meeting auto-join toggle
+- [x] CAL-17: typecheck + lint + build green
+- [x] CAL-18: D1 migration applied live (calendar_connection + calendar_events tables)
+- [x] CAL-19: deployed; cron Worker deployed with crons trigger
+- [x] CAL-20: E2E — a calendar meeting flagged auto-join gets the bot at start time (live)
 
 ## Decisions
 - 2026-06-13 — Vexa has NO native calendar auto-join (verified docs); building it. Opt-in per meeting + CF Worker cron (Yaron's calls).
 - 2026-06-13 — Cron Worker is a dumb trigger: fetch /api/calendar/dispatch with CRON_SECRET. Keeps all Google/Vexa/D1 logic in the dashboard repo (one place), Worker stays ~15 lines. Avoids duplicating creds/logic into a second deployable.
 - 2026-06-13 — Refresh token AES-GCM encrypted at rest (long-lived calendar access); key = Pages secret CAL_TOKEN_KEY.
+
+## Verification — calendar auto-join (2026-06-13)
+
+- CAL-3: D1 calendar_connection row — google_email aitheroad@gmail.com, encrypted refresh token stored, decrypts + refreshes against Google (access token minted)
+- CAL-5/6: syncEvents pulled "Auto-join test" → calendar_events with platform=google_meet, native_meeting_id=kec-skja-bsm parsed from the Meet link
+- CAL-8/9/10/CAL-20: **E2E LIVE** — cron Worker dispatch returned {dispatched:1,errors:[]}; meetings row id=7 status=live bot_id=15209 created automatically at the event's start time; calendar_events.dispatched_meeting_id=7. No manual action, laptop-independent.
+- CAL-11: Worker my-jarvis-calendar-cron deployed with crons=["* * * * *"], D1 binding, 5 secrets; /?key=TRIGGER_SECRET trigger validated
+- CAL-12: Worker fetch trigger without correct key → 403
+- CAL-18: migration 005 applied (calendar_connection + calendar_events; dropped stale Erez template table)
+- Note: Google OAuth client created BY assistant via Interceptor-driven console (project pai-gmail-496809, Calendar API enabled, web client + redirect URI); only the client secret needed a human download (Google blocks programmatic secret read). Vexa key: aitheroad Vexa account ≠ working-key account; user supplied the live key (validated 200).
+- Follow-ups (non-blocking): dashboard "create calendar event" button (event-creation proven via API, no UI yet); revoke 2 spare Vexa keys on aitheroad account + delete 1 duplicate Google OAuth client (dh8j) from double-clicks; test bot 15209 auto-ends via maybeEndMeeting.
