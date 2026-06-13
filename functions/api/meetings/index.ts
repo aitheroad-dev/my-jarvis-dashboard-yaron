@@ -2,7 +2,7 @@ import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env as AuthEnv } from "../../_lib/auth";
 import { createBot, vexaConfigured, type VexaEnv } from "../../_lib/vexa";
-import { parseMeetingUrl } from "../../_lib/meeting-url";
+import { parseMeetingUrl, redactMeetingUrl } from "../../_lib/meeting-url";
 
 interface Env extends AuthEnv, VexaEnv {}
 
@@ -127,7 +127,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const rows = (await sql/* sql */ `
       INSERT INTO meetings (title, meeting_url, platform, native_meeting_id, status, started_at)
-      VALUES (${title}, ${meetingUrl}, ${parsed.platform}, ${parsed.nativeMeetingId},
+      VALUES (${title}, ${redactMeetingUrl(meetingUrl)}, ${parsed.platform}, ${parsed.nativeMeetingId},
               'starting', strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       RETURNING id, title, meeting_url, platform, native_meeting_id, bot_id, status,
                 summary, started_at, ended_at, created_at

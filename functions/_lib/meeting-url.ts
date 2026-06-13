@@ -43,8 +43,28 @@ export function parseMeetingUrl(raw: string): ParsedMeetingUrl {
   if (host === "teams.microsoft.com" || host.endsWith(".teams.microsoft.com")) {
     const m = u.pathname.match(/\/l\/meetup-join\/([^/]+)/);
     if (!m) return { ok: false, error: "Teams URL needs /l/meetup-join/" };
-    return { ok: true, platform: "teams", nativeMeetingId: decodeURIComponent(m[1]) };
+    const teamsId = decodeURIComponent(m[1]);
+    // Cap length; the id is sent verbatim to the bot vendor and stored.
+    if (teamsId.length === 0 || teamsId.length > 512) {
+      return { ok: false, error: "Teams meeting id looks malformed" };
+    }
+    return { ok: true, platform: "teams", nativeMeetingId: teamsId };
   }
 
   return { ok: false, error: "only Google Meet, Zoom, and Teams are supported" };
+}
+
+/**
+ * Strip secrets from a meeting URL before we persist it / echo it to the
+ * client. The Zoom `pwd` is a shared meeting secret — we forward it to the bot
+ * vendor at create time, but it must not live in D1 or the rendered page.
+ */
+export function redactMeetingUrl(raw: string): string {
+  try {
+    const u = new URL(raw.trim());
+    for (const k of ["pwd", "password"]) u.searchParams.delete(k);
+    return u.toString();
+  } catch {
+    return raw.trim();
+  }
 }

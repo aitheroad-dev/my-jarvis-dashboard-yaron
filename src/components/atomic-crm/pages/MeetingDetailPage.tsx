@@ -86,12 +86,17 @@ export function MeetingDetailPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stopping, setStopping] = useState(false);
   const stopRef = useRef(false);
+  const inFlightRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!Number.isInteger(id) || id <= 0) {
       setLoadError("invalid meeting id");
       return;
     }
+    // In-flight guard: a server pull can take longer than the 1s poll interval,
+    // so without this, ticks stack up into overlapping concurrent requests.
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     try {
       const res = await api(`/api/meetings/${id}`);
       if (!res.ok) {
@@ -105,6 +110,8 @@ export function MeetingDetailPage() {
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      inFlightRef.current = false;
     }
   }, [api, id]);
 
@@ -112,17 +119,16 @@ export function MeetingDetailPage() {
     void load();
   }, [load]);
 
-  // Poll every 1s while live. Worker MeetingDO also polls Vexa every 1s, so
-  // worst-case end-to-end transcript lag is ~2s (1s worker + 1s dashboard)
-  // plus Whisper inference. Cost difference between 1s and 5s polling is
-  // pennies per month at our volume; the UX win (live-feeling transcripts)
-  // is large.
+  // Poll every 1s while the meeting is live or still starting. The server pulls
+  // Vexa on each request but only writes D1 when the transcript actually
+  // changed, so most polls are cheap reads. Lag to a live transcript line is
+  // ~1s + Whisper inference.
   useEffect(() => {
-    if (!meeting || meeting.status !== "live") return;
+    if (!meeting || (meeting.status !== "live" && meeting.status !== "starting")) return;
     const handle = window.setInterval(() => {
-      // Skip the poll while the tab is hidden — a live meeting left open in a
-      // background tab polls /api/meetings every 1s, 24/7, for nobody.
-      if (!stopRef.current && !document.hidden) void load();
+      // Skip while the tab is hidden (a backgrounded tab would poll for nobody)
+      // or while a request is already outstanding.
+      if (!stopRef.current && !inFlightRef.current && !document.hidden) void load();
     }, 1000);
     return () => window.clearInterval(handle);
   }, [meeting, load]);
@@ -240,7 +246,7 @@ export function MeetingDetailPage() {
                   {meeting.meeting_url}
                 </a>
               </div>
-              {meeting.status === "live" && (
+              {(meeting.status === "live" || meeting.status === "starting") && (
                 <button
                   type="button"
                   onClick={handleStop}
@@ -313,7 +319,9 @@ export function MeetingDetailPage() {
               </div>
               <div style={{ fontSize: 12, color: T.ink3 }}>
                 {segments.length} segments
-                {meeting.status === "live" ? " · refreshing every 5s" : ""}
+                {meeting.status === "live" || meeting.status === "starting"
+                  ? " · live"
+                  : ""}
               </div>
             </div>
 

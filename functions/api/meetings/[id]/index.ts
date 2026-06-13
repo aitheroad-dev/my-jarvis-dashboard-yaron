@@ -7,7 +7,13 @@ import {
   vexaConfigured,
   type Platform,
   type VexaEnv,
+  type VexaSegment,
 } from "../../../_lib/vexa";
+
+// A live meeting with no new transcript for this long is treated as over and
+// auto-ended (backstop for "nobody clicked Stop"). 12h is the hard ceiling.
+const NO_ACTIVITY_END_MS = 20 * 60_000;
+const HARD_CAP_MS = 12 * 3600_000;
 
 interface Env extends AuthEnv, VexaEnv {}
 
@@ -23,6 +29,8 @@ type MeetingRow = {
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
+  last_segment_sig: string | null;
+  last_activity_at: string | null;
 };
 
 type SegmentRow = {
@@ -43,63 +51,99 @@ function parseId(params: { id?: string | string[] }): number | null {
 }
 
 /**
- * Pull-on-view ingest: fetch the full transcript from Vexa and upsert it into
- * meeting_transcript. Idempotent via the (meeting_id, start_ts, speaker_name)
- * unique index — re-pulls update text/completed in place. Vendor failure is
- * swallowed: the page then serves whatever D1 already has.
+ * Cheap change-detection signature over Vexa's full transcript. Two pulls with
+ * the same signature carry no new information, so we skip all D1 writes — this
+ * is what keeps a 1s poll on an hour-long meeting from doing millions of writes.
+ */
+function transcriptSig(segs: VexaSegment[]): string {
+  let count = 0;
+  let chars = 0;
+  for (const s of segs) {
+    const t = (s.text ?? "").trim();
+    if (!t) continue;
+    count++;
+    chars += t.length;
+  }
+  const last = segs.length ? segs[segs.length - 1] : null;
+  const tail = last
+    ? `${last.absolute_start_time ?? ""}|${(last.text ?? "").length}|${last.completed ? 1 : 0}`
+    : "";
+  return `${count}:${chars}:${tail}`;
+}
+
+interface SyncResult {
+  /** epoch ms of the last time this meeting's transcript actually changed */
+  lastActivityAt: number | null;
+}
+
+/**
+ * Pull-on-view ingest: fetch Vexa's full transcript and, only when it changed
+ * since last pull, atomically REPLACE this meeting's segments (delete-all +
+ * insert-all in one D1 batch). Replace-all is immune to Vexa re-segmentation
+ * (tail partials reorder/coalesce as they finalize) — a positional upsert key
+ * would silently overwrite the wrong utterance; identity matching is avoided
+ * entirely. Vendor failure is swallowed: the page serves whatever D1 has.
  */
 async function syncTranscript(
   env: Env,
-  sql: ReturnType<typeof getDb>,
   meeting: MeetingRow,
-): Promise<void> {
-  if (!vexaConfigured(env)) return;
-  if (!meeting.platform || !meeting.native_meeting_id) return;
-  const res = await fetchTranscript(
-    env,
-    meeting.platform as Platform,
-    meeting.native_meeting_id,
-  );
-  if (!res.ok) return;
-  // Session boundary: Vexa scopes transcripts by platform+meeting code, so a
-  // reused Meet code (personal rooms!) can return segments from an earlier
-  // session. Only ingest segments that started after this row was created,
-  // with 60s grace for clock skew.
-  const sessionStart = meeting.started_at
-    ? Date.parse(meeting.started_at) - 60_000
-    : null;
-  // Dedup on the segment's position in Vexa's full-transcript list, NOT on
-  // start_ts: the hosted API returns start_time null, and SQLite treats NULLs
-  // as distinct in a unique index, so a timestamp key let every poll re-insert
-  // the same utterances (observed: 480+ rows for 3 sentences). Vexa returns the
-  // entire transcript each call in stable order, so the array index is a stable
-  // identity — partials update in place, finals append.
-  for (let i = 0; i < res.data.length; i++) {
-    const seg = res.data[i];
-    const text = (seg.text ?? "").trim();
-    if (!text) continue;
+): Promise<SyncResult> {
+  const priorActivity = meeting.last_activity_at ? Date.parse(meeting.last_activity_at) : null;
+  if (!vexaConfigured(env) || !meeting.platform || !meeting.native_meeting_id) {
+    return { lastActivityAt: priorActivity };
+  }
+  const res = await fetchTranscript(env, meeting.platform as Platform, meeting.native_meeting_id);
+  if (!res.ok) return { lastActivityAt: priorActivity };
+
+  // Session boundary: Vexa keys transcripts by platform+meeting code, so a
+  // reused Meet code (personal rooms) can return a prior session's segments.
+  // Keep only segments that started at/after this row's start (60s grace).
+  // absolute_start_time is populated by Vexa even though start_time is null.
+  const sessionStart = meeting.started_at ? Date.parse(meeting.started_at) - 60_000 : null;
+  const kept = res.data.filter((seg) => {
+    if (!(seg.text ?? "").trim()) return false;
     if (sessionStart !== null && seg.absolute_start_time) {
       const t = Date.parse(seg.absolute_start_time);
-      if (Number.isFinite(t) && t < sessionStart) continue;
+      if (Number.isFinite(t) && t < sessionStart) return false;
     }
-    const speaker = seg.speaker ?? "";
-    const start = Number.isFinite(seg.start_time) ? seg.start_time : null;
-    const end = Number.isFinite(seg.end_time) ? seg.end_time : null;
-    await sql/* sql */ `
-      INSERT INTO meeting_transcript
-        (meeting_id, seq, bot_id, speaker_name, words, start_ts, end_ts, event_type, created_at)
-      VALUES
-        (${meeting.id}, ${i}, ${meeting.bot_id ?? ""}, ${speaker}, ${text}, ${start}, ${end},
-         ${seg.completed ? "final" : "partial"},
-         COALESCE(${seg.absolute_start_time}, strftime('%Y-%m-%dT%H:%M:%SZ','now')))
-      ON CONFLICT (meeting_id, seq) DO UPDATE SET
-        words = excluded.words,
-        speaker_name = excluded.speaker_name,
-        start_ts = excluded.start_ts,
-        end_ts = excluded.end_ts,
-        event_type = excluded.event_type
-    `;
+    return true;
+  });
+
+  const sig = transcriptSig(kept);
+  if (sig === meeting.last_segment_sig) {
+    // No new transcript since last pull — nothing to write.
+    return { lastActivityAt: priorActivity };
   }
+
+  const nowIso = new Date().toISOString();
+  const botId = meeting.bot_id ?? "";
+  const stmts = [
+    env.DB.prepare("DELETE FROM meeting_transcript WHERE meeting_id = ?").bind(meeting.id),
+    ...kept.map((seg, i) =>
+      env.DB.prepare(
+        `INSERT INTO meeting_transcript
+           (meeting_id, seq, bot_id, speaker_name, words, start_ts, end_ts, event_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        meeting.id,
+        i,
+        botId,
+        seg.speaker ?? "",
+        (seg.text ?? "").trim(),
+        Number.isFinite(seg.start_time) ? seg.start_time : null,
+        Number.isFinite(seg.end_time) ? seg.end_time : null,
+        seg.completed ? "final" : "partial",
+        seg.absolute_start_time ?? nowIso,
+      ),
+    ),
+    env.DB.prepare(
+      "UPDATE meetings SET last_segment_sig = ?, last_activity_at = ? WHERE id = ?",
+    ).bind(sig, nowIso, meeting.id),
+  ];
+  // D1 batch runs as one atomic transaction, so two concurrent polls can't
+  // interleave a half-deleted transcript.
+  await env.DB.batch(stmts);
+  return { lastActivityAt: Date.parse(nowIso) };
 }
 
 /** GET /api/meetings/:id — meeting + transcript (synced from Vexa while live). */
@@ -118,33 +162,36 @@ export const onRequestGet: PagesFunction<Env, "id"> = async ({ request, env, par
     const sql = getDb(env);
     const meetings = (await sql/* sql */ `
       SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status,
-             summary, started_at, ended_at, created_at
+             summary, started_at, ended_at, created_at, last_segment_sig, last_activity_at
         FROM meetings WHERE id = ${id}
     `) as MeetingRow[];
     const meeting = meetings[0];
     if (!meeting) return json({ error: "not found" }, { status: 404 });
 
-    // Orphaned-bot safeguard: nothing legitimately runs 12h+. Flip it ended
-    // (best-effort bot stop) so a forgotten tab can't burn vendor hours.
-    if (
-      (meeting.status === "live" || meeting.status === "starting") &&
-      meeting.started_at &&
-      Date.now() - Date.parse(meeting.started_at) > 12 * 3600_000
-    ) {
-      if (vexaConfigured(env) && meeting.platform && meeting.native_meeting_id) {
-        await stopBot(env, meeting.platform as Platform, meeting.native_meeting_id);
-      }
-      await sql/* sql */ `
-        UPDATE meetings SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
-         WHERE id = ${meeting.id}
-      `;
-      meeting.status = "ended";
-    }
-
     // Live/starting meetings refresh from the vendor on every view; ended and
     // failed meetings are served purely from D1 (the permanent record).
     if (meeting.status === "live" || meeting.status === "starting") {
-      await syncTranscript(env, sql, meeting);
+      const { lastActivityAt } = await syncTranscript(env, meeting);
+
+      // Auto-end backstop for "nobody clicked Stop": end when the transcript
+      // has been quiet for NO_ACTIVITY_END_MS, or after the 12h hard cap. Use
+      // started_at as the activity baseline when nothing has transcribed yet.
+      const baseline = lastActivityAt ?? (meeting.started_at ? Date.parse(meeting.started_at) : null);
+      const started = meeting.started_at ? Date.parse(meeting.started_at) : null;
+      const now = Date.now();
+      const stale =
+        (baseline !== null && now - baseline > NO_ACTIVITY_END_MS) ||
+        (started !== null && now - started > HARD_CAP_MS);
+      if (stale) {
+        if (vexaConfigured(env) && meeting.platform && meeting.native_meeting_id) {
+          await stopBot(env, meeting.platform as Platform, meeting.native_meeting_id);
+        }
+        await sql/* sql */ `
+          UPDATE meetings SET status = 'ended', ended_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+           WHERE id = ${meeting.id}
+        `;
+        meeting.status = "ended";
+      }
     }
 
     const segments = (await sql/* sql */ `
@@ -186,7 +233,7 @@ export const onRequestPost: PagesFunction<Env, "id"> = async ({ request, env, pa
   const sql = getDb(env);
   const rows = (await sql/* sql */ `
     SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status,
-           summary, started_at, ended_at, created_at
+           summary, started_at, ended_at, created_at, last_segment_sig, last_activity_at
       FROM meetings WHERE id = ${id}
   `) as MeetingRow[];
   const meeting = rows[0];
@@ -201,7 +248,7 @@ export const onRequestPost: PagesFunction<Env, "id"> = async ({ request, env, pa
     // Tolerate vendor refusal (bot already left, meeting over) — the meeting
     // still ends on our side so the UI moves on.
     if (!res.ok) vendorNote = `stop returned ${res.status}: ${res.detail.slice(0, 200)}`;
-    await syncTranscript(env, sql, meeting); // final pull before we stop syncing
+    await syncTranscript(env, meeting); // final pull before we stop syncing
   }
 
   await sql/* sql */ `
