@@ -4,10 +4,10 @@ task: Standalone cloud meetings app — agent joins + transcribes, laptop-indepe
 slug: dashboard-meetings-app
 effort: E4
 phase: execute
-progress: 49/56
+progress: 50/56
 mode: standard
 started: 2026-06-11T10:15:00+02:00
-updated: 2026-06-13T13:30:00+02:00
+updated: 2026-06-13T13:55:00+02:00
 ---
 
 # Dashboard Meetings App — ISA
@@ -175,7 +175,7 @@ A meeting created in the dashboard from any device causes a cloud agent to join 
 - [x] ISC-53: change-detection gate — syncTranscript skips all writes when payload signature unchanged (kills 1s-poll write amplification)
 - [x] ISC-54: auto-end on no-activity — VERIFIED LIVE: meeting 1 self-flipped to `ended` past the 20-min threshold and stopBot was invoked (lingering bot stopped)
 - [x] ISC-55: Zoom `pwd` stripped from stored/echoed meeting_url (redactMeetingUrl); Teams id length-capped
-- [ ] ISC-56: [DEFERRED-VERIFY E2E-VEXA-002] replace-all populates a NEW live meeting with zero duplication under the new code (meeting 1 ended before re-pull; needs one fresh test call)
+- [x] ISC-56: replace-all populates a NEW live meeting with zero duplication — VERIFIED LIVE 2026-06-13 meeting 2 "test2": grew 1→4→10 rows, rows==distinct_seq throughout; Hebrew + English both transcribed (mid-call language switch followed)
 
 ## Verification — post-review (2026-06-13)
 
