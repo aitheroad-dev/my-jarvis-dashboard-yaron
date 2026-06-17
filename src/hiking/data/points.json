@@ -1,0 +1,2690 @@
+[
+ {
+  "id": "poi-001",
+  "name": "מערת דודים",
+  "description": "",
+  "region": "הגליל",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%A8%D7%AA+%D7%93%D7%95%D7%93%D7%99%D7%9D%E2%80%AD/data=!4m2!3m1!1s0x150319ffaf576f0f:0xaeb183791a78bc2f",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-002",
+  "name": "גב שונדי",
+  "description": "",
+  "region": "הגליל",
+  "lat": 33.07488,
+  "lng": 35.5038553,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%92%D7%91+%D7%A9%D7%95%D7%A0%D7%93%D7%99%E2%80%AD/data=!4m2!3m1!1s0x151e9f7880f394b3:0x55e4616a402b4065",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-003",
+  "name": "מעיין עין טייסים",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%A2%D7%99%D7%9F+%D7%98%D7%99%D7%99%D7%A1%D7%99%D7%9D%E2%80%AD/data=!4m2!3m1!1s0x1502dbd1cc44ef81:0xb4632b9099cbc54b",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-004",
+  "name": "עין ראפא",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.792537,
+  "lng": 35.107359,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Rafa+Bike+Trail/data=!4m2!3m1!1s0x1502d0c1a6699547:0x1eab8ae2d4a8c1ce",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-005",
+  "name": "עין אשקף",
+  "description": "",
+  "region": "הגליל",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Eshkaf/data=!4m2!3m1!1s0x1502d9f8a1c982cf:0xb9227cab51adbe41",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-006",
+  "name": "מעיין מרי",
+  "description": "מעיין בתוך מערת זחילה",
+  "region": "הגליל",
+  "lat": 31.7653326999999,
+  "lng": 35.1611631,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Mary's+Spring/data=!4m2!3m1!1s0x1502d771c9b63b47:0x1bfe6e9cb03703e6",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-007",
+  "name": "עין נקופה/עין תות",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.8085525,
+  "lng": 35.1423464,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.8085525,35.1423464",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-008",
+  "name": "עין רזיאל",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.776063,
+  "lng": 35.067188,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A8%D7%96%D7%99%D7%90%D7%9C%E2%80%AD/data=!4m2!3m1!1s0x1502da9beed75d73:0x4f587f87564c541b",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-009",
+  "name": "הסטף",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.7754723,
+  "lng": 35.127615,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Sataf/data=!4m2!3m1!1s0x1502d0ca1daefb79:0x34d50d5b3ad9c9e9",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-010",
+  "name": "עין איתמר",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.7409074,
+  "lng": 35.1471094,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Itamar+Spring/data=!4m2!3m1!1s0x1502d9ea3946777d:0xb09b3752a6fb5786",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-011",
+  "name": "עין ספיר",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.760813,
+  "lng": 35.131438,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Sappir/data=!4m2!3m1!1s0x1502d9fe13f01b9b:0x74facbc5b8308af5",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-012",
+  "name": "עין תמר",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.756363,
+  "lng": 35.140669,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Tamar+Spring/data=!4m2!3m1!1s0x1502d9e3ab20c46b:0xdb2af18e2b5dcf84",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-013",
+  "name": "עין חניה",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.743938,
+  "lng": 35.157438,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Hanya/data=!4m2!3m1!1s0x1502d9dad402b511:0x1454b356c010a39e",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-014",
+  "name": "עינות כסלון",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.7780556,
+  "lng": 35.0511111,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Kesalon/data=!4m2!3m1!1s0x1502daa540c87a27:0x3ba7681c978b2578",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-015",
+  "name": "עינות בוקר",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.7808333,
+  "lng": 35.0555556,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60Enot+Baqar/data=!4m2!3m1!1s0x1502daa1544d380f:0xf83cf10ae4e31811",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-016",
+  "name": "עין מקלף",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.7941887,
+  "lng": 35.1648354,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Sorek+Lake+Spring/data=!4m2!3m1!1s0x1502d7277393a7f3:0x3e935df2d94505e8",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-017",
+  "name": "עין מבשר",
+  "description": "",
+  "region": "רמת הגולן",
+  "lat": 31.801063,
+  "lng": 35.158062,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%9E%D7%91%D7%A9%D7%A8%E2%80%AD/data=!4m2!3m1!1s0x1502d6e51c751d4f:0x8cbf5a0883cc453f",
+  "tags": [
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-018",
+  "name": "בור איתן",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.7617622,
+  "lng": 35.113501,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%91%D7%95%D7%A8+%D7%90%D7%99%D7%AA%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x1502db288d6ee555:0x3739e4cf0727a17",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-019",
+  "name": "עין סוף",
+  "description": "",
+  "region": "הגליל",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A1%D7%95%D7%A3%E2%80%AD/data=!4m2!3m1!1s0x1502d7f1ec2a0fb5:0x351c421949a35a95",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-020",
+  "name": "עין ערן",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.757312,
+  "lng": 35.126438,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A2%D7%A8%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x1502dbce3f10fa71:0x88840bc6781c708",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-021",
+  "name": "עין חנדק",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 31.761833,
+  "lng": 35.139032,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Handek/data=!4m2!3m1!1s0x1502d75834c36d03:0x3f574859df705a3e",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-022",
+  "name": "באר אלה",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 31.712852,
+  "lng": 34.892993,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.712852,34.892993",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-023",
+  "name": "מעיין מצפה השלום",
+  "description": "",
+  "region": "חיפה והכרמל",
+  "lat": 32.758335,
+  "lng": 35.6566243,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%9E%D7%A6%D7%A4%D7%94+%D7%94%D7%A9%D7%9C%D7%95%D7%9D%E2%80%AD/data=!4m2!3m1!1s0x151c1318d0e21c29:0x8030f7dd62e9fd0c",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-024",
+  "name": "עין פיק",
+  "description": "",
+  "region": "חיפה והכרמל",
+  "lat": 32.775199,
+  "lng": 35.701358,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Pik/data=!4m2!3m1!1s0x151c118375caf5e5:0xc20b179cfd5db4e2",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-025",
+  "name": "בור חמת",
+  "description": "",
+  "region": "חיפה והכרמל",
+  "lat": 30.5933333,
+  "lng": 34.7091667,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Bor+Hemet/data=!4m2!3m1!1s0x1501efc221ff444f:0x5022be21708b4990",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-026",
+  "name": "עין קצביה",
+  "description": "מפל ובריכה גדולה, מקומות לקפיצה, הליכה קצת מסובכת",
+  "region": "חיפה והכרמל",
+  "lat": 32.9697487,
+  "lng": 35.7303041,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.9697487,35.7303041",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-027",
+  "name": "תצפית אליסף בן פורת",
+  "description": "",
+  "region": "הגליל",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%AA%D7%A6%D7%A4%D7%99%D7%AA+%D7%90%D7%9C%D7%99%D7%A1%D7%A3+%D7%91%D7%9F+%D7%A4%D7%95%D7%A8%D7%AA%E2%80%AD/data=!4m2!3m1!1s0x151c23000c39b2dd:0x7441d1eba80abea2",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-028",
+  "name": "באר שם טוב",
+  "description": "",
+  "region": "הגליל",
+  "lat": 31.560437,
+  "lng": 34.935563,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%91%D7%90%D7%A8+%D7%A9%D7%9D+%D7%98%D7%95%D7%91%E2%80%AD/data=!4m2!3m1!1s0x1502ec3c48256a83:0xa4f4c6092d6b45bf",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-029",
+  "name": "בור העמודים / בור עוזיהו",
+  "description": "מאגר מי גשמים כל החורף מלא במים",
+  "region": "הגליל",
+  "lat": 31.6659847,
+  "lng": 35.3203194,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.6659847,35.3203194",
+  "tags": [
+   "טיול 4x4",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-030",
+  "name": "מצד תמר",
+  "description": "נוף יפה על ים המלח בזריחה",
+  "region": "עמק יזרעאל",
+  "lat": 31.027276,
+  "lng": 35.241664,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Mezad+Tamar/data=!4m2!3m1!1s0x1503b36b520db019:0x60dd688b67c908b5",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-031",
+  "name": "מאגר עשת",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 30.3431946,
+  "lng": 35.1855789,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Eshet+Hadassa+Reservoir/data=!4m2!3m1!1s0x15019f9e5a8dd91f:0x5662eff3aaed21d6",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-032",
+  "name": "עין אום צלח",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 30.699156,
+  "lng": 35.035785,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Um+Saleh/data=!4m2!3m1!1s0x150227d9d20a2437:0x41db7fb601bb8828",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-033",
+  "name": "גב ימין",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 30.944063,
+  "lng": 35.073188,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%92%D7%91+%D7%99%D7%9E%D7%99%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x1502370075d3dbd7:0x8e7b5e6b9ba5ddc9",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-034",
+  "name": "עין סוכות",
+  "description": "",
+  "region": "חיפה והכרמל",
+  "lat": 32.3650427,
+  "lng": 35.5472433,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.3650427,35.5472433",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-035",
+  "name": "גב חצירה",
+  "description": "",
+  "region": "חיפה והכרמל",
+  "lat": 30.9331297,
+  "lng": 35.2426057,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.9331297,35.2426057",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-036",
+  "name": "מאגר על הכרבולת",
+  "description": "מאגר מקורות שאמור להיות פתוח על הר הכרבולת",
+  "region": "חיפה והכרמל",
+  "lat": 30.919467,
+  "lng": 34.999649,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.919467,34.999649",
+  "tags": [
+   "מקום מיוחד",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-037",
+  "name": "חניון לילה ליד עין יהב",
+  "description": "חניון לילה ליד עין יהב, שקט ונעים",
+  "region": "חיפה והכרמל",
+  "lat": 30.6444036,
+  "lng": 35.197603,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.6444036,35.197603",
+  "tags": [
+   "חניון לילה"
+  ]
+ },
+ {
+  "id": "poi-038",
+  "name": "נחל מרזבה",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 30.6969508,
+  "lng": 35.102919,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.6969508,35.102919",
+  "tags": [
+   "טיול 4x4"
+  ]
+ },
+ {
+  "id": "poi-039",
+  "name": "נחל דרגה",
+  "description": "",
+  "region": "עמק יזרעאל",
+  "lat": 31.647378,
+  "lng": 35.3186711,
+  "imageUrl": "",
+  "googleUrl": "נחל דרגה",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-040",
+  "name": "חוף מצוקי דרגות",
+  "description": "חוף מצוקי דרגות\n בריכה טורקיז",
+  "region": "עמק יזרעאל",
+  "lat": 31.5848096,
+  "lng": 35.4112986,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.5848096,35.4112986",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-041",
+  "name": "גבי פארן",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 30.2882203,
+  "lng": 34.8503927,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.2882203,34.8503927",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-042",
+  "name": "נחל עתק",
+  "description": "נחל עתק הצפוני",
+  "region": "ירושלים והסביבה",
+  "lat": 29.701237,
+  "lng": 34.916019,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A0%D7%97%D7%9C+%D7%A2%D7%AA%D7%A7%E2%80%AD/data=!4m2!3m1!1s0x15006a521f5bebaf:0xf03dee573ab15cae",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-043",
+  "name": "נחל צפונות",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 29.664049393068,
+  "lng": 34.9520396689361,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Nahal+Tsfunot/data=!4m2!3m1!1s0x1500695f958d3023:0xfb4b4a06c3859794",
+  "tags": [
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-044",
+  "name": "האגם הנעלם",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 29.666438,
+  "lng": 34.940438,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/The+hidden+valley/data=!4m2!3m1!1s0x15006b0060199861:0x792dfe5ab4bd8482",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-045",
+  "name": "עין רכש",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.6583333,
+  "lng": 35.4722222,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Rekhesh/data=!4m2!3m1!1s0x151c4471312600db:0x3bc4bbc7f7a4be93",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-046",
+  "name": "עין אולם",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.6677778,
+  "lng": 35.4994444,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Ulam/data=!4m2!3m1!1s0x151c43e78551a7b7:0xa47008f4dd2f47e9",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-047",
+  "name": "עין סמאיה",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 31.986959,
+  "lng": 35.334403,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.986959,35.334403",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-048",
+  "name": "מצפה אופיר",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.814904,
+  "lng": 35.662663,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%90%D7%95%D7%A4%D7%99%D7%A8%E2%80%AD/data=!4m2!3m1!1s0x151c1128cb016867:0x5d7791c1ac8a44bf",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-049",
+  "name": "גב ילק",
+  "description": "",
+  "region": "שפלה",
+  "lat": 30.557938,
+  "lng": 34.911187,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%92%D7%91+%D7%99%D7%9C%D7%A7%E2%80%AD/data=!4m2!3m1!1s0x15018d0d7bce132d:0x6d8a284ea374ed8a",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-050",
+  "name": "חוות נפתלי",
+  "description": "פריחת נוריות באפריל",
+  "region": "שפלה",
+  "lat": 33.164687,
+  "lng": 35.574188,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%97%D7%95%D7%95%D7%AA+%D7%A0%D7%A4%D7%AA%D7%9C%D7%99+-+Powered+by+M51+and+Black+Flamingo%E2%80%AD/data=!4m2!3m1!1s0x151ea3044fc040d5:0xfdde0f3ec5481410",
+  "tags": [
+   "מקום מיוחד"
+  ]
+ },
+ {
+  "id": "poi-051",
+  "name": "נחל רחף",
+  "description": "נחל רחף מסלול עם גבים",
+  "region": "נגב",
+  "lat": 31.281831,
+  "lng": 35.318172,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A0%D7%97%D7%9C+%D7%A8%D7%97%D7%A3%E2%80%AD/data=!4m2!3m1!1s0x1503004cf6f798eb:0x870749b9c2d8bef9",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-052",
+  "name": "עין חוקוק",
+  "description": "",
+  "region": "נגב",
+  "lat": 32.8867444,
+  "lng": 35.4818216,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%97%D7%95%D7%A7%D7%95%D7%A7%E2%80%AD/data=!4m2!3m1!1s0x151c3c8311afd05d:0x46933b325a84dc17",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-053",
+  "name": "עין נזם",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.4322222,
+  "lng": 35.5133333,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Nezem/data=!4m2!3m1!1s0x151cf587aee5be8f:0xd687a383d92d2397",
+  "tags": [
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-054",
+  "name": "הר שאול",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.535556,
+  "lng": 35.374722,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Har+%C5%A0a'ul/data=!4m2!3m1!1s0x151c576979e3c281:0xed652c13ba9ae196",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-055",
+  "name": "עין שרביט",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.164687,
+  "lng": 35.574188,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A9%D7%A8%D7%91%D7%99%D7%98%E2%80%AD/data=!4m2!3m1!1s0x151c41b4b35cfe97:0xdfdb32bdd3725a7e",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-056",
+  "name": "עין שרונה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7138884,
+  "lng": 35.475,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Sharona/data=!4m2!3m1!1s0x151c46d27b3373bd:0x4f55b4d66a5c9397",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-057",
+  "name": "עין פוריה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A4%D7%95%D7%A8%D7%99%D7%94%E2%80%AD/data=!4m2!3m1!1s0x151c41adb64518af:0x3e802b5e92dfd9a2",
+  "tags": [
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-058",
+  "name": "מצפור אילן",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.098937,
+  "lng": 34.981687,
+  "imageUrl": "",
+  "googleUrl": "מצפור אילן",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-059",
+  "name": "עין תבנע",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.009507,
+  "lng": 35.106733,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.009507,35.106733",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-060",
+  "name": "עין מודע",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.4813889,
+  "lng": 35.4505556,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60Ein+el+Maddu%60/data=!4m2!3m1!1s0x151c58eed38b992f:0x5649eac4cc20974",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-061",
+  "name": "עין אבוקה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.465563,
+  "lng": 35.537937,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%91%D7%A8%D7%99%D7%9B%D7%AA+%D7%90%D7%91%D7%95%D7%A7%D7%94%E2%80%AD/data=!4m2!3m1!1s0x151c5f92e855e7fb:0xb89488820b351e9d",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-062",
+  "name": "עין צמד",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Zemed/data=!4m2!3m1!1s0x151c5ef8b9d6e7cd:0x3ebb41874250e059",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-063",
+  "name": "עין אביאל",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.539324,
+  "lng": 34.9947113,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Aviel/data=!4m2!3m1!1s0x151d09e6a2efbaf5:0x1f2929e62bc46a8",
+  "tags": [
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-064",
+  "name": "עין קנטרה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%94%D7%92%D7%A9%D7%A8+%D7%94%D7%A7%D7%A0%D7%98%D7%A8%D7%94%E2%80%AD/data=!4m2!3m1!1s0x151c594ba101c441:0xea2f4e73290cc83b",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-065",
+  "name": "עין קדם",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.760312,
+  "lng": 34.995312,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Kedem/data=!4m2!3m1!1s0x151dbad565c65c6f:0xfd05244e374852db",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-066",
+  "name": "באר האלה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 31.691812,
+  "lng": 34.945313,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Valley+of+Elah+(Terebinths)/data=!4m2!3m1!1s0x1502c188f1e40fef:0xe4d97e4f0c3ac2ae",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-067",
+  "name": "מעיין השמחה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%94%D7%A9%D7%9E%D7%97%D7%94%E2%80%AD/data=!4m2!3m1!1s0x1502c3000015656b:0x9fb11cdf196ce40f",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-068",
+  "name": "האגם הנעלם",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 29.7661766,
+  "lng": 35.0008262,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%94%D7%90%D7%92%D7%9D+%D7%94%D7%A0%D7%A2%D7%9C%D7%9D%E2%80%AD/data=!4m2!3m1!1s0x150043003b2f7121:0xa879e4d6e9220145",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-069",
+  "name": "עין גבול",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.5716667,
+  "lng": 35.4916667,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Gevul/data=!4m2!3m1!1s0x151c5c905244de5f:0xe8888b694be9f673",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-070",
+  "name": "בריכת האירוסים",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.999334,
+  "lng": 35.73873,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Hairusim+Fall/data=!4m2!3m1!1s0x151ea7fd102213f5:0x3b5621ddb423442a",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-071",
+  "name": "בריכת אורחה ג'וחדר",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%91%D7%A8%D7%99%D7%9B%D7%AA+%D7%90%D7%95%D7%A8%D7%97%D7%94+%D7%92'%D7%95%D7%97%D7%93%D7%A8%E2%80%AD/data=!4m2!3m1!1s0x151c01f9e9bcd3cf:0x46e4cc2f292e93c0",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-072",
+  "name": "`En Migdal",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.839494,
+  "lng": 35.499849,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60En+Migdal/data=!4m2!3m1!1s0x151c591a3ff93a8b:0xb6309e6d50338bd0",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-073",
+  "name": "מצפה משה שעיה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%9E%D7%A9%D7%94+%D7%A9%D7%A2%D7%99%D7%94%E2%80%AD/data=!4m2!3m1!1s0x1502cebf1c924da1:0x20df56f15cba91e0",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-074",
+  "name": "מעיין האולמוסים",
+  "description": "מעיין האולמוסים\n בריכה קטנה ושקטה עם מקום לישיבה",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%94%D7%90%D7%95%D7%9C%D7%9E%D7%95%D7%A1%D7%99%D7%9D%E2%80%AD/data=!4m2!3m1!1s0x151da99df64deb0b:0x837d3b852256120a",
+  "tags": [
+   "מקור מים",
+   "מעיין",
+   "מים כל השנה"
+  ]
+ },
+ {
+  "id": "poi-075",
+  "name": "מאגר גלעד",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.5667731,
+  "lng": 35.0672624,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5667731,35.0672624",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-076",
+  "name": "עין ירדנה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.5369042,
+  "lng": 34.988156,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5369042,34.988156",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-077",
+  "name": "חלת ציחריג",
+  "description": "חלת ציחריג \n מאגר מים תת קרקעי קדום",
+  "region": "יהודה ושומרון",
+  "lat": 32.095838,
+  "lng": 34.952177,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Rosh+Haayin/data=!4m2!3m1!1s0x151d3117bf4b5abd:0x46f8bac57506806c",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-078",
+  "name": "חרבית כנף",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.871308,
+  "lng": 35.6862439999999,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Khirbet+Kanaf/data=!4m2!3m1!1s0x151c1a5d53803295:0x1e23bf57ac114019",
+  "tags": [
+   "שקיעה",
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-079",
+  "name": "עין נשל",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.634937,
+  "lng": 35.126312,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A0%D7%A9%D7%9C%E2%80%AD/data=!4m2!3m1!1s0x151da9ed42c13959:0xed8cfd48e2c63771",
+  "tags": [
+   "מקור מים",
+   "מים כל השנה",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-080",
+  "name": "תל זריק",
+  "description": "תל זריק, מעיין על רשת חבלים מעליו",
+  "region": "יהודה ושומרון",
+  "lat": 32.63487,
+  "lng": 35.126547,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D8%AA%D9%84+%D8%B2%D8%B1%D9%8A%D9%82%E2%80%AD/data=!4m2!3m1!1s0x151da95586ab0861:0xeaba2c3c8bbd0e85",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-081",
+  "name": "עין נמר",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 31.3561111,
+  "lng": 35.3144444,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%60Ein+en+Nimriya/data=!4m2!3m1!1s0x150304906d4cc8c5:0xc3ca6e77d4133690",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-082",
+  "name": "נחל הרדוף",
+  "description": "גבים",
+  "region": "יהודה ושומרון",
+  "lat": 31.3685238959873,
+  "lng": 35.2998933716806,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Nahal+Harduf/data=!4m2!3m1!1s0x1503029e378b41af:0xca964c7f67d9379b",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-083",
+  "name": "מצפה הוד",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%94%D7%95%D7%93%E2%80%AD/data=!4m2!3m1!1s0x151c30254a86c02b:0x15f8f99f6f5044a1",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-084",
+  "name": "מצפה הוד",
+  "description": "נק תצפית",
+  "region": "שפלה",
+  "lat": 32.713938,
+  "lng": 35.546688,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%94%D7%95%D7%93+Hod+Lookout%E2%80%AD/data=!4m2!3m1!1s0x151c41f7f135d43b:0xd05ce013ad7684e2",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-085",
+  "name": "עין ראשש (בוסתן ואדי ראשאש, בריכת מלאכי השלום)",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A8%D7%90%D7%A9%D7%A9+(%D7%91%D7%95%D7%A1%D7%AA%D7%9F+%D7%95%D7%90%D7%93%D7%99+%D7%A8%D7%90%D7%A9%D7%90%D7%A9,+%D7%91%D7%A8%D7%99%D7%9B%D7%AA+%D7%9E%D7%9C%D7%90%D7%9B%D7%99+%D7%94%D7%A9%D7%9C%D7%95%D7%9D)%E2%80%AD/data=!4m2!3m1!1s0x151cdb3b3c203537:0x60679de71065acb2",
+  "tags": [
+   "תצפית",
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-086",
+  "name": "עין דישון",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%93%D7%99%D7%A9%D7%95%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x151e9f983f3c14bb:0x6a4451503e84e923",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-087",
+  "name": "מצפה הפסנתר",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%94%D7%A4%D7%A1%D7%A0%D7%AA%D7%A8%E2%80%AD/data=!4m2!3m1!1s0x1502d927d2e329d7:0x8c9f688829cc41de",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-088",
+  "name": "תל עזקה",
+  "description": "",
+  "region": "שפלה",
+  "lat": 31.69999,
+  "lng": 34.936008,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Tel+Azekah/data=!4m2!3m1!1s0x1502c19c44579cbd:0xe1c0b32098ae8720",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-089",
+  "name": "מצפור לוקי",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%95%D7%A8+%D7%9C%D7%95%D7%A7%D7%99%E2%80%AD/data=!4m2!3m1!1s0x1502d18fd9ff53b3:0x11f40dd46303a41a",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-090",
+  "name": "מצפה השניים",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%94%D7%A9%D7%A0%D7%99%D7%99%D7%9D%E2%80%AD/data=!4m2!3m1!1s0x1502cb3a605cf189:0xf74c6533cdcc87cb",
+  "tags": [
+   "שקיעה",
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-091",
+  "name": "עין ורדה, משגר",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%95%D7%A8%D7%93%D7%94,+%D7%9E%D7%A9%D7%92%D7%A8%E2%80%AD/data=!4m2!3m1!1s0x1502c9d865e1b0cf:0xc563a6a8ecbc805c",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-092",
+  "name": "גבעת יאיר לזכרו של רס\"ר יאיר כהן ז\"ל",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%92%D7%91%D7%A2%D7%AA+%D7%99%D7%90%D7%99%D7%A8+%D7%9C%D7%96%D7%9B%D7%A8%D7%95+%D7%A9%D7%9C+%D7%A8%D7%A1%22%D7%A8+%D7%99%D7%90%D7%99%D7%A8+%D7%9B%D7%94%D7%9F+%D7%96%22%D7%9C%E2%80%AD/data=!4m2!3m1!1s0x1502b9001f8892ff:0x93d4df7531f103d2",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-093",
+  "name": "נחל צלמון",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.9054843,
+  "lng": 35.3722944,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A0%D7%97%D7%9C+%D7%A6%D7%9C%D7%9E%D7%95%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x151c308d9611d0d7:0xca0445a2e7c1fc04",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-094",
+  "name": "תצפית כמון",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.907187,
+  "lng": 35.361812,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%AA%D7%A6%D7%A4%D7%99%D7%AA+%D7%9B%D7%9E%D7%95%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x151c31b6a5970fd3:0x8f159c48a71d393f",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-095",
+  "name": "עין שרקרק",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.713313,
+  "lng": 35.141937,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A9%D7%A8%D7%A7%D7%A8%D7%A7%E2%80%AD/data=!4m2!3m1!1s0x151db3b0d9c3511b:0xb9ecc023648130f0",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-096",
+  "name": "חמאם בנות יעקב",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.0250308,
+  "lng": 35.627628,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%97%D7%9E%D7%90%D7%9D+%D7%91%D7%A0%D7%95%D7%AA+%D7%99%D7%A2%D7%A7%D7%91%E2%80%AD/data=!4m2!3m1!1s0x151c1f716204ef93:0x7a19c14219d0addc",
+  "tags": [
+   "מקור מים",
+   "מים כל השנה",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-097",
+  "name": "עין טמיר",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.041431,
+  "lng": 35.250236,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Temir/data=!4m2!3m1!1s0x151c2cfa894e074f:0x3adadaf69f554a2a",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-098",
+  "name": "צוק תל דור קפיצה למים",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.6166932,
+  "lng": 34.9164959,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Tel+Dor/data=!4m2!3m1!1s0x151d0a7ac636c17b:0x1a22bb2c12620118",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-099",
+  "name": "עין גבריאל",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.148938,
+  "lng": 35.119312,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%90%D7%91%22%D7%99%E2%80%AD/data=!4m2!3m1!1s0x151d25da971e0707:0xd48b3036060aa95e",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-100",
+  "name": "עין חרדלית",
+  "description": "",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%97%D7%A8%D7%93%D7%9C%D7%99%D7%AA%E2%80%AD/data=!4m2!3m1!1s0x151dd2f1ce223d31:0x74253845785c8d86",
+  "tags": [
+   "מקור מים",
+   "מעיין",
+   "מים כל השנה"
+  ]
+ },
+ {
+  "id": "poi-101",
+  "name": "עין זיו מעיין",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.0366667,
+  "lng": 35.2727778,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Ziv/data=!4m2!3m1!1s0x151c2c45a6ec9f7b:0xe6a7486a6fb47a1b",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-102",
+  "name": "בריכת הדולבים",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%91%D7%A8%D7%99%D7%9B%D7%AA+%D7%92%D7%9F+%D7%A2%D7%93%D7%9F+(%D7%94%D7%93%D7%9C%D7%91%D7%99%D7%9D)%E2%80%AD/data=!4m2!3m1!1s0x151c2d3e9963a51b:0x1c5750da64daed32",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-103",
+  "name": "עין ארנון",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.387161,
+  "lng": 35.520306,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.387161,35.520306",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-104",
+  "name": "تلة بزرا 873",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.017324,
+  "lng": 35.830926,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D8%AA%D9%84%D8%A9+%D8%A8%D8%B2%D8%B1%D8%A7+873%E2%80%AD/data=!4m2!3m1!1s0x151eabdeff0d2899:0x26b32c3bee8cb31f",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-105",
+  "name": "Dropped pin",
+  "description": "עין אל פארס",
+  "region": "שפלה",
+  "lat": 32.905788,
+  "lng": 35.786667,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.905788,35.786667",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-106",
+  "name": "מעין ידידיה",
+  "description": "עין ידידיה",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%9F+%D7%99%D7%93%D7%99%D7%93%D7%99%D7%94%E2%80%AD/data=!4m2!3m1!1s0x151c030d370b0c01:0xf36a308bd9a768a1",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-107",
+  "name": "Rujum Al-Hiri",
+  "description": "רוג׳ום מרשים וגדול, טיול יום",
+  "region": "יהודה ושומרון",
+  "lat": 32.9087024,
+  "lng": 35.8009647,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Rujum+Al-Hiri/data=!4m2!3m1!1s0x151c037cd479d76b:0xe6bcfd238777ef24",
+  "tags": [
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-108",
+  "name": "Ein Alva",
+  "description": "עין עלווה",
+  "region": "שפלה",
+  "lat": 33.033503,
+  "lng": 35.453796,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Alva/data=!4m2!3m1!1s0x151c26e85767f4fd:0x663227ffcb74c096",
+  "tags": [
+   "מקור מים",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-109",
+  "name": "Keren naftali.",
+  "description": "תצפית קרן נפתלי",
+  "region": "יהודה ושומרון",
+  "lat": 33.0894694,
+  "lng": 35.5641808,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Keren+naftali./data=!4m2!3m1!1s0x151e9f03b34dab41:0xe5f9d1621f1b2b5a",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-110",
+  "name": "Tzaanan pool",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 31.6041492,
+  "lng": 34.9589786,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Tzaanan+pool/data=!4m2!3m1!1s0x1502e96502881e55:0x6ee8c15306d181e2",
+  "tags": [
+   "מעיין",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-111",
+  "name": "Derech Ariel Sharon",
+  "description": "פרצה חוף הצוק",
+  "region": "שפלה",
+  "lat": 32.6938415,
+  "lng": 35.3122234,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Derech+Ariel+Sharon/data=!4m2!3m1!1s0x151d48df76083907:0xd1893290ebeae8f9",
+  "tags": [
+   "שקיעה",
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-112",
+  "name": "תל מגידו",
+  "description": "תל מגידו מצפה",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%AA%D7%9C+%D7%9E%D7%92%D7%99%D7%93%D7%95%E2%80%AD/data=!4m2!3m1!1s0x151daae0db1b384d:0x2231c6285b979aa8",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-113",
+  "name": "Dropped pin",
+  "description": "עין עתיד",
+  "region": "יהודה ושומרון",
+  "lat": 31.714113,
+  "lng": 34.975247,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.714113,34.975247",
+  "tags": [
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-114",
+  "name": "Nir Oz Lion",
+  "description": "",
+  "region": "שפלה",
+  "lat": 31.2960164,
+  "lng": 34.4105233,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Nir+Oz+Lion/data=!4m2!3m1!1s0x14fd8f002776c075:0x63aea658f44d1504",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-115",
+  "name": "Dropped pin",
+  "description": "צורף ממליץ נקודת תצפית על מגדל מים",
+  "region": "יהודה ושומרון",
+  "lat": 31.3069234,
+  "lng": 34.3907184,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.3069234,34.3907184",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-116",
+  "name": "מעיין ימק\"א",
+  "description": "מעיין ימק״א",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%99%D7%9E%D7%A7%22%D7%90%E2%80%AD/data=!4m2!3m1!1s0x151c3fa478d2dc55:0x5e91249d0c81279e",
+  "tags": [
+   "מעיין",
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-117",
+  "name": "Timna Mountain",
+  "description": "הר תמנע",
+  "region": "יהודה ושומרון",
+  "lat": 29.7799673,
+  "lng": 34.9700086,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Timna+Mountain/data=!4m2!3m1!1s0x150043c02db664c1:0x7f2013f29cffffc9",
+  "tags": [
+   "מקום מיוחד",
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-118",
+  "name": "הר גמל",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 30.6031228,
+  "lng": 34.7966623,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.6031228,34.7966623",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-119",
+  "name": "גן הפסלים",
+  "description": "",
+  "region": "שפלה",
+  "lat": 30.6144621,
+  "lng": 34.8055887,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.6144621,34.8055887",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-120",
+  "name": "עין שוקו e'n shoko",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.739688,
+  "lng": 35.652187,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A9%D7%95%D7%A7%D7%95+e'n+shoko%E2%80%AD/data=!4m2!3m1!1s0x151c1523d0ef0acf:0x375c2582ceff376",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים",
+   "תצפית",
+   "שקיעה",
+   "מעיין"
+  ]
+ },
+ {
+  "id": "poi-121",
+  "name": "מצפה רון",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: מצפה רון מקום מהמם לשקיעה בפלמחים, הכי קל לחנות מחוץ לקיבוץ ולהכנס ברגל דרך הקיבוץ לנקודה.\n תשתיות במצפה: מסלעה לישיבה, ניתן גם לפרוס מחצלת ולהנות מהנוף.",
+  "region": "שפלה",
+  "lat": 31.935563,
+  "lng": 34.707563,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%A8%D7%95%D7%9F%E2%80%AD/data=!4m2!3m1!1s0x1502b17696caaf0b:0x4f0a6eff6bd703dc",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-122",
+  "name": "הר תנופה",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: מצפור הר תנופה על שם סרן עופר שוורץ, מתנשא לגובה 389 מטר. ונותן מראה נרחב על על האזור.\n תשתיות במצפה: ספסלים, פחי זבל.",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%94%D7%A8+%D7%AA%D7%A0%D7%95%D7%A4%D7%94%E2%80%AD/data=!4m2!3m1!1s0x1502c55e7cfcdba9:0xd6312ef9ecffd159",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-123",
+  "name": "תצפית מעלה לבונה",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: התצפית במעלה לבונה מקסימה ביופיה, היא ממלא את הנפש ונותנת תחושת שלווה ורוגע.",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%AA%D7%A6%D7%A4%D7%99%D7%AA+%D7%9E%D7%A2%D7%9C%D7%94+%D7%9C%D7%91%D7%95%D7%A0%D7%94%E2%80%AD/data=!4m2!3m1!1s0x151cd9b952e1cce1:0x4b17c0cd23bdf2d8",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-124",
+  "name": "תל חדיד",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: תל חדיד הוא חלק מיער בן שמן ומתנשא לגובה של 147 מטרים. בפסגת התל ישנה תצפית מרהיבה המשקיפה על המרחב שבין פתח תקוה, ללוד, רמלה ותל אביב.",
+  "region": "שפלה",
+  "lat": 31.963534,
+  "lng": 34.95203,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%AA%D7%9C+%D7%97%D7%93%D7%99%D7%93%E2%80%AD/data=!4m2!3m1!1s0x1502cca74787251b:0x23ef7b16fae788e3",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-125",
+  "name": "מצפה עילם",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.5317629,
+  "lng": 34.9385834,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5317629,34.9385834",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-126",
+  "name": "בריכות דגים המעפיל",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: מצפה שקט ומיוחד בלב עמק חפר, סמוך לבריכות דגים מוקפות בטבע ירוק ופראי.\n המקום מציע נוף פתוח של שדות, מים ושמיים רחבים, עם אווירה רגועה ושלווה שמושלמת להתנתקות מהיום-יום.\n תשתיות במצפה: ספסלים, מעיין קרוב.",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%91%D7%A8%D7%99%D7%9B%D7%95%D7%AA+%D7%93%D7%92%D7%99%D7%9D+%D7%94%D7%9E%D7%A2%D7%A4%D7%99%D7%9C%E2%80%AD/data=!4m2!3m1!1s0x151d11bfe7c4b0eb:0x68165908ce7e9cb",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-127",
+  "name": "מצפה עידו שני",
+  "description": "סוג המצפה: שקיעה\n כמה מילים:\"מצפה עידו\" הינה פינה במושב חרוצים, הסמוך למושב בצרה. המצפה נחנך ביולי 2024 לזכרו של עידו שנפל בעזה.",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%A2%D7%99%D7%93%D7%95+%D7%A9%D7%A0%D7%99%E2%80%AD/data=!4m2!3m1!1s0x151d38a00bc0e0cf:0x5a40fed3763ec768",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-128",
+  "name": "Dropped pin",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: בסמוך ליישוב סלעית על גבעה בגובה 263 מטר מעל פני הים הוקם מצפה הדר גולדין – לזכרו של הדר גולדין שנפל בעת מילוי תפקידו בזמן מבצע צוק איתן בשנת 2014. המצפה הוקם על שרידי מבנה מהתקופה הרומאית שהיה על הדרך בין העיר אפולוניה במערב ועד לשכם שבמזרח.",
+  "region": "יהודה ושומרון",
+  "lat": 32.240866,
+  "lng": 35.0386901,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.240866,35.0386901",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-129",
+  "name": "Dropped pin",
+  "description": "סוג מצפה: שקיעה\n מצפה לזכר רועי נגרי\n מצפה מטופח עם כיסא נדנדה ודק לזכרו\n למיקום מדויק חיפוש בעמוד ענן",
+  "region": "יהודה ושומרון",
+  "lat": 32.2238745,
+  "lng": 34.818226,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.2238745,34.818226",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-130",
+  "name": "Tel Gimzo",
+  "description": "סוג המצפה: שקיעה\n כמה מילים: מצפה משגע ביופיו הניצב מעל מושב גמזו.\n תשתיות במצפה: ספסלים, פחי זבל.",
+  "region": "יהודה ושומרון",
+  "lat": 31.9300417,
+  "lng": 34.9465224,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Tel+Gimzo/data=!4m2!3m1!1s0x1502cb861882ecd9:0xc8def5623f147",
+  "tags": [
+   "תצפית",
+   "שקיעה"
+  ]
+ },
+ {
+  "id": "poi-131",
+  "name": "Har Etan",
+  "description": "סוג המצפה: זריחה\n כמה מילים: הר איתן נמצא לא רחוק ממחלף הראל בכביש ירושלים-תל אביב ליד מבשרת ציון ובית זית. ההר הוא חלק מהרי ירושלים. בצידו המזרחי נובעים מעיינות הסטף וצידו המערבי משקיף על נחל שורק.",
+  "region": "יהודה ושומרון",
+  "lat": 31.7694444,
+  "lng": 35.1119444,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Har+Etan/data=!4m2!3m1!1s0x1502d0a714318efd:0x1f6cb803f9641de4",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-132",
+  "name": "תל יבנה",
+  "description": "סוג המצפה: זריחה\n כמה מילים: תל יבנה הוא אתר ארכיאולוגי חשוב ועשיר בהיסטוריה, הממוקם במזרח העיר יבנה והוא התל הגבוה ביותר באזור השפלה.\n היסטוריה עתיקה: היישוב במקום החל כבר בתקופת הברונזה התיכונה השנייה (לפני כ-4,000 שנה). התל היה מיושב כמעט ברציפות לאורך תקופות רבות, בשל קרבתו ל\"דרך הים\" החשובה.",
+  "region": "יהודה ושומרון",
+  "lat": 31.866188,
+  "lng": 34.747187,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%AA%D7%9C+%D7%99%D7%91%D7%A0%D7%94%E2%80%AD/data=!4m2!3m1!1s0x1502ba6b998fcdb9:0x428d7754be927c76",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-133",
+  "name": "View Of The Jordan Hall",
+  "description": "סוג המצפה: זריחה\n כמה מילים: תצפית מדהימה על הרי מואב, בקעת יריחו, נחל פרת ונופי צפון ים המלח.\n תשתיות במצפה: ספסלים, מים, חשמל, תאורה, פחי זבל, חניון מסודר",
+  "region": "יהודה ושומרון",
+  "lat": 31.8143854,
+  "lng": 35.3963441,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/View+Of+The+Jordan+Hall/data=!4m2!3m1!1s0x150332992e7e382d:0x928839f32b3d6861",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-134",
+  "name": "Metsoke Dragot",
+  "description": "סוג המצפה: זריחה\n כמה מילים: מצוקי דרגות שוכן בנקודה ייחודית, כשמצדו האחד נפרש הנוף עוצר הנשימה של ים המלח, ומצדו האחר מתגלה המדבר הרחב.",
+  "region": "יהודה ושומרון",
+  "lat": 31.591008,
+  "lng": 35.393344,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Metsoke+Dragot/data=!4m2!3m1!1s0x15033cada70da315:0xb38db3a68d01e265",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-135",
+  "name": "מצפה מואב",
+  "description": "סוג המצפה: זריחה\n כמה מילים: מצפה מואב הינו נקודת תצפית מרהיבה מערד מזרחה לעבר הרי מדבר יהודה, ים המלח והרי מואב.\n תשתיות במצפה: ספסלים, תאורה, פחי זבל, חניון מסודר.",
+  "region": "יהודה ושומרון",
+  "lat": 31.261313,
+  "lng": 35.239063,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A6%D7%A4%D7%94+%D7%9E%D7%95%D7%90%D7%91%E2%80%AD/data=!4m2!3m1!1s0x1503006cfcffb797:0xe06bbf0cf6e771a6",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-136",
+  "name": "המרפסת של בודי",
+  "description": "סוג המצפה: זריחה\n כמה מילים: מצפה שנמצא מזרחית למושב עידן לזכר אהד (בודי) כהן, לא נדרש רכב 4x4.\n תשתיות במצפה: חניון מסודר",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%94%D7%9E%D7%A8%D7%A4%D7%A1%D7%AA+%D7%A9%D7%9C+%D7%91%D7%95%D7%93%D7%99%E2%80%AD/data=!4m2!3m1!1s0x1503cf0021629d9f:0x708c3717de481cae",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-137",
+  "name": "Ein Bokek beach",
+  "description": "סוג המצפה: זריחה\n כמה מילים: מקום משגע לצפות בזריחה אל מול הרי מואב.\n תשתיות במצפה: ספסלים, פחי זבל, מים, חניון מסודר",
+  "region": "יהודה ושומרון",
+  "lat": 31.1966358999999,
+  "lng": 35.3632542,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ein+Bokek+beach/data=!4m2!3m1!1s0x1503a83cafc47e91:0x1da2271e85270305",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-138",
+  "name": "מעלה הסולמות / שביל המדרגות",
+  "description": "סוג המצפה: זריחה\n כמה מילים: תצפית הר סדום מספקת לנו נקודת מנוחה מושלמת לצפייה על בריכות ים המלח.",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%9C%D7%94+%D7%94%D7%A1%D7%95%D7%9C%D7%9E%D7%95%D7%AA+%2F+%D7%A9%D7%91%D7%99%D7%9C+%D7%94%D7%9E%D7%93%D7%A8%D7%92%D7%95%D7%AA%E2%80%AD/data=!4m2!3m1!1s0x1503a544cc6ac241:0x6e95b70df530095b",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-139",
+  "name": "Har Zaror",
+  "description": "סוג המצפה: זריחה\n כמה מילים: הר שולחן שצופה אל עבר בקעת צין, חוד עקב, ומדבר יפיפה.\n לינה לפני כן בשטח(לימן צרור/לימן מ\"ד באפליקציית גוגל מאפס).\n האיזור הוא שמורת טבע ורק בלימן ניתן לחנות בצורה מסודרת. עלייה של 25 דקות בקצב איתי אל ההר לפני הזריחה.",
+  "region": "יהודה ושומרון",
+  "lat": 30.8608333,
+  "lng": 34.8202778,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Har+Zaror/data=!4m2!3m1!1s0x15021854903d7a7f:0xbd198eaf46a1f63a",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-140",
+  "name": "Dropped pin",
+  "description": "סוג המצפה: זריחה\n כמה מילים: לאורך כל הצוק של המדרשה, מהקבר של בן גוריון ולכל המשך הרצועה מתפרש הצוק שמשקיף על נוף מדברי מהמם, מתאים גם לשקיעות כמובן.",
+  "region": "יהודה ושומרון",
+  "lat": 30.8481197,
+  "lng": 34.7819253,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.8481197,34.7819253",
+  "tags": []
+ },
+ {
+  "id": "poi-141",
+  "name": "Ras Irdeiha",
+  "description": "יציאה מחניון הר ארדון וטיפוס עם אור ראשון לראש ההר. תצפית מדהימה עם הזריחה שעולה מעל כרבולת חרירים.",
+  "region": "יהודה ושומרון",
+  "lat": 30.6413889,
+  "lng": 34.9533333,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Ras+Irdeiha/data=!4m2!3m1!1s0x150189624d429e83:0xf4baa9c8b1234c8c",
+  "tags": [
+   "תצפית"
+  ]
+ },
+ {
+  "id": "poi-142",
+  "name": "עין שווירח",
+  "description": "",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A9%D7%95%D7%95%D7%99%D7%A8%D7%97%E2%80%AD/data=!4m2!3m1!1s0x151c15747a6af551:0x125e55b438643441",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-143",
+  "name": "מעיין עין אי\"ה",
+  "description": "",
+  "region": "שפלה",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%A2%D7%99%D7%9F+%D7%90%D7%99%22%D7%94%E2%80%AD/data=!4m2!3m1!1s0x151c0dfe21f30847:0xaf0d64e041073f93",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-144",
+  "name": "Nahal Barak",
+  "description": "מסלול יום טיול, נחל ורדית וברק. גבי מים קרים",
+  "region": "שפלה",
+  "lat": 30.4200910659591,
+  "lng": 35.1055325203285,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/Nahal+Barak/data=!4m2!3m1!1s0x15019965707be3ab:0xf6e60215d77bef17",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-145",
+  "name": "עין פלוטית - המעיין הנסתר",
+  "description": "עין אהבה, מים חמימים מקום ישיבה קטן",
+  "region": "יהודה ושומרון",
+  "lat": null,
+  "lng": null,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/place/%D7%A2%D7%99%D7%9F+%D7%A4%D7%9C%D7%95%D7%98%D7%99%D7%AA+-+%D7%94%D7%9E%D7%A2%D7%99%D7%99%D7%9F+%D7%94%D7%A0%D7%A1%D7%AA%D7%A8%E2%80%AD/data=!4m2!3m1!1s0x1503b716ae209957:0x9d50836b682c1a1a",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-146",
+  "name": "האגם הנסתר בגעתון",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.0138457,
+  "lng": 35.1751328,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.0138457,35.1751328",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-147",
+  "name": "הבריכה הבריטית",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.0162927,
+  "lng": 35.2556419,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.0162927,35.2556419",
+  "tags": [
+   "מקור מים",
+   "מים כל השנה"
+  ]
+ },
+ {
+  "id": "poi-148",
+  "name": "מאגר 2.0’",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.2960993,
+  "lng": 35.7735443,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.2960993,35.7735443",
+  "tags": [
+   "מקור מים",
+   "מים כל השנה"
+  ]
+ },
+ {
+  "id": "poi-149",
+  "name": "המחלק בדפנה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.2359595,
+  "lng": 35.6357002,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.2359595,35.6357002",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-150",
+  "name": "הפינה בשניר",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.1994823,
+  "lng": 35.609436,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.1994823,35.609436",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-151",
+  "name": "מפל הירדינון",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.1568106,
+  "lng": 35.6562996,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.1568106,35.6562996",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-152",
+  "name": "עין תאו",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.1329513,
+  "lng": 35.5692673,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.1329513,35.5692673",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-153",
+  "name": "סכר ירדינון",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.1545112,
+  "lng": 35.6683159,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.1545112,35.6683159",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-154",
+  "name": "מפל גילבון",
+  "description": "",
+  "region": "שפלה",
+  "lat": 33.0397519,
+  "lng": 35.6617928,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.0397519,35.6617928",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-155",
+  "name": "מפל דבורה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.0433494,
+  "lng": 35.6674576,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.0433494,35.6674576",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-156",
+  "name": "חמאם בנות יעקב",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 33.0250726,
+  "lng": 35.6276321,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/33.0250726,35.6276321",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-157",
+  "name": "עין עמיחי (עין זכרי)",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.9902356,
+  "lng": 35.6634235,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.9902356,35.6634235",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-158",
+  "name": "מעיין הבוקרים",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.9699316,
+  "lng": 35.6187057,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.9699316,35.6187057",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-159",
+  "name": "נחל עיט (תחילת מסלול)",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.9550966,
+  "lng": 35.7405853,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.9550966,35.7405853",
+  "tags": [
+   "מקור מים",
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-160",
+  "name": "32°57'14.2\"N 35°41'18.2\"E",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.9539443,
+  "lng": 35.6884003,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.9539443,35.6884003",
+  "tags": [
+   "מקור מים",
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-161",
+  "name": "עין איוב",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.8720904,
+  "lng": 35.5524445,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.8720904,35.5524445",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-162",
+  "name": "עין פיק",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7751514,
+  "lng": 35.7014465,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.7751514,35.7014465",
+  "tags": [
+   "מים כל השנה",
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-163",
+  "name": "עין שרביט",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7097444,
+  "lng": 35.4789734,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.7097444,35.4789734",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-164",
+  "name": "עין זלף-עין זעטוטה",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.690243,
+  "lng": 35.4063606,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.690243,35.4063606",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-165",
+  "name": "עין יבניאל",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.690532,
+  "lng": 35.5047226,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.690532,35.5047226",
+  "tags": [
+   "מקור מים",
+   "מים כל השנה"
+  ]
+ },
+ {
+  "id": "poi-166",
+  "name": "שמורת טבע נחל תבור",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.6428441,
+  "lng": 35.4528809,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.6428441,35.4528809",
+  "tags": [
+   "מקור מים",
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-167",
+  "name": "בור מתניה",
+  "description": "",
+  "region": "שפלה",
+  "lat": 32.5812457,
+  "lng": 35.3835297,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5812457,35.3835297",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-168",
+  "name": "בוסתן כיאט",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.8027869,
+  "lng": 34.9697828,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.8027869,34.9697828",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-169",
+  "name": "עין משוטטים",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.8011275,
+  "lng": 34.9738598,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.8011275,34.9738598",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-170",
+  "name": "עין שיח",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.8025344,
+  "lng": 34.9711776,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.8025344,34.9711776",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-171",
+  "name": "עין קדם",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7602838,
+  "lng": 34.9953175,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.7602838,34.9953175",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-172",
+  "name": "עין חנאפז",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7324185,
+  "lng": 35.1155663,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.7324185,35.1155663",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-173",
+  "name": "באר אבא",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7198546,
+  "lng": 35.1686096,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.7198546,35.1686096",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-174",
+  "name": "באר טבעון (עין שרקרק)",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.7133554,
+  "lng": 35.1420021,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.7133554,35.1420021",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-175",
+  "name": "עין זריק",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.6348936,
+  "lng": 35.1265526,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.6348936,35.1265526",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-176",
+  "name": "מפלוני ריחניה",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.6207617,
+  "lng": 35.0909758,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.6207617,35.0909758",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-177",
+  "name": "עין שלף",
+  "description": "",
+  "region": "יהודה ושומרון",
+  "lat": 32.6049647,
+  "lng": 35.0814056,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.6049647,35.0814056",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-178",
+  "name": "מעיין האולמוסים",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.6147975,
+  "lng": 35.0930786,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.6147975,35.0930786",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-179",
+  "name": "מאגר גלעד",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.5676479,
+  "lng": 35.0687027,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5676479,35.0687027",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-180",
+  "name": "עין ארובות",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.4813839,
+  "lng": 35.0213242,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.4813839,35.0213242",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-181",
+  "name": "עין סרטן",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.5022338,
+  "lng": 35.0015831,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5022338,35.0015831",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-182",
+  "name": "עין אורי",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.5266973,
+  "lng": 35.0139427,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.5266973,35.0139427",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-183",
+  "name": "המפלים הלבנים",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.4759897,
+  "lng": 35.5034351,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.4759897,35.5034351",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים",
+   "מסלול"
+  ]
+ },
+ {
+  "id": "poi-184",
+  "name": "עין גל",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.3834407,
+  "lng": 35.5208588,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.3834407,35.5208588",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-185",
+  "name": "המפלים הלבנים מפלס תחתון",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 32.4747949,
+  "lng": 35.5084133,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/32.4747949,35.5084133",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-186",
+  "name": "שמורת נחל פרת",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 31.8314824,
+  "lng": 35.3066254,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.8314824,35.3066254",
+  "tags": [
+   "מסלול",
+   "מקור מים",
+   "מים כל השנה"
+  ]
+ },
+ {
+  "id": "poi-187",
+  "name": "בור יביע",
+  "description": "בור מים",
+  "region": "ירושלים והסביבה",
+  "lat": 31.7779787,
+  "lng": 35.1729012,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.7779787,35.1729012",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-188",
+  "name": "בור לוע התנין",
+  "description": "בור מים",
+  "region": "ירושלים והסביבה",
+  "lat": 31.7808972,
+  "lng": 35.1703691,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.7808972,35.1703691",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-189",
+  "name": "עין סוף",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 31.7698428,
+  "lng": 35.1677942,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.7698428,35.1677942",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-190",
+  "name": "בור פולה",
+  "description": "בור מים",
+  "region": "ירושלים והסביבה",
+  "lat": 31.7795839,
+  "lng": 35.1763773,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.7795839,35.1763773",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-191",
+  "name": "עין אל-חארב",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 31.7821558,
+  "lng": 35.1274323,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.7821558,35.1274323",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-192",
+  "name": "עין צובה",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 31.783615,
+  "lng": 35.1277757,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.783615,35.1277757",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-193",
+  "name": "עין איתמר",
+  "description": "מעיין גובה ברכיים, פינת ישיבה",
+  "region": "ירושלים והסביבה",
+  "lat": 31.7408689,
+  "lng": 35.1471519,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.7408689,35.1471519",
+  "tags": [
+   "מים כל השנה",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-194",
+  "name": "באר אלה",
+  "description": "באר אלה, באר עמוקה עם צל בשטח שלמעלה",
+  "region": "ירושלים והסביבה",
+  "lat": 31.712324,
+  "lng": 34.8936939,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.712324,34.8936939",
+  "tags": [
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-195",
+  "name": "בור עג’ור",
+  "description": "בור מים מגניב, יריד עם סולם וחבלים",
+  "region": "ירושלים והסביבה",
+  "lat": 31.6869084,
+  "lng": 34.9214521,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.6869084,34.9214521",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-196",
+  "name": "בירכת צפירה",
+  "description": "",
+  "region": "ירושלים והסביבה",
+  "lat": 31.3375102,
+  "lng": 35.2774429,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/31.3375102,35.2774429",
+  "tags": [
+   "מסלול",
+   "מקור מים"
+  ]
+ },
+ {
+  "id": "poi-197",
+  "name": "עין עקב",
+  "description": "",
+  "region": "",
+  "lat": 30.8136237,
+  "lng": 34.8124981,
+  "imageUrl": "",
+  "googleUrl": "https://www.google.com/maps/search/30.8136237,34.8124981",
+  "tags": [
+   "מקור מים",
+   "מסלול"
+  ]
+ }
+]
