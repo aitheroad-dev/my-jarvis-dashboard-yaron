@@ -79,10 +79,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const meetingUrl =
     typeof body.meeting_url === "string" ? body.meeting_url.trim() : "";
+  // Default to auto-detect (Vexa/Whisper picks he/en); a caller can still force
+  // a language by sending it explicitly.
   const language =
     typeof body.language === "string" && body.language.trim().length > 0
       ? body.language.trim()
-      : "he";
+      : "auto";
   const bodyPasscode =
     typeof body.passcode === "string" && body.passcode.trim().length > 0
       ? body.passcode.trim()

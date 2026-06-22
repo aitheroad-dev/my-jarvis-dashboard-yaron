@@ -31,7 +31,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   const events = (await sql/* sql */ `
     SELECT google_event_id, title, start_time, end_time, meeting_url, platform,
-           native_meeting_id, auto_join, dispatched_meeting_id
+           native_meeting_id, auto_join, dispatched_meeting_id, language
       FROM calendar_events
      WHERE start_time >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-1 hour')
      ORDER BY start_time ASC

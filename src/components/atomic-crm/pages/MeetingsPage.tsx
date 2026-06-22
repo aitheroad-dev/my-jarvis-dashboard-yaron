@@ -43,6 +43,7 @@ type CalEvent = {
   platform: string | null;
   auto_join: number;
   dispatched_meeting_id: number | null;
+  language: string | null;
 };
 
 function fmtWhen(iso: string | null): string {
@@ -101,6 +102,21 @@ function CalendarSection() {
       await api(`/api/calendar/events/${encodeURIComponent(gid)}`, {
         method: "POST",
         body: JSON.stringify({ auto_join: on }),
+      });
+    } catch {
+      void loadEvents(); // revert to server truth on failure
+    }
+  };
+
+  const setLanguage = async (gid: string, lang: string) => {
+    const value = lang === "he" || lang === "en" ? lang : null;
+    setEvents((evs) =>
+      evs.map((e) => (e.google_event_id === gid ? { ...e, language: value } : e)),
+    );
+    try {
+      await api(`/api/calendar/events/${encodeURIComponent(gid)}`, {
+        method: "POST",
+        body: JSON.stringify({ language: lang }),
       });
     } catch {
       void loadEvents(); // revert to server truth on failure
@@ -222,17 +238,37 @@ function CalendarSection() {
                       {e.dispatched_meeting_id ? " · bot dispatched" : ""}
                     </div>
                   </div>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <span style={{ fontSize: 12.5, color: e.auto_join ? T.green : T.ink3, fontWeight: 600 }}>
-                      {e.auto_join ? "Auto-join on" : "Auto-join"}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={e.auto_join === 1}
-                      onChange={(ev) => void toggle(e.google_event_id, ev.target.checked)}
-                      style={{ width: 18, height: 18, cursor: "pointer", accentColor: T.peachDark }}
-                    />
-                  </label>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+                    <select
+                      value={e.language ?? "auto"}
+                      onChange={(ev) => void setLanguage(e.google_event_id, ev.target.value)}
+                      title="Transcription language"
+                      style={{
+                        fontSize: 12.5,
+                        padding: "4px 6px",
+                        borderRadius: 8,
+                        border: `1px solid ${T.line}`,
+                        background: T.white,
+                        color: T.ink2,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <option value="auto">Auto-detect</option>
+                      <option value="he">עברית</option>
+                      <option value="en">English</option>
+                    </select>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <span style={{ fontSize: 12.5, color: e.auto_join ? T.green : T.ink3, fontWeight: 600 }}>
+                        {e.auto_join ? "Auto-join on" : "Auto-join"}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={e.auto_join === 1}
+                        onChange={(ev) => void toggle(e.google_event_id, ev.target.checked)}
+                        style={{ width: 18, height: 18, cursor: "pointer", accentColor: T.peachDark }}
+                      />
+                    </label>
+                  </div>
                 </div>
               ))}
             </div>

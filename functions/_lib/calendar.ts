@@ -64,6 +64,7 @@ export interface CalEventRow {
   attempt_count: number;
   last_attempt_at: string | null;
   present: number;
+  language: string | null;
 }
 
 /**
@@ -172,7 +173,7 @@ export async function dispatchDue(
   const candidates = (await sql/* sql */ `
     SELECT google_event_id, title, start_time, end_time, meeting_url, platform,
            native_meeting_id, auto_join, dispatched_meeting_id,
-           attempt_count, last_attempt_at, present
+           attempt_count, last_attempt_at, present, language
       FROM calendar_events
      WHERE auto_join = 1 AND present = 1 AND start_time IS NOT NULL
   `) as CalEventRow[];
@@ -223,7 +224,9 @@ export async function dispatchDue(
       meetingUrl: ev.meeting_url ?? "",
       platform: ev.platform as "google_meet" | "zoom" | "teams",
       nativeMeetingId: ev.native_meeting_id,
-      language: "he",
+      // NULL language → auto-detect (createBot omits the param so Vexa/Whisper
+      // picks he/en); 'he'/'en' force that language.
+      language: ev.language ?? undefined,
     });
     if (r.ok) {
       // Success resets the consecutive-failure counter so the cap only ever
