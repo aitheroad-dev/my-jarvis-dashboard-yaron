@@ -4,10 +4,16 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
 [vars]
-# Single-tenant dashboard. Auth runs through Cloudflare Access — the email
-# allow-listed on the Access policy is the only person who can reach this app.
-# Functions verify the Cf-Access-Authenticated-User-Email header matches.
+# Dashboard auth runs through Cloudflare Access. Functions VERIFY the signed
+# Cf-Access-Jwt-Assertion (RS256) against the team JWKS — issuer + audience +
+# signature — and derive the email from the verified claims (not the spoofable
+# Cf-Access-Authenticated-User-Email header). The email must be on the allow-list.
 TENANT_OWNER_EMAIL = "aitheroad@gmail.com"
+# CF Access team auth domain + this app's Application Audience (AUD) tag.
+ACCESS_TEAM_DOMAIN = "small-fire-f8d3.cloudflareaccess.com"
+ACCESS_AUD = "da27b6b7d6ed7f4d92516c708135a929b85e55f8dd75ad5504b799d6e3930946"
+# Who may use the dashboard (comma-separated). Yaron + Noa.
+ACCESS_ALLOWED_EMAILS = "aitheroad@gmail.com,noabarkai@gmail.com"
 # Public base URL of the R2 voice bucket; audio_url = ${VOICE_PUBLIC_URL}/<id>.mp3
 VOICE_PUBLIC_URL = "https://pub-6fcd8a707615437da46fb97b8be570ba.r2.dev"
 

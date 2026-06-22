@@ -1,3 +1,5 @@
+import { createRemoteJWKSet, jwtVerify } from "jose";
+
 export interface Env {
   /** Cloudflare D1 (SQLite) — the dashboard's data store. Replaces Neon. */
   DB: D1Database;
@@ -6,6 +8,12 @@ export interface Env {
   /** Public base URL for the R2 voice bucket, e.g. https://pub-xxxx.r2.dev */
   VOICE_PUBLIC_URL: string;
   TENANT_OWNER_EMAIL: string;
+  /** CF Access team auth domain, e.g. small-fire-f8d3.cloudflareaccess.com */
+  ACCESS_TEAM_DOMAIN?: string;
+  /** CF Access Application Audience (AUD) tag for this app. */
+  ACCESS_AUD?: string;
+  /** Comma-separated allow-list of authorized emails. */
+  ACCESS_ALLOWED_EMAILS?: string;
   CLOUDFLARE_API_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
 }
@@ -16,39 +24,90 @@ export type AuthedUser = {
   orgId: string;
 };
 
+// Known-good defaults (verified live 2026-06-22). Env vars override; the
+// defaults exist so a dropped var can never lock the owner out of the dashboard.
+const DEFAULT_TEAM_DOMAIN = "small-fire-f8d3.cloudflareaccess.com";
+const DEFAULT_AUD =
+  "da27b6b7d6ed7f4d92516c708135a929b85e55f8dd75ad5504b799d6e3930946";
+const DEFAULT_ALLOWED = "aitheroad@gmail.com,noabarkai@gmail.com";
+
+// Module-scope JWKS cache, keyed by team domain. jose handles key rotation +
+// cooldown internally; reusing the set across requests in an isolate avoids a
+// certs fetch per request.
+const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+function getJwks(teamDomain: string) {
+  let set = jwksCache.get(teamDomain);
+  if (!set) {
+    set = createRemoteJWKSet(
+      new URL(`https://${teamDomain}/cdn-cgi/access/certs`),
+    );
+    jwksCache.set(teamDomain, set);
+  }
+  return set;
+}
+
+function allowList(env: Env): Set<string> {
+  const raw = env.ACCESS_ALLOWED_EMAILS || DEFAULT_ALLOWED;
+  const emails = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  // Always include the configured owner so the owner cannot be locked out.
+  if (env.TENANT_OWNER_EMAIL) emails.push(env.TENANT_OWNER_EMAIL.toLowerCase());
+  return new Set(emails);
+}
+
 /**
- * Trusts Cloudflare Access: every request must arrive through the Access
- * policy, which sets Cf-Access-Authenticated-User-Email after sign-in.
- * The function rejects if the header is missing or doesn't match the
- * single allow-listed email (TENANT_OWNER_EMAIL).
+ * Verifies the Cloudflare Access JWT and authorizes the caller.
  *
- * The Access policy is the primary security boundary; this header check is
- * defense-in-depth so direct-to-origin requests still fail closed.
+ * Cloudflare Access injects `Cf-Access-Jwt-Assertion` (a signed RS256 JWT) on
+ * every request that passes the Access policy. We VERIFY that token's
+ * signature against the team JWKS, check issuer + audience, and derive the
+ * email from the verified claims — never from the spoofable
+ * `Cf-Access-Authenticated-User-Email` header. Then the email must be on the
+ * allow-list. Direct-to-origin requests (which carry no valid assertion) fail
+ * closed with 401.
  */
 export async function requireUser(
   request: Request,
   env: Env,
 ): Promise<AuthedUser> {
-  const email = request.headers
-    .get("Cf-Access-Authenticated-User-Email")
-    ?.toLowerCase();
+  const token = request.headers.get("Cf-Access-Jwt-Assertion");
+  if (!token) {
+    throw unauthorized(
+      "missing Cf-Access-Jwt-Assertion (request did not pass Access)",
+    );
+  }
+
+  const teamDomain = env.ACCESS_TEAM_DOMAIN || DEFAULT_TEAM_DOMAIN;
+  const audience = env.ACCESS_AUD || DEFAULT_AUD;
+  const issuer = `https://${teamDomain}`;
+
+  let email: string;
+  try {
+    const { payload } = await jwtVerify(token, getJwks(teamDomain), {
+      audience,
+      issuer,
+    });
+    email = String(payload.email ?? "").toLowerCase();
+  } catch (e) {
+    const code =
+      (e as { code?: string })?.code ??
+      (e as Error)?.message ??
+      "verify_failed";
+    throw unauthorized(`invalid Access token: ${code}`);
+  }
 
   if (!email) {
-    throw unauthorized("missing Cf-Access-Authenticated-User-Email header");
+    throw unauthorized("verified token carries no email claim");
   }
-
-  const expected = env.TENANT_OWNER_EMAIL?.toLowerCase();
-  if (!expected) {
-    throw unauthorized("server misconfigured: TENANT_OWNER_EMAIL not set");
-  }
-
-  if (email !== expected) {
+  if (!allowList(env).has(email)) {
     throw unauthorized(`email ${email} not authorized for this dashboard`);
   }
 
   return {
     userId: email,
-    sessionId: request.headers.get("Cf-Access-Jwt-Assertion"),
+    sessionId: token,
     orgId: "single-tenant",
   };
 }
