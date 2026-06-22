@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/lib/workos-shim";
 import { getTenantIdentity } from "@/lib/tenant";
+import { useMe } from "@/lib/useMe";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +17,21 @@ export function CrmSidebar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { displayName: tenantDisplayName } = getTenantIdentity();
+  const { role, email } = useMe();
+
+  const isMove = role === "move";
+  const items = isMove
+    ? navItems.filter((item) => item.to === "/move")
+    : navItems;
 
   const fullName = [user?.firstName, user?.lastName]
     .filter((v): v is string => Boolean(v))
     .join(" ");
-  const displayName = fullName || user?.email || "User";
+  // Move users (Noa) get their real email from /api/me; the workos-shim `user`
+  // is hardcoded to the owner, so it can't name a move user.
+  const displayName = isMove
+    ? email ?? "User"
+    : fullName || user?.email || "User";
   const avatarUrl = user?.profilePictureUrl ?? undefined;
   const initial = displayName.charAt(0).toUpperCase();
 
@@ -40,7 +51,7 @@ export function CrmSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-2 overflow-y-auto pt-6 pb-4">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <NavLink key={item.to} item={item} />
         ))}
       </nav>
@@ -57,13 +68,15 @@ export function CrmSidebar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-48">
-            <DropdownMenuItem
-              onClick={() => navigate("/settings")}
-              className="cursor-pointer"
-            >
-              <Settings className="h-4 w-4 me-2" />
-              Settings
-            </DropdownMenuItem>
+            {!isMove && (
+              <DropdownMenuItem
+                onClick={() => navigate("/settings")}
+                className="cursor-pointer"
+              >
+                <Settings className="h-4 w-4 me-2" />
+                Settings
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => signOut()}
               className="cursor-pointer"

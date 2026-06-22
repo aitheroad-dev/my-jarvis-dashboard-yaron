@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "../layout/Layout";
+import { useMe } from "@/lib/useMe";
 
 // === Core domains (Structured) ===
 import { ProjectsListPage } from "../projects-dashboard/ProjectsListPage";
@@ -36,7 +37,24 @@ import { SettingsPage } from "../pages/SettingsPage";
 //
 // AuthKitProvider + AuthGate in App.tsx gate this whole tree, so every route
 // here assumes an authenticated user.
-export const CRM = () => (
+export const CRM = () => {
+  const { role } = useMe();
+
+  // Move-only users (Noa) are scoped to the move tracker. The dashboard frame is
+  // kept, but only /move is routable; every other path redirects there. This is
+  // the cosmetic gate — the server (_middleware.ts) is the real authorization wall.
+  if (role === "move") {
+    return (
+      <Layout>
+        <Routes>
+          <Route path="/move" element={<MovePage />} />
+          <Route path="*" element={<Navigate to="/move" replace />} />
+        </Routes>
+      </Layout>
+    );
+  }
+
+  return (
   <Layout>
     <Routes>
       {/* Root → Home. */}
@@ -91,4 +109,5 @@ export const CRM = () => (
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   </Layout>
-);
+  );
+};

@@ -14,6 +14,9 @@ ACCESS_TEAM_DOMAIN = "small-fire-f8d3.cloudflareaccess.com"
 ACCESS_AUD = "da27b6b7d6ed7f4d92516c708135a929b85e55f8dd75ad5504b799d6e3930946"
 # Who may use the dashboard (comma-separated). Yaron + Noa.
 ACCESS_ALLOWED_EMAILS = "aitheroad@gmail.com,noabarkai@gmail.com"
+# Of the above, who is restricted to ONLY the move tracker (role "move"). The
+# owner is force-excluded in code, so listing him here is a no-op (lockout-safe).
+ACCESS_MOVE_ONLY_EMAILS = "noabarkai@gmail.com"
 # Public base URL of the R2 voice bucket; audio_url = ${VOICE_PUBLIC_URL}/<id>.mp3
 VOICE_PUBLIC_URL = "https://pub-6fcd8a707615437da46fb97b8be570ba.r2.dev"
 
