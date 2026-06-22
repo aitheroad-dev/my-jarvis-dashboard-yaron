@@ -18,7 +18,7 @@ export function CrmSidebar() {
 
   const isMove = role === "move";
   const items = isMove
-    ? navItems.filter((item) => item.to === "/move")
+    ? navItems.filter((item) => item.to === "/move" || item.to === "/rental")
     : navItems;
 
   const fullName = [user?.firstName, user?.lastName]

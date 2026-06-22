@@ -4,8 +4,9 @@ import { identifyAccessUser, type Env } from "./_lib/auth";
 /**
  * Server-side authorization wall (RBAC).
  *
- * The dashboard is single-tenant, but a "move" role (Noa) is scoped to ONLY the
- * move tracker. CF Access lets her email in at the edge and every handler's
+ * The dashboard is single-tenant, but the "move" role (Noa) is scoped to a small
+ * set of SHARED pages — the move tracker and the rental search (/api/move +
+ * /api/rental). CF Access lets her email in at the edge and every handler's
  * `requireUser` would otherwise grant her full read access. This middleware is
  * the single choke point that enforces the scope: a positively-verified
  * move-role browser user may reach ONLY the paths in `moveAllowed`; everything
@@ -61,7 +62,8 @@ export function moveAllowed(pathname: string): boolean {
   if (
     pathname === "/api/me" ||
     pathname === "/api/version" ||
-    pathname === "/api/move"
+    pathname === "/api/move" ||
+    pathname === "/api/rental"
   ) {
     return true;
   }

@@ -17,6 +17,7 @@ import { MeetingDetailPage } from "../pages/MeetingDetailPage";
 import { HomePage } from "../pages/HomePage";
 import { PortfolioPage } from "../pages/PortfolioPage";
 import { MovePage } from "../move/MovePage";
+import { RentalPage } from "../rental/RentalPage";
 
 // === Standards + chrome ===
 import { KbBlueprintPage } from "../blueprint/KbBlueprintPage";
@@ -40,14 +41,16 @@ import { SettingsPage } from "../pages/SettingsPage";
 export const CRM = () => {
   const { role } = useMe();
 
-  // Move-only users (Noa) are scoped to the move tracker. The dashboard frame is
-  // kept, but only /move is routable; every other path redirects there. This is
-  // the cosmetic gate — the server (_middleware.ts) is the real authorization wall.
+  // Move users (Noa) are scoped to the SHARED pages — the move tracker and the
+  // rental search. The dashboard frame is kept, but only /move and /rental are
+  // routable; every other path redirects to /move. This is the cosmetic gate —
+  // the server (_middleware.ts) is the real authorization wall.
   if (role === "move") {
     return (
       <Layout>
         <Routes>
           <Route path="/move" element={<MovePage />} />
+          <Route path="/rental" element={<RentalPage />} />
           <Route path="*" element={<Navigate to="/move" replace />} />
         </Routes>
       </Layout>
@@ -87,6 +90,9 @@ export const CRM = () => {
 
       {/* Move tracker (Structured). */}
       <Route path="/move" element={<MovePage />} />
+
+      {/* NL rental search — live map + findings, mirrored from the box. */}
+      <Route path="/rental" element={<RentalPage />} />
 
       {/* Skills (Structured list + Knowledge — Classic detail). */}
       <Route path="/skills" element={<SkillsPage />} />

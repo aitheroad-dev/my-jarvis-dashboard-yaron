@@ -498,6 +498,8 @@ export function MovePage() {
   // failures (no scary error for a single dropped poll).
   useEffect(() => {
     const handle = window.setInterval(() => {
+      // Don't poll a backgrounded tab — saves mobile battery + D1 reads.
+      if (document.visibilityState !== "visible") return;
       void (async () => {
         const gen = mutationGenRef.current;
         try {
