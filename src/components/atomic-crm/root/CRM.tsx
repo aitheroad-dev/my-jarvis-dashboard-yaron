@@ -18,6 +18,7 @@ import { HomePage } from "../pages/HomePage";
 import { PortfolioPage } from "../pages/PortfolioPage";
 import { MovePage } from "../move/MovePage";
 import { RentalPage } from "../rental/RentalPage";
+import { SpendPage } from "../spend/SpendPage";
 
 // === Standards + chrome ===
 import { KbBlueprintPage } from "../blueprint/KbBlueprintPage";
@@ -87,6 +88,9 @@ export const CRM = () => {
 
       {/* Portfolio (Structured) — mirror of local pai-portfolio CLI. */}
       <Route path="/portfolio" element={<PortfolioPage />} />
+
+      {/* Spend mirror — read-only view of the Mac-local pai-spend SQLite DB. */}
+      <Route path="/spend" element={<SpendPage />} />
 
       {/* Move tracker (Structured). */}
       <Route path="/move" element={<MovePage />} />

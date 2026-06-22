@@ -12,6 +12,7 @@ import {
   Truck,
   Users,
   Video,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export const navItems: NavItem[] = [
   { label: "Goals", to: "/goals-list", icon: Target },
   { label: "Projects", to: "/projects-list", icon: Briefcase },
   { label: "Portfolio", to: "/portfolio", icon: PieChart },
+  { label: "Spend", to: "/spend", icon: Wallet },
   { label: "מעבר דירה", to: "/move", icon: Truck },
   { label: "Rental", to: "/rental", icon: MapPin },
   { label: "Situation", to: "/situation", icon: Radar },
