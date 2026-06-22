@@ -20,9 +20,11 @@ const DEFAULT_DURATION_MS = 60 * 60_000;
 // Minimum gap between dispatch attempts for the same event — stops a failing
 // event re-firing every single minute (the Jun-13 failed-row storm).
 const RETRY_BACKOFF_MS = 5 * 60_000;
-// Give up after this many CONSECUTIVE failed sends for one event. A successful
-// send resets the counter to 0, so a long meeting waiting for a late human keeps
-// getting a bot through its window rather than being capped mid-way.
+// Give up after this many dispatch attempts for one event occurrence (success
+// or failure both count). With RETRY_BACKOFF_MS this covers ~30 min of retries
+// to catch a late human; once a bot actually captures transcript the
+// occurrence-scoped "handled" check stops dispatch regardless. Not resetting on
+// bot-creation is deliberate — it's what bounds the empty-room re-dispatch storm.
 const MAX_ATTEMPTS = 6;
 
 export interface CalendarConnection {
@@ -229,11 +231,15 @@ export async function dispatchDue(
       language: ev.language ?? undefined,
     });
     if (r.ok) {
-      // Success resets the consecutive-failure counter so the cap only ever
-      // bounds genuine Vexa failures, not empty-room re-dispatch across a window.
+      // Do NOT reset attempt_count here. A bot that's merely *created* (but lands
+      // in an empty room and captures nothing) would otherwise re-dispatch every
+      // backoff for the whole event window — the duplicate-empty-meeting storm.
+      // The cap (MAX_ATTEMPTS) now bounds total dispatches per event; once a bot
+      // actually captures transcript the occurrence-scoped "handled" check stops
+      // further dispatch on its own.
       await sql/* sql */ `
         UPDATE calendar_events
-           SET dispatched_meeting_id = ${r.meetingId}, attempt_count = 0
+           SET dispatched_meeting_id = ${r.meetingId}
          WHERE google_event_id = ${ev.google_event_id}
       `;
       dispatched++;
