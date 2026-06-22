@@ -58,6 +58,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
                 CASE WHEN delta_pct IS NULL THEN 1 ELSE 0 END ASC,
                 delta_pct ASC,
                 rent_eur ASC
+       LIMIT 1000
     `) as RentalRow[];
 
     const listings = rows.map((r) => ({

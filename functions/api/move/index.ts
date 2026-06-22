@@ -55,6 +55,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
         FROM move_tasks
        ORDER BY bucket ASC, seq ASC
+       LIMIT 1000
     `) as MoveTaskRow[];
 
     return json(rows);
