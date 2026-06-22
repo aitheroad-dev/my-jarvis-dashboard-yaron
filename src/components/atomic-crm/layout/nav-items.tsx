@@ -30,7 +30,7 @@ export const navItems: NavItem[] = [
   { label: "Goals", to: "/goals-list", icon: Target },
   { label: "Projects", to: "/projects-list", icon: Briefcase },
   { label: "Portfolio", to: "/portfolio", icon: PieChart },
-  { label: "Move", to: "/move", icon: Truck },
+  { label: "מעבר דירה", to: "/move", icon: Truck },
   { label: "Situation", to: "/situation", icon: Radar },
   { label: "Agents", to: "/agents", icon: Users },
   { label: "Skills", to: "/skills", icon: Sparkles },

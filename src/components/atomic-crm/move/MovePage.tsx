@@ -27,17 +27,26 @@ type EditingCell = {
   value: string;
 };
 
+// Bucket keys (A–D) are the stored data; titles are Hebrew display labels
+// (kept in sync with the move-share page).
 const BUCKETS: { id: MoveBucket; title: string }[] = [
-  { id: "A", title: "A · Handback" },
-  { id: "B", title: "B · Utilities & admin" },
-  { id: "C", title: "C · New place" },
-  { id: "D", title: "D · Packing & logistics" },
+  { id: "A", title: "מסירת הבית (קלוסטרהוף)" },
+  { id: "B", title: "תשתיות וכתובת" },
+  { id: "C", title: "הבית החדש" },
+  { id: "D", title: "אריזה ולוגיסטיקה" },
 ];
 
 const NEXT_STATUS: Record<MoveStatus, MoveStatus> = {
   todo: "doing",
   doing: "done",
   done: "todo",
+};
+
+// Status VALUES stay English in the DB; this maps them to Hebrew for display.
+const STATUS_HE: Record<MoveStatus, string> = {
+  todo: "לעשות",
+  doing: "בתהליך",
+  done: "בוצע",
 };
 
 const STATUS_ICON: Record<MoveStatus, typeof Circle> = {
@@ -88,10 +97,10 @@ function StatusButton({
   return (
     <button
       type="button"
-      aria-label={`Set ${task.title} status`}
+      aria-label={`שינוי סטטוס: ${task.title}`}
       onClick={() => onToggle(task)}
       disabled={disabled}
-      title={task.status}
+      title={STATUS_HE[task.status]}
       style={{
         width: 34,
         height: 34,
@@ -157,6 +166,7 @@ function InlineCell({
           fontSize: field === "title" ? 14 : 12,
           lineHeight: 1.35,
           outline: "none",
+          textAlign: "right",
         }}
       />
     );
@@ -176,7 +186,7 @@ function InlineCell({
         fontSize: field === "title" ? 14 : 12,
         fontWeight: field === "title" ? 700 : 500,
         lineHeight: 1.45,
-        textAlign: "left",
+        textAlign: "right",
         cursor: "text",
         wordBreak: "break-word",
       }}
@@ -216,7 +226,7 @@ function BucketAddForm({
       <input
         value={value}
         onChange={(event) => onChange(bucket, event.currentTarget.value)}
-        placeholder="Add item"
+        placeholder="להוסיף פריט"
         disabled={disabled}
         style={{
           minWidth: 0,
@@ -227,13 +237,14 @@ function BucketAddForm({
           padding: "9px 11px",
           fontSize: 13,
           outline: "none",
+          textAlign: "right",
         }}
       />
       <button
         type="submit"
         disabled={disabled || value.trim() === ""}
-        aria-label="Add move item"
-        title="Add item"
+        aria-label="להוסיף משימה"
+        title="להוסיף פריט"
         style={{
           width: 38,
           height: 38,
@@ -270,7 +281,7 @@ export function MovePage() {
 
   const loadRows = useCallback(async () => {
     const res = await api("/api/move");
-    if (!res.ok) throw await errorFromResponse("Failed to load move tasks", res);
+    if (!res.ok) throw await errorFromResponse("טעינת המשימות נכשלה", res);
     const data = (await res.json()) as MoveTask[];
     setRows(data);
     setError(null);
@@ -281,14 +292,14 @@ export function MovePage() {
     (async () => {
       try {
         const res = await api("/api/move");
-        if (!res.ok) throw await errorFromResponse("Failed to load move tasks", res);
+        if (!res.ok) throw await errorFromResponse("טעינת המשימות נכשלה", res);
         const data = (await res.json()) as MoveTask[];
         if (!cancelled) {
           setRows(data);
           setError(null);
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
+        if (!cancelled) setError(e instanceof Error ? e.message : "הטעינה נכשלה");
       }
     })();
     return () => { cancelled = true; };
@@ -302,12 +313,12 @@ export function MovePage() {
         method: "PATCH",
         body: JSON.stringify(patch),
       });
-      if (!res.ok) throw await errorFromResponse("Failed to update move task", res);
+      if (!res.ok) throw await errorFromResponse("עדכון המשימה נכשל", res);
       const updated = (await res.json()) as MoveTask;
       setRows((current) => (current ? replaceTask(current, updated) : current));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update move task");
+      setError(e instanceof Error ? e.message : "עדכון המשימה נכשל");
     } finally {
       setBusyId(null);
     }
@@ -317,7 +328,7 @@ export function MovePage() {
     setEditing(null);
     const normalized = field === "title" ? value.trim() : normalizeEdit(value);
     if (field === "title" && !normalized) {
-      setError("Title cannot be empty.");
+      setError("אי אפשר להשאיר כותרת ריקה.");
       return;
     }
     if ((task[field] ?? "") === (normalized ?? "")) return;
@@ -334,11 +345,11 @@ export function MovePage() {
         method: "POST",
         body: JSON.stringify({ bucket, title }),
       });
-      if (!res.ok) throw await errorFromResponse("Failed to add move task", res);
+      if (!res.ok) throw await errorFromResponse("הוספת המשימה נכשלה", res);
       setNewTitles((current) => ({ ...current, [bucket]: "" }));
       await loadRows();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add move task");
+      setError(e instanceof Error ? e.message : "הוספת המשימה נכשלה");
     } finally {
       setAddingBucket(null);
     }
@@ -348,10 +359,10 @@ export function MovePage() {
     setBusyId(task.id);
     try {
       const res = await api(`/api/move/${encodeURIComponent(task.id)}`, { method: "DELETE" });
-      if (!res.ok) throw await errorFromResponse("Failed to delete move task", res);
+      if (!res.ok) throw await errorFromResponse("מחיקת המשימה נכשלה", res);
       await loadRows();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete move task");
+      setError(e instanceof Error ? e.message : "מחיקת המשימה נכשלה");
     } finally {
       setBusyId(null);
     }
@@ -362,8 +373,8 @@ export function MovePage() {
   }
 
   return (
-    <div style={{
-      fontFamily: "Inter, sans-serif",
+    <div dir="rtl" style={{
+      fontFamily: "Inter, 'Arial Hebrew', Arial, sans-serif",
       boxSizing: "border-box",
       padding: "40px 48px 80px",
     }}>
@@ -371,21 +382,21 @@ export function MovePage() {
         <div style={{ textAlign: "center", padding: "32px 20px 40px", marginBottom: 28 }}>
           <div style={{
             fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
-            color: T.skyDark, textTransform: "uppercase", marginBottom: 14,
+            color: T.skyDark, marginBottom: 14,
           }}>
-            MyJarvis · Logistics
+            לוגיסטיקה · מעבר דירה
           </div>
           <h1 style={{
             fontSize: 34, fontWeight: 800, color: T.ink,
             margin: "0 0 14px", letterSpacing: "-0.02em", lineHeight: 1.15,
           }}>
-            Move
+            🏠 מעבר דירה
           </h1>
           <p style={{
             fontSize: 16, color: T.ink2, lineHeight: 1.65,
             maxWidth: 720, margin: "0 auto",
           }}>
-            Kloosterhof handback, utilities, new-place setup, and packing work in one editable tracker.
+            מסירת קלוסטרהוף, תשתיות, סידור הבית החדש ואריזה — הכל במעקב אחד שאפשר לערוך.
           </p>
         </div>
 
@@ -409,7 +420,7 @@ export function MovePage() {
             display: "inline-flex", alignItems: "center", gap: 8,
           }}>
             <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />
-            Loading…
+            טוען…
           </div>
         ) : (
           <div style={{ display: "grid", gap: 24 }}>
@@ -470,7 +481,7 @@ export function MovePage() {
                       <InlineCell
                         task={task}
                         field="title"
-                        placeholder="Title"
+                        placeholder="כותרת"
                         editing={editing}
                         setEditing={setEditing}
                         onCommit={commitEdit}
@@ -478,7 +489,7 @@ export function MovePage() {
                       <InlineCell
                         task={task}
                         field="owner"
-                        placeholder="Owner"
+                        placeholder="מי"
                         editing={editing}
                         setEditing={setEditing}
                         onCommit={commitEdit}
@@ -486,7 +497,7 @@ export function MovePage() {
                       <InlineCell
                         task={task}
                         field="due"
-                        placeholder="Due"
+                        placeholder="עד מתי"
                         editing={editing}
                         setEditing={setEditing}
                         onCommit={commitEdit}
@@ -494,15 +505,15 @@ export function MovePage() {
                       <InlineCell
                         task={task}
                         field="notes"
-                        placeholder="Notes"
+                        placeholder="הערות"
                         editing={editing}
                         setEditing={setEditing}
                         onCommit={commitEdit}
                       />
                       <button
                         type="button"
-                        aria-label={`Delete ${task.title}`}
-                        title="Delete"
+                        aria-label={`מחיקה: ${task.title}`}
+                        title="מחיקה"
                         disabled={busyId === task.id}
                         onClick={() => void deleteTask(task)}
                         style={{
