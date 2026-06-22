@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Circle, CircleDot, Loader2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Circle, CircleDot, Loader2, Plus, SendHorizontal, Sparkles, Trash2 } from "lucide-react";
 import { useApi } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { architectureT as T } from "../blueprint/ArchitectureBlocks";
@@ -440,6 +440,121 @@ function BucketAddForm({
   );
 }
 
+type AgentSummary = { added: number; updated: number; statusChanged: number; deleted: number };
+type AgentMessage = { text: string; tone: "ok" | "err" };
+
+// Build the Hebrew "what the agent did" line from the server's counts.
+function summaryText(s: AgentSummary, skippedCount: number, note: string | null): string {
+  const parts: string[] = [];
+  if (s.added) parts.push(`נוספו ${s.added}`);
+  if (s.updated) parts.push(`עודכנו ${s.updated}`);
+  if (s.statusChanged) parts.push(`שינוי סטטוס: ${s.statusChanged}`);
+  if (s.deleted) parts.push(`נמחקו ${s.deleted}`);
+  let msg = parts.length ? parts.join(" · ") : note?.trim() || "לא בוצעו שינויים";
+  if (skippedCount > 0) msg += ` · דולגו ${skippedCount}`;
+  return msg;
+}
+
+// Natural-language assistant bar: type an instruction, the agent edits the list.
+function AgentBar({
+  value,
+  busy,
+  message,
+  isMobile,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  busy: boolean;
+  message: AgentMessage | null;
+  isMobile: boolean;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  const sendDisabled = busy || value.trim() === "";
+  return (
+    <div style={{ marginBottom: isMobile ? 18 : 24 }}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr auto",
+          gap: 10,
+          alignItems: "center",
+          border: `1px solid ${T.skyDark}`,
+          background: T.skySoft,
+          borderRadius: 10,
+          padding: isMobile ? "10px 12px" : "12px 14px",
+        }}
+      >
+        <span style={{ display: "inline-flex", color: T.skyDark, flex: "0 0 auto" }}>
+          {busy ? (
+            <Loader2 className="animate-spin" style={{ width: 20, height: 20 }} />
+          ) : (
+            <Sparkles style={{ width: 20, height: 20 }} />
+          )}
+        </span>
+        <input
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          disabled={busy}
+          placeholder="כתוב לסוכן מה לעשות… למשל: תוסיף 3 דברים לאריזה"
+          style={{
+            minWidth: 0,
+            border: 0,
+            background: "transparent",
+            color: T.ink,
+            fontSize: 14,
+            outline: "none",
+            textAlign: "right",
+          }}
+        />
+        <button
+          type="submit"
+          disabled={sendDisabled}
+          aria-label="הפעל סוכן"
+          title="הפעל סוכן"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            border: `1px solid ${T.skyDark}`,
+            background: T.white,
+            color: T.skyDark,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: sendDisabled ? "default" : "pointer",
+            opacity: sendDisabled ? 0.55 : 1,
+            flex: "0 0 auto",
+          }}
+        >
+          <SendHorizontal style={{ width: 18, height: 18, transform: "scaleX(-1)" }} />
+        </button>
+      </form>
+      {message ? (
+        <div
+          style={{
+            marginTop: 8,
+            padding: "9px 13px",
+            borderRadius: 8,
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: message.tone === "ok" ? T.green : T.red,
+            background: message.tone === "ok" ? T.greenSoft : T.redSoft,
+            border: `1px solid ${message.tone === "ok" ? T.green : T.red}`,
+          }}
+        >
+          {message.text}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function MovePage() {
   const api = useApi();
   const isMobile = useIsMobile();
@@ -454,6 +569,9 @@ export function MovePage() {
     C: "",
     D: "",
   });
+  const [agentText, setAgentText] = useState("");
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [agentMsg, setAgentMsg] = useState<AgentMessage | null>(null);
 
   // Latest editing/busy ids, readable from the polling interval without
   // re-subscribing it every keystroke.
@@ -598,6 +716,49 @@ export function MovePage() {
     }
   }
 
+  // Natural-language agent: POST the instruction, then re-render from the
+  // server's fresh list (apply-immediately) and report what changed.
+  async function runAgent() {
+    const instruction = agentText.trim();
+    if (!instruction || agentBusy) return;
+
+    mutationGenRef.current += 1;
+    setAgentBusy(true);
+    setAgentMsg(null);
+    try {
+      const res = await api("/api/move/agent", {
+        method: "POST",
+        body: JSON.stringify({ instruction }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        setAgentMsg({ text: payload?.error || "פעולת הסוכן נכשלה. נסה שוב.", tone: "err" });
+        return;
+      }
+      const data = (await res.json()) as {
+        summary: AgentSummary;
+        skipped: unknown[];
+        note: string | null;
+        tasks: MoveTask[];
+        refreshError?: string | null;
+      };
+      if (data.refreshError) {
+        // Ops applied, but the server's post-write reload failed — its `tasks` is
+        // empty and not the truth. Refetch rather than blanking the list.
+        await loadRows().catch(() => {});
+      } else {
+        setRows(data.tasks);
+      }
+      setAgentText("");
+      setError(null);
+      setAgentMsg({ text: summaryText(data.summary, data.skipped?.length ?? 0, data.note), tone: "ok" });
+    } catch (e) {
+      setAgentMsg({ text: e instanceof Error ? e.message : "פעולת הסוכן נכשלה.", tone: "err" });
+    } finally {
+      setAgentBusy(false);
+    }
+  }
+
   function rowsForBucket(bucket: MoveBucket): MoveTask[] {
     return (rows ?? []).filter((row) => row.bucket === bucket);
   }
@@ -629,6 +790,15 @@ export function MovePage() {
             מסירת קלוסטרהוף, תשתיות, סידור הבית החדש ואריזה — הכל במעקב אחד שאפשר לערוך.
           </p>
         </div>
+
+        <AgentBar
+          value={agentText}
+          busy={agentBusy}
+          message={agentMsg}
+          isMobile={isMobile}
+          onChange={setAgentText}
+          onSubmit={() => void runAgent()}
+        />
 
         {error ? (
           <div style={{

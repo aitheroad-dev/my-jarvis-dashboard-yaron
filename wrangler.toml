@@ -30,3 +30,8 @@ database_id = "bede39da-5d58-4a2d-9198-89f9f6e2804c"
 [[r2_buckets]]
 binding = "VOICE_BUCKET"
 bucket_name = "mjd-yaron-voice"
+
+# Workers AI — powers the /move natural-language agent (functions/api/move/agent.ts).
+# In-platform, no API key, EU edge. Bound as env.AI.
+[ai]
+binding = "AI"
