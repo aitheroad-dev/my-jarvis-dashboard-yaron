@@ -112,7 +112,7 @@ export function SituationPage() {
             fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
             color: T.skyDark, textTransform: "uppercase", marginBottom: 14,
           }}>
-            MyJarvis · Operations
+            My Dashboard · Operations
           </div>
           <h1 style={{ fontSize: 34, fontWeight: 800, color: T.ink, margin: "0 0 14px", letterSpacing: "-0.02em" }}>
             Situation

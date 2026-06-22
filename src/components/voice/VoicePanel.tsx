@@ -15,7 +15,8 @@ const AVATAR_BASE = `${import.meta.env.VITE_VOICE_PUBLIC_URL ?? ""}/avatars`;
 // voice player, and the agent configs all show the same color per agent.
 // Rex has no avatar image yet (rex.jpg 404 in R2) → renders a colored initial.
 const AGENT_META: Record<string, { label: string; color: string; avatar: string }> = {
-  jarvis: { label: "Jarvis", color: "#4f9cf9", avatar: `${AVATAR_BASE}/jarvis.jpg` },
+  ringo: { label: "Ringo", color: "#4f9cf9", avatar: `${AVATAR_BASE}/ringo.jpg` },
+  jarvis: { label: "Ringo", color: "#4f9cf9", avatar: `${AVATAR_BASE}/jarvis.jpg` },
   atlas: { label: "Atlas", color: "#34d399", avatar: `${AVATAR_BASE}/atlas.jpg` },
   nova: { label: "Nova", color: "#f472b6", avatar: `${AVATAR_BASE}/nova.jpg` },
   rex: { label: "Rex", color: "#fb923c", avatar: "" },

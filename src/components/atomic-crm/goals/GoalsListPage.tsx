@@ -106,7 +106,7 @@ export function GoalsListPage() {
             fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
             color: T.skyDark, textTransform: "uppercase", marginBottom: 14,
           }}>
-            MyJarvis · Strategy
+            My Dashboard · Strategy
           </div>
           <h1 style={{
             fontSize: 34, fontWeight: 800, color: T.ink,

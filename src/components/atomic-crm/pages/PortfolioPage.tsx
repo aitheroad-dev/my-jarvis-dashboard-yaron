@@ -177,7 +177,7 @@ export function PortfolioPage() {
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <div style={{ textAlign: "center", padding: "8px 20px 28px" }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: T.skyDark, textTransform: "uppercase", marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <PieChart style={{ width: 14, height: 14 }} /> MyJarvis · Wealth
+            <PieChart style={{ width: 14, height: 14 }} /> My Dashboard · Wealth
           </div>
           <h1 style={{ fontSize: 34, fontWeight: 800, color: T.ink, margin: "0 0 12px", letterSpacing: "-0.02em" }}>Portfolio</h1>
           <p style={{ fontSize: 15, color: T.ink2, lineHeight: 1.6, maxWidth: 680, margin: "0 auto" }}>

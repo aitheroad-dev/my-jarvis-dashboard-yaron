@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/lib/workos-shim";
-import { getTenantIdentity } from "@/lib/tenant";
 import { useMe } from "@/lib/useMe";
 import {
   DropdownMenu,
@@ -10,13 +9,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { myjarvisLogoUrl } from "./myjarvis-logo";
 import { navItems, NavLink } from "./nav-items";
 
 export function CrmSidebar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { displayName: tenantDisplayName } = getTenantIdentity();
   const { role, email } = useMe();
 
   const isMove = role === "move";
@@ -39,14 +36,8 @@ export function CrmSidebar() {
     <aside className="hidden h-svh w-56 shrink-0 flex-col border-r bg-sidebar md:flex">
       <div className="flex items-center gap-2 px-4 py-4">
         <Link to="/" className="flex items-center gap-2">
-          <img
-            src={myjarvisLogoUrl}
-            alt={`${tenantDisplayName} logo`}
-            className="h-8 w-8 rounded-lg object-cover"
-          />
-          <span className="text-sm font-semibold">
-            {tenantDisplayName} Dashboard
-          </span>
+          <LayoutDashboard className="h-8 w-8 rounded-lg text-foreground" />
+          <span className="text-sm font-semibold">My Dashboard</span>
         </Link>
       </div>
 

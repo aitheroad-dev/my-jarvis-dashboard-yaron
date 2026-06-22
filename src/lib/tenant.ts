@@ -11,8 +11,8 @@ export type TenantIdentity = {
 };
 
 const TEMPLATE_FALLBACK: TenantIdentity = {
-  slug: "myjarvis",
-  displayName: "MyJarvis",
+  slug: "my-dashboard",
+  displayName: "My Dashboard",
   initial: "M",
 };
 
