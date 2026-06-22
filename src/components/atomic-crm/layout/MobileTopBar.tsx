@@ -9,11 +9,14 @@ import {
 } from "@/components/ui/sheet";
 import { VoiceFeedBody } from "@/components/voice/VoicePanel";
 import { navItems, NavLink } from "./nav-items";
+import { useMe } from "@/lib/useMe";
 
-export function MobileTopBar() {
+export function MobileTopBar({ voiceEnabled }: { voiceEnabled: boolean }) {
   const [navOpen, setNavOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const location = useLocation();
+  const { isOwner, pages } = useMe();
+  const items = isOwner ? navItems : navItems.filter((item) => pages.has(item.key));
 
   useEffect(() => {
     setNavOpen(false);
@@ -42,7 +45,7 @@ export function MobileTopBar() {
             <span className="text-sm font-semibold">Dashboard</span>
           </div>
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-4">
-            {navItems.map((item) => (
+            {items.map((item) => (
               <NavLink key={item.to} item={item} />
             ))}
           </nav>
@@ -52,7 +55,9 @@ export function MobileTopBar() {
       {/* Title */}
       <span className="text-sm font-semibold">Dashboard</span>
 
-      {/* Right: voice button → full-screen voice Sheet */}
+      {/* Right: voice button → full-screen voice Sheet. Owner-only — guests have
+          no voice subsystem, so the button (and its VoiceFeedBody) must not render. */}
+      {voiceEnabled && (
       <div className="ml-auto">
         <Sheet open={voiceOpen} onOpenChange={setVoiceOpen}>
           <SheetTrigger asChild>
@@ -73,6 +78,7 @@ export function MobileTopBar() {
           </SheetContent>
         </Sheet>
       </div>
+      )}
     </header>
   );
 }

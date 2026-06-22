@@ -56,6 +56,17 @@ type SpendTotalRow = {
   synced_at: string;
 };
 
+type SpendUsageRow = {
+  service_key: string;
+  metric: string;
+  value: number | null;
+  limit_value: number | null;
+  pct: number | null;
+  unit: string | null;
+  captured_at: string | null;
+  synced_at: string;
+};
+
 function numberOrNull(v: number | null): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
@@ -102,6 +113,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         FROM spend_totals
        ORDER BY period DESC
     `) as SpendTotalRow[];
+    const usageRows = (await sql/* sql */ `
+      SELECT service_key, metric, value, limit_value, pct, unit, captured_at, synced_at
+        FROM spend_usage
+       ORDER BY pct DESC, service_key, metric
+    `) as SpendUsageRow[];
 
     const services = servicesRows.map((r) => ({
       key: r.key,
@@ -149,6 +165,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       captured_at: r.captured_at,
     }));
 
+    const usage = usageRows.map((r) => ({
+      service_key: r.service_key,
+      metric: r.metric,
+      value: numberOrNull(r.value),
+      limit_value: numberOrNull(r.limit_value),
+      pct: numberOrNull(r.pct),
+      unit: r.unit,
+      captured_at: r.captured_at,
+    }));
+
     const currentPeriod = new Date().toISOString().slice(0, 7);
     const currentTotal = totalRows.find((r) => r.period === currentPeriod);
     const byConnectionStatus = {
@@ -157,7 +183,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       "no-cred": services.filter((s) => s.connection_status === "no-cred").length,
       "no-api": services.filter((s) => s.connection_status === "no-api").length,
     };
-    const lastSync = [...servicesRows, ...chargeRows, ...alertRows, ...totalRows].reduce(
+    const lastSync = [...servicesRows, ...chargeRows, ...alertRows, ...totalRows, ...usageRows].reduce(
       (m, r) => maxIso(m, r.synced_at),
       "",
     );
@@ -168,10 +194,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       usdMonthly: numberOrZero(currentTotal?.usd_total ?? null),
       byConnectionStatus,
       unpaidInvoiceCount: alertRows.filter((r) => r.type === "unpaid_invoice").length,
+      usageOverLimitCount: usageRows.filter((r) => r.pct != null && r.pct > 80).length,
       lastSync,
     };
 
-    return json({ services, charges, alerts, totals, summary });
+    return json({ services, charges, alerts, totals, usage, summary });
   } catch (err) {
     return json(
       {

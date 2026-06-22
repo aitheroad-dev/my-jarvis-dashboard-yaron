@@ -1,123 +1,49 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "../layout/Layout";
 import { useMe } from "@/lib/useMe";
+import { PAGES } from "@/lib/pages";
+import { navItems } from "../layout/nav-items";
 
-// === Core domains (Structured) ===
-import { ProjectsListPage } from "../projects-dashboard/ProjectsListPage";
-import { ProjectDetailPage } from "../projects-dashboard/ProjectDetailPage";
-import { GoalsListPage } from "../goals/GoalsListPage";
-import { GoalDetailPage } from "../goals/GoalDetailPage";
-import { SituationPage } from "../situation/SituationPage";
-import { AgentsPage } from "../agents/AgentsPage";
-import { MemoryPage } from "../memory/MemoryPage";
-import { SkillsPage } from "../skills/SkillsPage";
-import { SkillDetailPage } from "../skills/SkillDetailPage";
-import { MeetingsPage } from "../pages/MeetingsPage";
-import { MeetingDetailPage } from "../pages/MeetingDetailPage";
-import { HomePage } from "../pages/HomePage";
-import { PortfolioPage } from "../pages/PortfolioPage";
-import { MovePage } from "../move/MovePage";
-import { RentalPage } from "../rental/RentalPage";
-import { SpendPage } from "../spend/SpendPage";
-
-// === Standards + chrome ===
-import { KbBlueprintPage } from "../blueprint/KbBlueprintPage";
+// Owner-only chrome routes that are NOT grantable pages.
 import { PitchDocBlueprintPage } from "../blueprint/PitchDocBlueprintPage";
-import { KnowledgeBaseListPage } from "../knowledge-base-list/KnowledgeBaseListPage";
 import { SettingsPage } from "../pages/SettingsPage";
 
-// Template baseline (MJOS-074).
-//
-// Top-level slugs that ship with every fresh tenant:
-//   /home  /goals(-list)  /projects(-list)  /situation  /agents
-//   /skills  /memory  /knowledge-base
-// Plus catchall renderers: /kb-doc/*, /pitch-doc/*.
-// Plus detail patterns: /situation/:slug, /goals/:slug, /projects/:slug, /skills/:slug.
-// Plus structured Meetings (route registered, sidebar entry off by default — flip
-// it on per-tenant in nav-items.tsx when the user wants meetings).
-// Plus /settings, reached via the sidebar account dropdown.
-//
-// AuthKitProvider + AuthGate in App.tsx gate this whole tree, so every route
-// here assumes an authenticated user.
+// All grantable page routes come from the PAGES manifest (lib/pages.tsx) — adding
+// or sharing a page is a one-line change there + nav-items.tsx, never a rewrite
+// here. The owner sees every page; a granted guest sees only their granted subset
+// (cosmetic gate — the server `_middleware.ts` is the real authorization wall).
 export const CRM = () => {
-  const { role } = useMe();
+  const { isOwner, pages } = useMe();
 
-  // Move users (Noa) are scoped to the SHARED pages — the move tracker and the
-  // rental search. The dashboard frame is kept, but only /move and /rental are
-  // routable; every other path redirects to /move. This is the cosmetic gate —
-  // the server (_middleware.ts) is the real authorization wall.
-  if (role === "move") {
+  const visiblePages = isOwner ? PAGES : PAGES.filter((p) => pages.has(p.key));
+  const pageRoutes = visiblePages.flatMap((p) =>
+    p.routes.map((r) => <Route key={r.path} path={r.path} element={r.element} />),
+  );
+
+  // Guest: only granted pages are routable; everything else lands on their first
+  // granted page.
+  if (!isOwner) {
+    const landing = navItems.find((n) => pages.has(n.key))?.to ?? "/move";
     return (
       <Layout>
         <Routes>
-          <Route path="/move" element={<MovePage />} />
-          <Route path="/rental" element={<RentalPage />} />
-          <Route path="*" element={<Navigate to="/move" replace />} />
+          {pageRoutes}
+          <Route path="*" element={<Navigate to={landing} replace />} />
         </Routes>
       </Layout>
     );
   }
 
+  // Owner: every page + owner-only chrome.
   return (
-  <Layout>
-    <Routes>
-      {/* Root → Home. */}
-      <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route path="/home" element={<HomePage />} />
-
-      {/* Meetings (Structured) — route registered, sidebar entry off by default. */}
-      <Route path="/meetings" element={<MeetingsPage />} />
-      <Route path="/meetings/:id" element={<MeetingDetailPage />} />
-
-      {/* Goals (Structured list + Knowledge — Classic detail). */}
-      <Route path="/goals" element={<Navigate to="/goals-list" replace />} />
-      <Route path="/goals-list" element={<GoalsListPage />} />
-      <Route path="/goals/:slug" element={<GoalDetailPage />} />
-
-      {/* Projects (Structured list + Knowledge — Classic detail). */}
-      <Route path="/projects" element={<Navigate to="/projects-list" replace />} />
-      <Route path="/projects-list" element={<ProjectsListPage />} />
-      <Route path="/projects/:slug" element={<ProjectDetailPage />} />
-
-      {/* Situation — the Work Journal: day-by-day account of all work streams.
-          Per-project stories live on /projects/:slug (v2 reframe, 2026-06-11). */}
-      <Route path="/situation" element={<SituationPage />} />
-
-      {/* Agents (Structured). */}
-      <Route path="/agents" element={<AgentsPage />} />
-
-      {/* Portfolio (Structured) — mirror of local pai-portfolio CLI. */}
-      <Route path="/portfolio" element={<PortfolioPage />} />
-
-      {/* Spend mirror — read-only view of the Mac-local pai-spend SQLite DB. */}
-      <Route path="/spend" element={<SpendPage />} />
-
-      {/* Move tracker (Structured). */}
-      <Route path="/move" element={<MovePage />} />
-
-      {/* NL rental search — live map + findings, mirrored from the box. */}
-      <Route path="/rental" element={<RentalPage />} />
-
-      {/* Skills (Structured list + Knowledge — Classic detail). */}
-      <Route path="/skills" element={<SkillsPage />} />
-      <Route path="/skills/:slug" element={<SkillDetailPage />} />
-
-      {/* Memory (Structured). */}
-      <Route path="/memory" element={<MemoryPage />} />
-
-      {/* Generic Knowledge renderers. */}
-      <Route path="/kb-doc/*" element={<KbBlueprintPage />} />
-      <Route path="/pitch-doc/*" element={<PitchDocBlueprintPage />} />
-
-      {/* Knowledge Base index + named standards page. */}
-      <Route path="/knowledge-base" element={<KnowledgeBaseListPage />} />
-
-      {/* Settings (sidebar account dropdown). */}
-      <Route path="/settings" element={<SettingsPage />} />
-
-      {/* Anything else falls through to home. */}
-      <Route path="*" element={<Navigate to="/home" replace />} />
-    </Routes>
-  </Layout>
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        {pageRoutes}
+        <Route path="/pitch-doc/*" element={<PitchDocBlueprintPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
+    </Layout>
   );
 };

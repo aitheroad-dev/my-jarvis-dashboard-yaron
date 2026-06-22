@@ -26,14 +26,15 @@ function VersionPollMount() {
 }
 
 // Inside the QueryClientProvider so it can resolve the real identity via useMe.
-// A "move" user (Noa) gets just the scoped CRM — NO voice subsystem, because
-// /api/voice* is owner-only and would 403-spam the 5s feed poll.
+// A granted guest (e.g. Noa) gets just the scoped CRM — NO voice subsystem,
+// because /api/voice* is owner-only and would 403-spam the 5s feed poll (and the
+// voice context would otherwise crash the guest shell).
 function AppShell() {
-  const { role, isLoading } = useMe();
+  const { hasVoice, isLoading } = useMe();
 
   if (isLoading) return null;
 
-  if (role === "move") return <CRM />;
+  if (!hasVoice) return <CRM />;
 
   return (
     <VoiceChannelProvider>

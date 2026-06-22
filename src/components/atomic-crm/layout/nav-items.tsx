@@ -16,8 +16,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { PageKey } from "@/lib/page-keys";
 
 export type NavItem = {
+  key: PageKey;
   label: string;
   to: string;
   icon: LucideIcon;
@@ -27,20 +29,22 @@ export type NavItem = {
 // reachable from the avatar menu at the sidebar footer (not duplicated here).
 // Detail routes (/goals/:slug, /meetings/:id, etc.) and doc catchalls
 // (/kb-doc/*, /pitch-doc/*) are reached by drilling in, not from the sidebar.
+// `key` ties each entry to a grantable page (see lib/page-keys.ts) so the nav can
+// be filtered to a guest's granted pages.
 export const navItems: NavItem[] = [
-  { label: "Home", to: "/home", icon: Home },
-  { label: "Goals", to: "/goals-list", icon: Target },
-  { label: "Projects", to: "/projects-list", icon: Briefcase },
-  { label: "Portfolio", to: "/portfolio", icon: PieChart },
-  { label: "Spend", to: "/spend", icon: Wallet },
-  { label: "מעבר דירה", to: "/move", icon: Truck },
-  { label: "Rental", to: "/rental", icon: MapPin },
-  { label: "Situation", to: "/situation", icon: Radar },
-  { label: "Agents", to: "/agents", icon: Users },
-  { label: "Skills", to: "/skills", icon: Sparkles },
-  { label: "Memory", to: "/memory", icon: Brain },
-  { label: "Knowledge Base", to: "/knowledge-base", icon: Library },
-  { label: "Meetings", to: "/meetings", icon: Video },
+  { key: "home", label: "Home", to: "/home", icon: Home },
+  { key: "goals", label: "Goals", to: "/goals-list", icon: Target },
+  { key: "projects", label: "Projects", to: "/projects-list", icon: Briefcase },
+  { key: "portfolio", label: "Portfolio", to: "/portfolio", icon: PieChart },
+  { key: "spend", label: "Spend", to: "/spend", icon: Wallet },
+  { key: "move", label: "מעבר דירה", to: "/move", icon: Truck },
+  { key: "rental", label: "Rental", to: "/rental", icon: MapPin },
+  { key: "situation", label: "Situation", to: "/situation", icon: Radar },
+  { key: "agents", label: "Agents", to: "/agents", icon: Users },
+  { key: "skills", label: "Skills", to: "/skills", icon: Sparkles },
+  { key: "memory", label: "Memory", to: "/memory", icon: Brain },
+  { key: "knowledge-base", label: "Knowledge Base", to: "/knowledge-base", icon: Library },
+  { key: "meetings", label: "Meetings", to: "/meetings", icon: Video },
 ];
 
 export function NavLink({ item }: { item: NavItem }) {

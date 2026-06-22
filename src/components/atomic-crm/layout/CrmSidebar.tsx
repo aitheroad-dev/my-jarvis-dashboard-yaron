@@ -14,19 +14,19 @@ import { navItems, NavLink } from "./nav-items";
 export function CrmSidebar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { role, email } = useMe();
+  const { isOwner, pages, email } = useMe();
 
-  const isMove = role === "move";
-  const items = isMove
-    ? navItems.filter((item) => item.to === "/move" || item.to === "/rental")
-    : navItems;
+  // Owner sees every nav entry; a granted guest sees only their granted pages.
+  const items = isOwner
+    ? navItems
+    : navItems.filter((item) => pages.has(item.key));
 
   const fullName = [user?.firstName, user?.lastName]
     .filter((v): v is string => Boolean(v))
     .join(" ");
-  // Move users (Noa) get their real email from /api/me; the workos-shim `user`
-  // is hardcoded to the owner, so it can't name a move user.
-  const displayName = isMove
+  // Guests (e.g. Noa) get their real email from /api/me; the workos-shim `user`
+  // is hardcoded to the owner, so it can't name a guest.
+  const displayName = !isOwner
     ? email ?? "User"
     : fullName || user?.email || "User";
   const avatarUrl = user?.profilePictureUrl ?? undefined;
@@ -59,7 +59,7 @@ export function CrmSidebar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-48">
-            {!isMove && (
+            {isOwner && (
               <DropdownMenuItem
                 onClick={() => navigate("/settings")}
                 className="cursor-pointer"

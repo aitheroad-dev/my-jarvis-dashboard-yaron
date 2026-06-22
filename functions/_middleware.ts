@@ -1,31 +1,30 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
-import { identifyAccessUser, type Env } from "./_lib/auth";
+import { identifyAccessUser, isOwnerEmail, type Env } from "./_lib/auth";
+import { allowedApiPrefixes, apiPathAllowed, grantFor } from "./_lib/pages";
 
 /**
- * Server-side authorization wall (RBAC).
+ * Server-side authorization wall (page-grant RBAC).
  *
- * The dashboard is single-tenant, but the "move" role (Noa) is scoped to a small
- * set of SHARED pages — the move tracker and the rental search (/api/move +
- * /api/rental). CF Access lets her email in at the edge and every handler's
- * `requireUser` would otherwise grant her full read access. This middleware is
- * the single choke point that enforces the scope: a positively-verified
- * move-role browser user may reach ONLY the paths in `moveAllowed`; everything
- * else under `/api/*` returns 403.
+ * The dashboard is single-tenant (owner = full access), but any other allow-listed
+ * user is scoped to an explicit set of SHARED pages via the grant map in
+ * `_lib/pages.ts`. CF Access lets an allow-listed email in at the edge; this
+ * middleware is the single choke point that enforces the per-page scope: a
+ * positively-verified non-owner user may reach ONLY the `/api/*` prefixes their
+ * granted pages need (plus self-scoped endpoints); everything else returns 403.
  *
- * It is deliberately ADDITIVE — it never replaces a handler's own auth:
+ * Deliberately ADDITIVE — it never replaces a handler's own auth:
  *   - Non-API requests pass straight through (static assets + SPA client routes).
  *   - Machine callers (voice courier, MCP) carry no CF Access user JWT (they use
  *     their own secret), so `identifyAccessUser` returns null and they fall
  *     through to the handler, which checks its own secret.
- *   - Admin (owner) users pass through; their handlers still `requireUser`.
- * So this can only ADD a restriction for a known move user — it can never weaken
- * existing auth or break the machine channel.
+ *   - Owner users pass through; their handlers still `requireUser`.
+ * So this can only ADD a restriction for a known non-owner user — it can never
+ * weaken existing auth or break the machine channel.
  *
- * Encoding-robust (hardened after Forge audit, 2026-06-22): the move decision is
- * made on BOTH the raw and the fully-decoded path, with traversal sequences
- * rejected — so an encoded prefix (`/%61pi/...`) or encoded dot-segment
- * (`/api/move/%2e%2e%2f...`) cannot slip past, regardless of how Cloudflare
- * routes encoded octets.
+ * Encoding-robust: the decision is made on BOTH the raw and the fully-decoded
+ * path, with traversal sequences rejected (see `apiPathAllowed`) — so an encoded
+ * prefix (`/%61pi/...`) or encoded dot-segment (`/api/move/%2e%2e%2f...`) cannot
+ * slip past, regardless of how Cloudflare routes encoded octets.
  */
 
 function isApiPath(pathname: string): boolean {
@@ -47,30 +46,6 @@ function safeDecode(pathname: string): string | null {
   }
 }
 
-/**
- * Whether a (decoded, canonical) path is reachable by a move user. Exact
- * allow-list, with any traversal/odd-separator path rejected outright.
- */
-export function moveAllowed(pathname: string): boolean {
-  if (
-    pathname.includes("..") ||
-    pathname.includes("//") ||
-    pathname.includes("\\")
-  ) {
-    return false;
-  }
-  if (
-    pathname === "/api/me" ||
-    pathname === "/api/version" ||
-    pathname === "/api/move" ||
-    pathname === "/api/rental"
-  ) {
-    return true;
-  }
-  // /api/move/<id> — a single clean segment (PATCH/DELETE a task).
-  return /^\/api\/move\/[^/]+$/.test(pathname);
-}
-
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request, env, next } = ctx;
   const raw = new URL(request.url).pathname;
@@ -82,16 +57,22 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   if (decoded !== null && !apiish) return next();
 
   // API-ish (or malformed-encoding) request: only now pay for identity.
-  // Admins and machine callers (identify → null) are unaffected.
+  // Machine callers (identify → null) and the owner are unaffected.
   const user = await identifyAccessUser(request, env);
-  if (user?.role !== "move") return next();
+  if (!user) return next();
+  if (isOwnerEmail(user.email, env)) return next();
 
-  // Move user: BOTH the raw and the decoded form must be plainly allowed.
-  if (decoded !== null && moveAllowed(raw) && moveAllowed(decoded)) {
+  // Non-owner: enforce the grant. BOTH raw and decoded forms must be allowed.
+  const prefixes = allowedApiPrefixes(grantFor(user.email, env, false));
+  if (
+    decoded !== null &&
+    apiPathAllowed(raw, prefixes) &&
+    apiPathAllowed(decoded, prefixes)
+  ) {
     return next();
   }
   return new Response(
-    JSON.stringify({ error: "forbidden", reason: "move-only role" }),
+    JSON.stringify({ error: "forbidden", reason: "not granted for this page" }),
     { status: 403, headers: { "content-type": "application/json" } },
   );
 };

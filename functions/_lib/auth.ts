@@ -16,6 +16,8 @@ export interface Env {
   ACCESS_ALLOWED_EMAILS?: string;
   /** Comma-separated emails restricted to the move tracker only (role "move"). */
   ACCESS_MOVE_ONLY_EMAILS?: string;
+  /** Optional JSON map (email → page-key[]) overriding the code default grants. */
+  ACCESS_GRANTS?: string;
   CLOUDFLARE_API_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
 }
@@ -62,8 +64,8 @@ function allowList(env: Env): Set<string> {
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  // Always include the configured owner so the owner cannot be locked out.
-  if (env.TENANT_OWNER_EMAIL) emails.push(env.TENANT_OWNER_EMAIL.toLowerCase());
+  // Always include every owner identity so the owner cannot be locked out.
+  for (const owner of ownerEmails(env)) emails.push(owner);
   return new Set(emails);
 }
 
@@ -89,6 +91,15 @@ function moveOnlySet(env: Env): Set<string> {
 /** Maps an allow-listed email to its role. Owner → admin; move-only list → move. */
 export function roleFor(email: string, env: Env): Role {
   return moveOnlySet(env).has(email.toLowerCase()) ? "move" : "admin";
+}
+
+/**
+ * Whether an email is the dashboard owner (full, unrestricted access). The page
+ * grant model treats the owner as `"all"`; everyone else is grant-scoped. Owner
+ * detection is lockout-safe — derived from the same hardcoded + env owner set.
+ */
+export function isOwnerEmail(email: string, env: Env): boolean {
+  return ownerEmails(env).has(email.toLowerCase());
 }
 
 /**

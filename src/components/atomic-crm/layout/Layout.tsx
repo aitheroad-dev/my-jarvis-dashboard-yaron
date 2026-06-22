@@ -4,6 +4,7 @@ import { CrmSidebar } from "./CrmSidebar";
 import { MobileTopBar } from "./MobileTopBar";
 import { VoicePanel, VoicePanelToggle } from "@/components/voice/VoicePanel";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { useMe } from "@/lib/useMe";
 
 // Per-route background colors. The page wrapper bleeds past Layout's padding
 // via negative margin to fill the column, but when the voice panel toggles
@@ -86,6 +87,10 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   // the next page load picks it up at first paint. Manual open/close during
   // a session uses local state independent of the persisted preference.
   const { settings } = useUserSettings();
+  // Only the owner has the voice subsystem (App.tsx mounts VoiceChannelProvider
+  // for the owner only). Guests must NOT render any voice chrome, or it would
+  // call useVoiceChannel() with no provider and crash the whole shell.
+  const { hasVoice } = useMe();
   const [voicePanelOpen, setVoicePanelOpen] = useState(
     () => settings.voice_autoplay !== false,
   );
@@ -116,8 +121,8 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         className={`relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto ${customBg ? "" : "bg-background"}`}
         style={customBg ? { background: customBg } : undefined}
       >
-        <MobileTopBar />
-        {!voicePanelOpen && (
+        <MobileTopBar voiceEnabled={hasVoice} />
+        {hasVoice && !voicePanelOpen && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-30 hidden justify-end px-6 py-4 md:flex">
             <div className="pointer-events-auto">
               <VoicePanelToggle onClick={() => setVoicePanelOpen(true)} />
@@ -126,9 +131,11 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         )}
         <div className={contentClass}>{children}</div>
       </main>
-      <div className="hidden md:contents">
-        <VoicePanel open={voicePanelOpen} onClose={() => setVoicePanelOpen(false)} />
-      </div>
+      {hasVoice && (
+        <div className="hidden md:contents">
+          <VoicePanel open={voicePanelOpen} onClose={() => setVoicePanelOpen(false)} />
+        </div>
+      )}
     </div>
   );
 };

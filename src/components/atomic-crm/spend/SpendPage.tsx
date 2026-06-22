@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CreditCard, Loader2, RefreshCw, Wallet } from "lucide-react";
+import { AlertTriangle, CreditCard, Gauge, Loader2, RefreshCw, Wallet } from "lucide-react";
 import { useApi } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { architectureT as T } from "../blueprint/ArchitectureBlocks";
@@ -53,12 +53,23 @@ type SpendTotal = {
   captured_at: string | null;
 };
 
+type SpendUsage = {
+  service_key: string;
+  metric: string;
+  value: number | null;
+  limit_value: number | null;
+  pct: number | null;
+  unit: string | null;
+  captured_at: string | null;
+};
+
 type SpendSummary = {
   currentPeriod: string;
   eurMonthly: number;
   usdMonthly: number;
   byConnectionStatus: Record<ConnectionStatus, number>;
   unpaidInvoiceCount: number;
+  usageOverLimitCount: number;
   lastSync: string;
 };
 
@@ -67,6 +78,7 @@ type SpendResponse = {
   charges: SpendCharge[];
   alerts: SpendAlert[];
   totals: SpendTotal[];
+  usage: SpendUsage[];
   summary: SpendSummary;
 };
 
@@ -88,6 +100,11 @@ function nativeMoney(v: number | null, currency: string | null): string {
   if (normalized === "EUR") return euro(v);
   if (normalized === "USD") return usd(v);
   return `${normalized} ${Math.round(v).toLocaleString("nl-NL")}`;
+}
+
+function usageNumber(v: number | null): string {
+  if (v == null) return "-";
+  return new Intl.NumberFormat("nl-NL", { maximumFractionDigits: v >= 100 ? 0 : 1 }).format(v);
 }
 
 function lastSyncText(iso: string): string {
@@ -285,6 +302,7 @@ export function SpendPage() {
   const services = data?.services ?? [];
   const alerts = data?.alerts ?? [];
   const totals = data?.totals ?? [];
+  const usage = data?.usage ?? [];
   const s = data?.summary;
   const lastChargeByService = useMemo(() => {
     const byService = new Map<string, string>();
@@ -306,6 +324,7 @@ export function SpendPage() {
   const changeAlerts = alerts.filter(
     (alert) => alert.type === "new_charge" || alert.type === "price_change" || alert.type === "free_to_paid",
   );
+  const limitedUsage = usage.filter((row) => row.limit_value != null && row.pct != null);
 
   return (
     <div
@@ -359,6 +378,7 @@ export function SpendPage() {
           <SummaryCard label="UNPAID" value={s?.unpaidInvoiceCount ?? "-"} accent={T.red} />
           <SummaryCard label="CONNECTED" value={s?.byConnectionStatus.connected ?? "-"} accent={T.green} />
           <SummaryCard label="NEEDS ATTENTION" value={(s?.byConnectionStatus.degraded ?? 0) + (s?.byConnectionStatus["no-cred"] ?? 0)} accent={T.amber} />
+          <SummaryCard label="OVER 80%" value={s?.usageOverLimitCount ?? "-"} accent={T.red} />
         </div>
 
         {error ? (
@@ -366,6 +386,49 @@ export function SpendPage() {
             {error}
           </div>
         ) : null}
+
+        <div style={{ border: `1px solid ${T.line}`, borderRadius: 12, background: T.white, overflow: "hidden", marginBottom: 24 }}>
+          <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.line}`, background: T.bg2 }}>
+            <SectionTitle icon={<Gauge style={{ width: 16, height: 16 }} />} title="Usage (vs free-tier)" />
+          </div>
+          {data === null ? (
+            <div style={{ padding: 20, fontSize: 14, color: T.ink3 }}>Loading...</div>
+          ) : limitedUsage.length === 0 ? (
+            <div style={{ padding: 20, fontSize: 14, color: T.ink3 }}>No limited usage rows.</div>
+          ) : (
+            limitedUsage.map((row) => {
+              const pct = row.pct ?? 0;
+              const high = pct > 80;
+              const barColor = high ? T.red : T.green;
+              const soft = high ? T.redSoft : T.greenSoft;
+              return (
+                <div key={`${row.service_key}:${row.metric}`} style={{ padding: "13px 16px", borderBottom: `1px solid ${T.line}`, background: high ? soft : T.white }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: T.ink, fontSize: 13, fontWeight: 800, wordBreak: "break-word" }}>
+                        {row.service_key} · {row.metric}
+                      </div>
+                      <div style={{ color: T.ink2, fontSize: 12, marginTop: 3 }}>
+                        {usageNumber(row.value)} / {usageNumber(row.limit_value)} {row.unit ?? ""}
+                      </div>
+                    </div>
+                    <Badge text={`${usageNumber(pct)}%`} fg={high ? T.red : T.green} bg={high ? T.redSoft : T.greenSoft} bd={high ? T.red : T.green} />
+                  </div>
+                  <div style={{ height: 8, borderRadius: 999, background: T.bg2, border: `1px solid ${T.line}`, marginTop: 10, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${Math.min(100, Math.max(0, pct))}%`,
+                        background: barColor,
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
 
         <div style={{ border: `1px solid ${T.line}`, borderRadius: 12, background: T.white, overflow: "hidden", marginBottom: 24 }}>
           <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.line}`, background: T.bg2 }}>
