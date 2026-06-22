@@ -15,6 +15,7 @@ type MoveTaskRow = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  version: number;
 };
 
 type PatchMoveTaskBody = {
@@ -23,6 +24,11 @@ type PatchMoveTaskBody = {
   due?: unknown;
   status?: unknown;
   notes?: unknown;
+  // Optimistic concurrency: the integer version the client last saw for this row.
+  // When present, the UPDATE only lands if the row's version still matches, and
+  // every write bumps version — so a same-cell race in the same second is caught
+  // (updated_at is only second-resolution and can't be a reliable CAS token).
+  base_version?: unknown;
 };
 
 const STATUSES: MoveStatus[] = ["todo", "doing", "done"];
@@ -73,6 +79,14 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
     return json({ error: "status must be one of todo, doing, done" }, { status: 400 });
   }
 
+  // Optimistic-concurrency guard: when the client sends the version it last saw,
+  // the UPDATE only lands if the row's version still matches. Every write bumps
+  // version. Null = no guard (back-compat). Must be a non-negative integer.
+  const baseVersion =
+    typeof body.base_version === "number" && Number.isInteger(body.base_version) && body.base_version >= 0
+      ? body.base_version
+      : null;
+
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
@@ -82,12 +96,26 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
              due = CASE WHEN ${hasOwn(body, "due")} THEN ${optionalTextFromPatch(body, "due")} ELSE due END,
              status = CASE WHEN ${hasOwn(body, "status")} THEN ${body.status} ELSE status END,
              notes = CASE WHEN ${hasOwn(body, "notes")} THEN ${optionalTextFromPatch(body, "notes")} ELSE notes END,
-             updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+             updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now'),
+             version = version + 1
        WHERE id = ${id}
-       RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at
+         AND (${baseVersion} IS NULL OR version = ${baseVersion})
+       RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
     `) as MoveTaskRow[];
 
-    if (rows.length === 0) return json({ error: "not found" }, { status: 404 });
+    if (rows.length === 0) {
+      // 0 rows = either the row is gone (404) or it changed under the client (409).
+      const existing = (await sql/* sql */ `
+        SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
+          FROM move_tasks
+         WHERE id = ${id}
+      `) as MoveTaskRow[];
+      if (existing.length === 0) return json({ error: "not found" }, { status: 404 });
+      return json(
+        { error: "version conflict", conflict: true, current: existing[0] },
+        { status: 409 },
+      );
+    }
     return json(rows[0]);
   } catch (err) {
     return json(

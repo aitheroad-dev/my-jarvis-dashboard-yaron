@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Circle, CircleDot, Loader2, Plus, Trash2 } from "lucide-react";
 import { useApi } from "@/lib/api";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { architectureT as T } from "../blueprint/ArchitectureBlocks";
 
 type MoveBucket = "A" | "B" | "C" | "D";
@@ -17,6 +18,7 @@ type MoveTask = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  version: number;
 };
 
 type EditableField = "title" | "owner" | "due" | "notes";
@@ -26,6 +28,9 @@ type EditingCell = {
   field: EditableField;
   value: string;
 };
+
+// Poll the shared list this often so a co-editor's changes appear without a reload.
+const POLL_MS = 5000;
 
 // Bucket keys (A–D) are the stored data; titles are Hebrew display labels
 // (kept in sync with the move-share page).
@@ -78,6 +83,25 @@ function replaceTask(rows: MoveTask[], next: MoveTask): MoveTask[] {
   return rows.map((row) => (row.id === next.id ? next : row));
 }
 
+// Merge a fresh server snapshot over local state WITHOUT disturbing the row the
+// user is editing (or one with an in-flight write) — that row keeps its local
+// version so an open input never gets clobbered mid-keystroke. If the protected
+// row is absent from the snapshot (e.g. the other person deleted it), keep the
+// local copy anyway so the open edit doesn't vanish mid-keystroke — the eventual
+// PATCH will surface the 404/409 cleanly.
+function mergeServerRows(
+  server: MoveTask[],
+  prev: MoveTask[] | null,
+  protectedId: string | null,
+): MoveTask[] {
+  if (!protectedId || !prev) return server;
+  const prevById = new Map(prev.map((row) => [row.id, row] as const));
+  const merged = server.map((row) => (row.id === protectedId ? prevById.get(row.id) ?? row : row));
+  const protectedRow = prevById.get(protectedId);
+  if (protectedRow && !server.some((row) => row.id === protectedId)) merged.push(protectedRow);
+  return merged;
+}
+
 function errorFromResponse(prefix: string, res: Response): Promise<Error> {
   return res.text().then((text) => new Error(`${prefix}: HTTP ${res.status}${text ? ` ${text}` : ""}`));
 }
@@ -117,6 +141,42 @@ function StatusButton({
       }}
     >
       <Icon style={{ width: 18, height: 18 }} />
+    </button>
+  );
+}
+
+function DeleteButton({
+  task,
+  disabled,
+  onDelete,
+}: {
+  task: MoveTask;
+  disabled: boolean;
+  onDelete: (task: MoveTask) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`מחיקה: ${task.title}`}
+      title="מחיקה"
+      disabled={disabled}
+      onClick={() => onDelete(task)}
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 8,
+        border: `1px solid ${T.line}`,
+        background: T.white,
+        color: T.red,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.55 : 1,
+        flex: "0 0 auto",
+      }}
+    >
+      <Trash2 style={{ width: 16, height: 16 }} />
     </button>
   );
 }
@@ -196,6 +256,121 @@ function InlineCell({
   );
 }
 
+// Mobile-only: a labeled, inline-editable meta line (owner / due / notes).
+function MetaField({
+  label,
+  task,
+  field,
+  placeholder,
+  editing,
+  setEditing,
+  onCommit,
+}: {
+  label: string;
+  task: MoveTask;
+  field: EditableField;
+  placeholder: string;
+  editing: EditingCell | null;
+  setEditing: (editing: EditingCell | null) => void;
+  onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+      <span style={{ flex: "0 0 auto", minWidth: 54, color: T.ink3, fontSize: 11, fontWeight: 700 }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <InlineCell
+          task={task}
+          field={field}
+          placeholder={placeholder}
+          editing={editing}
+          setEditing={setEditing}
+          onCommit={onCommit}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TaskRow({
+  task,
+  isMobile,
+  busy,
+  editing,
+  setEditing,
+  onCommit,
+  onToggle,
+  onDelete,
+}: {
+  task: MoveTask;
+  isMobile: boolean;
+  busy: boolean;
+  editing: EditingCell | null;
+  setEditing: (editing: EditingCell | null) => void;
+  onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
+  onToggle: (task: MoveTask) => void;
+  onDelete: (task: MoveTask) => void;
+}) {
+  const doneBg = task.status === "done" ? T.greenSoft : T.white;
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          padding: "14px 16px",
+          borderBottom: `1px solid ${T.line}`,
+          background: doneBg,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <StatusButton task={task} disabled={busy} onToggle={onToggle} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <InlineCell
+              task={task}
+              field="title"
+              placeholder="כותרת"
+              editing={editing}
+              setEditing={setEditing}
+              onCommit={onCommit}
+            />
+          </div>
+          <DeleteButton task={task} disabled={busy} onDelete={onDelete} />
+        </div>
+        <div style={{ display: "grid", gap: 7, paddingInlineStart: 44 }}>
+          <MetaField label="מי" task={task} field="owner" placeholder="מי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+          <MetaField label="עד מתי" task={task} field="due" placeholder="עד מתי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+          <MetaField label="הערות" task={task} field="notes" placeholder="הערות" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "34px minmax(220px, 1.7fr) minmax(60px, 0.35fr) minmax(70px, 0.45fr) minmax(160px, 1fr) 34px",
+        gap: 12,
+        alignItems: "center",
+        padding: "13px 18px",
+        borderBottom: `1px solid ${T.line}`,
+        background: doneBg,
+      }}
+    >
+      <StatusButton task={task} disabled={busy} onToggle={onToggle} />
+      <InlineCell task={task} field="title" placeholder="כותרת" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+      <InlineCell task={task} field="owner" placeholder="מי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+      <InlineCell task={task} field="due" placeholder="עד מתי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+      <InlineCell task={task} field="notes" placeholder="הערות" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+      <DeleteButton task={task} disabled={busy} onDelete={onDelete} />
+    </div>
+  );
+}
+
 function BucketAddForm({
   bucket,
   value,
@@ -267,6 +442,7 @@ function BucketAddForm({
 
 export function MovePage() {
   const api = useApi();
+  const isMobile = useIsMobile();
   const [rows, setRows] = useState<MoveTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditingCell | null>(null);
@@ -278,6 +454,17 @@ export function MovePage() {
     C: "",
     D: "",
   });
+
+  // Latest editing/busy ids, readable from the polling interval without
+  // re-subscribing it every keystroke.
+  const editingRef = useRef<EditingCell | null>(editing);
+  const busyRef = useRef<string | null>(busyId);
+  editingRef.current = editing;
+  busyRef.current = busyId;
+
+  // Bumped at the start of every mutation. A poll that began before a mutation
+  // landed bails before its (now stale) snapshot can revert/hide/resurrect a row.
+  const mutationGenRef = useRef(0);
 
   const loadRows = useCallback(async () => {
     const res = await api("/api/move");
@@ -306,13 +493,48 @@ export function MovePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Background refresh so a co-editor's changes show up within a few seconds.
+  // Skips the row currently being edited / written, and stays quiet on transient
+  // failures (no scary error for a single dropped poll).
+  useEffect(() => {
+    const handle = window.setInterval(() => {
+      void (async () => {
+        const gen = mutationGenRef.current;
+        try {
+          const res = await api("/api/move");
+          if (!res.ok) return;
+          const server = (await res.json()) as MoveTask[];
+          // A mutation started while this GET was in flight → its snapshot may be
+          // stale; drop it and let the next tick (or the mutation's own setRows) win.
+          if (gen !== mutationGenRef.current) return;
+          const protectedId = editingRef.current?.id ?? busyRef.current ?? null;
+          setRows((current) => mergeServerRows(server, current, protectedId));
+        } catch {
+          // transient network blip — next tick retries
+        }
+      })();
+    }, POLL_MS);
+    return () => window.clearInterval(handle);
+  }, [api]);
+
   async function patchTask(task: MoveTask, patch: Partial<Pick<MoveTask, EditableField | "status">>) {
+    mutationGenRef.current += 1;
     setBusyId(task.id);
     try {
       const res = await api(`/api/move/${encodeURIComponent(task.id)}`, {
         method: "PATCH",
-        body: JSON.stringify(patch),
+        body: JSON.stringify({ ...patch, base_version: task.version }),
       });
+      if (res.status === 409) {
+        // Someone changed this row underneath us. Show the fresh value, drop our
+        // edit, and tell the user calmly — never silently overwrite.
+        const payload = (await res.json()) as { current?: MoveTask };
+        if (payload.current) {
+          setRows((current) => (current ? replaceTask(current, payload.current as MoveTask) : current));
+        }
+        setError("המשימה עודכנה במקביל — הצגנו את הגרסה העדכנית. בדוק ועדכן שוב אם צריך.");
+        return;
+      }
       if (!res.ok) throw await errorFromResponse("עדכון המשימה נכשל", res);
       const updated = (await res.json()) as MoveTask;
       setRows((current) => (current ? replaceTask(current, updated) : current));
@@ -335,10 +557,15 @@ export function MovePage() {
     await patchTask(task, { [field]: normalized });
   }
 
+  function toggleStatus(task: MoveTask) {
+    void patchTask(task, { status: NEXT_STATUS[task.status] });
+  }
+
   async function addTask(bucket: MoveBucket) {
     const title = newTitles[bucket].trim();
     if (!title) return;
 
+    mutationGenRef.current += 1;
     setAddingBucket(bucket);
     try {
       const res = await api("/api/move", {
@@ -356,6 +583,7 @@ export function MovePage() {
   }
 
   async function deleteTask(task: MoveTask) {
+    mutationGenRef.current += 1;
     setBusyId(task.id);
     try {
       const res = await api(`/api/move/${encodeURIComponent(task.id)}`, { method: "DELETE" });
@@ -376,10 +604,10 @@ export function MovePage() {
     <div dir="rtl" style={{
       fontFamily: "Inter, 'Arial Hebrew', Arial, sans-serif",
       boxSizing: "border-box",
-      padding: "40px 48px 80px",
+      padding: isMobile ? "20px 14px 60px" : "40px 48px 80px",
     }}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", padding: "32px 20px 40px", marginBottom: 28 }}>
+        <div style={{ textAlign: "center", padding: isMobile ? "12px 6px 24px" : "32px 20px 40px", marginBottom: isMobile ? 18 : 28 }}>
           <div style={{
             fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
             color: T.skyDark, marginBottom: 14,
@@ -387,13 +615,13 @@ export function MovePage() {
             לוגיסטיקה · מעבר דירה
           </div>
           <h1 style={{
-            fontSize: 34, fontWeight: 800, color: T.ink,
+            fontSize: isMobile ? 25 : 34, fontWeight: 800, color: T.ink,
             margin: "0 0 14px", letterSpacing: "-0.02em", lineHeight: 1.15,
           }}>
             🏠 מעבר דירה
           </h1>
           <p style={{
-            fontSize: 16, color: T.ink2, lineHeight: 1.65,
+            fontSize: isMobile ? 14 : 16, color: T.ink2, lineHeight: 1.65,
             maxWidth: 720, margin: "0 auto",
           }}>
             מסירת קלוסטרהוף, תשתיות, סידור הבית החדש ואריזה — הכל במעקב אחד שאפשר לערוך.
@@ -423,7 +651,7 @@ export function MovePage() {
             טוען…
           </div>
         ) : (
-          <div style={{ display: "grid", gap: 24 }}>
+          <div style={{ display: "grid", gap: isMobile ? 18 : 24 }}>
             {BUCKETS.map((bucket) => (
               <section
                 key={bucket.id}
@@ -443,7 +671,7 @@ export function MovePage() {
                   borderBottom: `1px solid ${T.line}`,
                   background: T.bg2,
                 }}>
-                  <h2 style={{ margin: 0, color: T.ink, fontSize: 17, fontWeight: 800 }}>
+                  <h2 style={{ margin: 0, color: T.ink, fontSize: isMobile ? 15 : 17, fontWeight: 800 }}>
                     {bucket.title}
                   </h2>
                   <span style={{
@@ -461,78 +689,17 @@ export function MovePage() {
 
                 <div style={{ display: "grid" }}>
                   {rowsForBucket(bucket.id).map((task) => (
-                    <div
+                    <TaskRow
                       key={task.id}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "34px minmax(220px, 1.7fr) minmax(60px, 0.35fr) minmax(70px, 0.45fr) minmax(160px, 1fr) 34px",
-                        gap: 12,
-                        alignItems: "center",
-                        padding: "13px 18px",
-                        borderBottom: `1px solid ${T.line}`,
-                        background: task.status === "done" ? T.greenSoft : T.white,
-                      }}
-                    >
-                      <StatusButton
-                        task={task}
-                        disabled={busyId === task.id}
-                        onToggle={(nextTask) => void patchTask(nextTask, { status: NEXT_STATUS[nextTask.status] })}
-                      />
-                      <InlineCell
-                        task={task}
-                        field="title"
-                        placeholder="כותרת"
-                        editing={editing}
-                        setEditing={setEditing}
-                        onCommit={commitEdit}
-                      />
-                      <InlineCell
-                        task={task}
-                        field="owner"
-                        placeholder="מי"
-                        editing={editing}
-                        setEditing={setEditing}
-                        onCommit={commitEdit}
-                      />
-                      <InlineCell
-                        task={task}
-                        field="due"
-                        placeholder="עד מתי"
-                        editing={editing}
-                        setEditing={setEditing}
-                        onCommit={commitEdit}
-                      />
-                      <InlineCell
-                        task={task}
-                        field="notes"
-                        placeholder="הערות"
-                        editing={editing}
-                        setEditing={setEditing}
-                        onCommit={commitEdit}
-                      />
-                      <button
-                        type="button"
-                        aria-label={`מחיקה: ${task.title}`}
-                        title="מחיקה"
-                        disabled={busyId === task.id}
-                        onClick={() => void deleteTask(task)}
-                        style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: 8,
-                          border: `1px solid ${T.line}`,
-                          background: T.white,
-                          color: T.red,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: busyId === task.id ? "default" : "pointer",
-                          opacity: busyId === task.id ? 0.55 : 1,
-                        }}
-                      >
-                        <Trash2 style={{ width: 16, height: 16 }} />
-                      </button>
-                    </div>
+                      task={task}
+                      isMobile={isMobile}
+                      busy={busyId === task.id}
+                      editing={editing}
+                      setEditing={setEditing}
+                      onCommit={commitEdit}
+                      onToggle={toggleStatus}
+                      onDelete={(t) => void deleteTask(t)}
+                    />
                   ))}
                 </div>
 

@@ -16,6 +16,7 @@ type MoveTaskRow = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  version: number;
 };
 
 type MaxSeqRow = { max_seq: number | null };
@@ -51,7 +52,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
-      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at
+      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
         FROM move_tasks
        ORDER BY bucket ASC, seq ASC
     `) as MoveTaskRow[];
@@ -111,7 +112,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         'todo',
         ${optionalText(body.notes)}
       )
-      RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at
+      RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
     `) as MoveTaskRow[];
 
     return json(rows[0], { status: 201 });
