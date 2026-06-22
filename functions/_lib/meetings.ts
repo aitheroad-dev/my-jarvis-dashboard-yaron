@@ -58,14 +58,28 @@ export async function createMeetingWithBot(
   `) as { id: number }[];
   if (existing[0]) return { ok: true, meetingId: existing[0].id, reused: true };
 
-  const inserted = (await sql/* sql */ `
-    INSERT INTO meetings (title, meeting_url, platform, native_meeting_id, status, started_at)
-    VALUES (${args.title}, ${redactMeetingUrl(args.meetingUrl)}, ${args.platform}, ${args.nativeMeetingId},
-            'starting', strftime('%Y-%m-%dT%H:%M:%SZ','now'))
-    RETURNING id
-  `) as { id: number }[];
-  if (!inserted[0]) return { ok: false, detail: "insert returned no row" };
-  const meetingId = inserted[0].id;
+  let meetingId: number;
+  try {
+    const inserted = (await sql/* sql */ `
+      INSERT INTO meetings (title, meeting_url, platform, native_meeting_id, status, started_at)
+      VALUES (${args.title}, ${redactMeetingUrl(args.meetingUrl)}, ${args.platform}, ${args.nativeMeetingId},
+              'starting', strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+      RETURNING id
+    `) as { id: number }[];
+    if (!inserted[0]) return { ok: false, detail: "insert returned no row" };
+    meetingId = inserted[0].id;
+  } catch {
+    // The partial unique index (one active bot per code) tripped — a concurrent
+    // dispatch won the race. Reuse its live/starting row instead of double-botting.
+    const raced = (await sql/* sql */ `
+      SELECT id FROM meetings
+       WHERE platform = ${args.platform} AND native_meeting_id = ${args.nativeMeetingId}
+         AND status IN ('live','starting')
+       LIMIT 1
+    `) as { id: number }[];
+    if (raced[0]) return { ok: true, meetingId: raced[0].id, reused: true };
+    return { ok: false, detail: "insert conflict but no active row found" };
+  }
 
   const bot = await createBot(env, {
     platform: args.platform,
@@ -124,4 +138,29 @@ export async function maybeEndMeeting(
      WHERE id = ${meeting.id}
   `;
   return "ended";
+}
+
+/**
+ * Sweep every live/starting meeting and end the ones whose bot is gone (call
+ * over, or empty-room bot dropped by Vexa). The cron calls this each minute so a
+ * stuck row self-heals WITHOUT anyone opening the dashboard — which is what lets
+ * an empty-room meeting flip to ended-with-no-transcript and become re-dispatch
+ * eligible (the late-join fix). A single bad row never blocks the sweep.
+ */
+export async function reconcileActiveMeetings(
+  env: VexaEnv,
+  sql: ReturnType<typeof getDb>,
+): Promise<void> {
+  const active = (await sql/* sql */ `
+    SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status, summary,
+           started_at, ended_at, created_at
+      FROM meetings WHERE status IN ('live','starting')
+  `) as MeetingRow[];
+  for (const m of active) {
+    try {
+      await maybeEndMeeting(env, sql, m, false);
+    } catch {
+      // never let one vendor hiccup abort the rest of the sweep
+    }
+  }
 }

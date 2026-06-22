@@ -9,12 +9,21 @@ import { parseMeetingUrl } from "./meeting-url";
 import { createMeetingWithBot } from "./meetings";
 import { type VexaEnv } from "./vexa";
 
-// Dispatch a bot when an opt-in meeting starts within this lead window. The
-// cron runs every minute, so a 3-min window tolerates a missed tick and lets
-// the bot be in the room slightly before the humans.
+// A bot is dispatched this long before start so it's in the room before humans.
 const DISPATCH_LEAD_MS = 3 * 60_000;
-// Don't dispatch for events whose start is already this far in the past (stale).
-const DISPATCH_LATE_MS = 10 * 60_000;
+// A bot may still be dispatched up to this long after the scheduled end — so a
+// late-starting or over-running meeting still gets a notetaker (replaces the old
+// hard +10-min-after-start cutoff that silently dropped late joins).
+const END_GRACE_MS = 5 * 60_000;
+// Assumed length when the calendar event carries no usable end_time.
+const DEFAULT_DURATION_MS = 60 * 60_000;
+// Minimum gap between dispatch attempts for the same event — stops a failing
+// event re-firing every single minute (the Jun-13 failed-row storm).
+const RETRY_BACKOFF_MS = 5 * 60_000;
+// Give up after this many CONSECUTIVE failed sends for one event. A successful
+// send resets the counter to 0, so a long meeting waiting for a late human keeps
+// getting a bot through its window rather than being capped mid-way.
+const MAX_ATTEMPTS = 6;
 
 export interface CalendarConnection {
   google_email: string | null;
@@ -52,33 +61,50 @@ export interface CalEventRow {
   native_meeting_id: string | null;
   auto_join: number;
   dispatched_meeting_id: number | null;
+  attempt_count: number;
+  last_attempt_at: string | null;
+  present: number;
 }
 
 /**
  * Refresh the cache of upcoming Meet-bearing events from Google into D1.
- * Preserves auto_join + dispatched_meeting_id across refreshes (ON CONFLICT
- * updates only the Google-owned fields). Only events whose URL parses to a
- * supported platform are stored.
+ * - New events default auto_join ON (owner wants the notetaker everywhere); an
+ *   explicit per-event opt-OUT is preserved across refreshes (ON CONFLICT never
+ *   touches auto_join).
+ * - All-day (date-only) events are skipped — they have no real start clock.
+ * - A reschedule / link change resets the dispatch attempt state so a moved
+ *   meeting isn't permanently blocked by a stale cap.
+ * - Events that vanished from Google within the synced window (cancelled /
+ *   deleted) are flipped present=0 so they stop dispatching. Only runs on a
+ *   successful list, so a transient API error never mass-deactivates.
  */
 export async function syncEvents(
   sql: ReturnType<typeof getDb>,
   accessToken: string,
   nowMs: number,
 ): Promise<void> {
-  const timeMin = new Date(nowMs - 5 * 60_000).toISOString();
-  const timeMax = new Date(nowMs + 24 * 3600_000).toISOString();
+  const windowStartMs = nowMs - 5 * 60_000;
+  const windowEndMs = nowMs + 24 * 3600_000;
+  const timeMin = new Date(windowStartMs).toISOString();
+  const timeMax = new Date(windowEndMs).toISOString();
   const res = await listEvents(accessToken, timeMin, timeMax);
   if (!res.ok) return;
+
+  const seen = new Set<string>();
   for (const ev of res.events) {
     if (!ev.meetingUrl || !ev.id) continue;
+    // Skip all-day events: Google gives a date with no time, which would parse
+    // to UTC midnight and dispatch at an unexpected local hour.
+    if (!ev.start || !ev.start.includes("T")) continue;
     const parsed = parseMeetingUrl(ev.meetingUrl);
     if (!parsed.ok) continue;
+    seen.add(ev.id);
     await sql/* sql */ `
       INSERT INTO calendar_events
-        (google_event_id, title, start_time, end_time, meeting_url, platform, native_meeting_id, auto_join, updated_at)
+        (google_event_id, title, start_time, end_time, meeting_url, platform, native_meeting_id, auto_join, present, updated_at)
       VALUES
         (${ev.id}, ${ev.title}, ${ev.start}, ${ev.end}, ${ev.meetingUrl},
-         ${parsed.platform}, ${parsed.nativeMeetingId}, 0, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+         ${parsed.platform}, ${parsed.nativeMeetingId}, 1, 1, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       ON CONFLICT (google_event_id) DO UPDATE SET
         title = excluded.title,
         start_time = excluded.start_time,
@@ -86,39 +112,111 @@ export async function syncEvents(
         meeting_url = excluded.meeting_url,
         platform = excluded.platform,
         native_meeting_id = excluded.native_meeting_id,
-        updated_at = excluded.updated_at
+        present = 1,
+        updated_at = excluded.updated_at,
+        attempt_count = CASE
+          WHEN calendar_events.start_time IS NOT excluded.start_time
+            OR calendar_events.native_meeting_id IS NOT excluded.native_meeting_id
+            OR calendar_events.platform IS NOT excluded.platform
+          THEN 0 ELSE calendar_events.attempt_count END,
+        last_attempt_at = CASE
+          WHEN calendar_events.start_time IS NOT excluded.start_time
+            OR calendar_events.native_meeting_id IS NOT excluded.native_meeting_id
+            OR calendar_events.platform IS NOT excluded.platform
+          THEN NULL ELSE calendar_events.last_attempt_at END,
+        dispatched_meeting_id = CASE
+          WHEN calendar_events.start_time IS NOT excluded.start_time
+            OR calendar_events.native_meeting_id IS NOT excluded.native_meeting_id
+            OR calendar_events.platform IS NOT excluded.platform
+          THEN NULL ELSE calendar_events.dispatched_meeting_id END
+    `;
+  }
+
+  // Deactivate cached events that Google no longer returns inside the synced
+  // window. Parse start_time with Date.parse (handles the stored UTC-offset),
+  // and only touch rows whose start falls in the window we actually queried.
+  const cached = (await sql/* sql */ `
+    SELECT google_event_id, start_time, present FROM calendar_events
+  `) as { google_event_id: string; start_time: string | null; present: number }[];
+  for (const row of cached) {
+    if (seen.has(row.google_event_id)) continue;
+    if (row.present === 0) continue;
+    const s = row.start_time ? Date.parse(row.start_time) : NaN;
+    if (!Number.isFinite(s)) continue;
+    if (s < windowStartMs || s > windowEndMs) continue; // outside synced window — leave alone
+    await sql/* sql */ `
+      UPDATE calendar_events SET present = 0 WHERE google_event_id = ${row.google_event_id}
     `;
   }
 }
 
 /**
- * Dispatch bots for opt-in events whose start time is in the dispatch window
- * and which haven't been dispatched yet. Idempotent: dispatched_meeting_id is
- * set as soon as a bot is created, and createMeetingWithBot also guards
- * one-bot-per-code. Returns how many were dispatched.
+ * Dispatch bots for opt-in events happening now that aren't already handled.
+ *
+ * "Handled" is scoped to THIS occurrence: a bot is live/starting for the code,
+ * OR a meeting for the code that STARTED within this occurrence's window already
+ * captured transcript. A past occurrence of a recurring/reused Meet link does
+ * not suppress the current one, and an empty-room ending (no transcript) is NOT
+ * handled — so a bot that left an empty room is re-sent when the human arrives.
+ *
+ * The attempt claim is atomic (a single conditional UPDATE … RETURNING), so two
+ * overlapping cron ticks can't both dispatch: the loser's backoff predicate
+ * fails. The cap counts CONSECUTIVE failures (reset on success), bounding the
+ * Vexa-error storm without stranding a long meeting that's waiting for a human.
  */
 export async function dispatchDue(
   env: GoogleEnv & VexaEnv,
   sql: ReturnType<typeof getDb>,
   nowMs: number,
 ): Promise<{ dispatched: number; errors: string[] }> {
-  const due = (await sql/* sql */ `
+  const candidates = (await sql/* sql */ `
     SELECT google_event_id, title, start_time, end_time, meeting_url, platform,
-           native_meeting_id, auto_join, dispatched_meeting_id
+           native_meeting_id, auto_join, dispatched_meeting_id,
+           attempt_count, last_attempt_at, present
       FROM calendar_events
-     WHERE auto_join = 1 AND dispatched_meeting_id IS NULL
-       AND start_time IS NOT NULL
+     WHERE auto_join = 1 AND present = 1 AND start_time IS NOT NULL
   `) as CalEventRow[];
 
+  const backoffCutoffIso = new Date(nowMs - RETRY_BACKOFF_MS).toISOString();
   let dispatched = 0;
   const errors: string[] = [];
-  for (const ev of due) {
+  for (const ev of candidates) {
     const startMs = ev.start_time ? Date.parse(ev.start_time) : NaN;
     if (!Number.isFinite(startMs)) continue;
-    // Window: start is within DISPATCH_LEAD ahead, and not more than DISPATCH_LATE behind.
-    if (startMs - nowMs > DISPATCH_LEAD_MS) continue;
-    if (nowMs - startMs > DISPATCH_LATE_MS) continue;
+    let endMs = ev.end_time ? Date.parse(ev.end_time) : NaN;
+    if (!Number.isFinite(endMs) || endMs <= startMs) endMs = startMs + DEFAULT_DURATION_MS;
+
+    // Window: from LEAD before start until END_GRACE after the scheduled end.
+    if (nowMs < startMs - DISPATCH_LEAD_MS) continue; // too early
+    if (nowMs > endMs + END_GRACE_MS) continue; // meeting is over
     if (!ev.platform || !ev.native_meeting_id) continue;
+
+    // Occurrence-scoped "handled" check (meetings.started_at is uniform UTC 'Z').
+    const winStartIso = new Date(startMs - DISPATCH_LEAD_MS).toISOString();
+    const winEndIso = new Date(endMs + END_GRACE_MS).toISOString();
+    const handled = (await sql/* sql */ `
+      SELECT 1 FROM meetings m
+       WHERE m.platform = ${ev.platform} AND m.native_meeting_id = ${ev.native_meeting_id}
+         AND ( m.status IN ('live','starting')
+            OR ( m.status = 'ended'
+                 AND m.started_at >= ${winStartIso} AND m.started_at <= ${winEndIso}
+                 AND EXISTS (SELECT 1 FROM meeting_transcript t WHERE t.meeting_id = m.id) ) )
+       LIMIT 1
+    `) as unknown[];
+    if (handled[0]) continue;
+
+    // Atomically claim the attempt: increments only if under the cap and past
+    // the backoff. Two overlapping ticks → only one wins; the other gets no row.
+    const claim = (await sql/* sql */ `
+      UPDATE calendar_events
+         SET attempt_count = attempt_count + 1,
+             last_attempt_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+       WHERE google_event_id = ${ev.google_event_id}
+         AND attempt_count < ${MAX_ATTEMPTS}
+         AND (last_attempt_at IS NULL OR last_attempt_at <= ${backoffCutoffIso})
+      RETURNING google_event_id
+    `) as unknown[];
+    if (!claim[0]) continue; // cap hit, backoff active, or another tick won the claim
 
     const r = await createMeetingWithBot(env, sql, {
       title: ev.title,
@@ -128,8 +226,11 @@ export async function dispatchDue(
       language: "he",
     });
     if (r.ok) {
+      // Success resets the consecutive-failure counter so the cap only ever
+      // bounds genuine Vexa failures, not empty-room re-dispatch across a window.
       await sql/* sql */ `
-        UPDATE calendar_events SET dispatched_meeting_id = ${r.meetingId}
+        UPDATE calendar_events
+           SET dispatched_meeting_id = ${r.meetingId}, attempt_count = 0
          WHERE google_event_id = ${ev.google_event_id}
       `;
       dispatched++;

@@ -9,6 +9,7 @@
  */
 import { getDb } from "../../../functions/_lib/db";
 import { getAccessToken, syncEvents, dispatchDue } from "../../../functions/_lib/calendar";
+import { reconcileActiveMeetings } from "../../../functions/_lib/meetings";
 
 export interface Env {
   DB: unknown; // D1Database — bound in wrangler.toml
@@ -31,6 +32,9 @@ async function runPass(env: Env): Promise<{ dispatched: number; errors: string[]
   if (!tok.ok) return { dispatched: 0, errors: [`token: ${tok.detail}`] };
   const now = Date.now();
   await syncEvents(sql, tok.accessToken, now);
+  // End empty/stale bots before dispatching so an empty-room meeting can flip to
+  // ended-no-transcript and become re-dispatch eligible (the late-join fix).
+  await reconcileActiveMeetings(e, sql);
   return dispatchDue(e, sql, now);
 }
 
