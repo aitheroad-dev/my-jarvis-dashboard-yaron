@@ -1,22 +1,14 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env } from "../../_lib/auth";
-
-type MoveStatus = "todo" | "doing" | "done";
-
-type MoveTaskRow = {
-  id: string;
-  bucket: "A" | "B" | "C" | "D";
-  seq: number;
-  title: string;
-  owner: string | null;
-  due: string | null;
-  status: MoveStatus;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  version: number;
-};
+import {
+  isMoveBucket,
+  isMoveStatus,
+  normalizeBuyOptions,
+  serializeMoveRow,
+  type MoveBucket,
+  type MoveTaskDbRow,
+} from "../../_lib/move";
 
 type PatchMoveTaskBody = {
   title?: unknown;
@@ -24,14 +16,16 @@ type PatchMoveTaskBody = {
   due?: unknown;
   status?: unknown;
   notes?: unknown;
+  // Move a task to a different section. When the bucket actually changes, seq is
+  // recomputed to the bottom of the target bucket.
+  bucket?: unknown;
+  // Full replacement of the purchase options (array of {label,url,price?}) or null.
+  buy_options?: unknown;
   // Optimistic concurrency: the integer version the client last saw for this row.
-  // When present, the UPDATE only lands if the row's version still matches, and
-  // every write bumps version — so a same-cell race in the same second is caught
-  // (updated_at is only second-resolution and can't be a reliable CAS token).
   base_version?: unknown;
 };
 
-const STATUSES: MoveStatus[] = ["todo", "doing", "done"];
+type MaxSeqRow = { max_seq: number | null };
 
 function hasOwn(body: PatchMoveTaskBody, key: keyof PatchMoveTaskBody): boolean {
   return Object.prototype.hasOwnProperty.call(body, key);
@@ -43,10 +37,6 @@ function optionalTextFromPatch(body: PatchMoveTaskBody, key: "owner" | "due" | "
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-function isMoveStatus(value: unknown): value is MoveStatus {
-  return typeof value === "string" && STATUSES.includes(value as MoveStatus);
 }
 
 export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, params }) => {
@@ -79,9 +69,19 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
     return json({ error: "status must be one of todo, doing, done" }, { status: 400 });
   }
 
+  const hasBucket = hasOwn(body, "bucket");
+  if (hasBucket && !isMoveBucket(body.bucket)) {
+    return json({ error: "bucket must be one of A, B, C, D" }, { status: 400 });
+  }
+  const nextBucket = hasBucket ? (body.bucket as MoveBucket) : null;
+
+  const hasBuy = hasOwn(body, "buy_options");
+  const buy = hasBuy ? normalizeBuyOptions(body.buy_options) : null;
+  if (buy && !buy.ok) return json({ error: buy.error }, { status: 400 });
+  const buyJson = buy && buy.ok ? buy.json : null;
+
   // Optimistic-concurrency guard: when the client sends the version it last saw,
-  // the UPDATE only lands if the row's version still matches. Every write bumps
-  // version. Null = no guard (back-compat). Must be a non-negative integer.
+  // the UPDATE only lands if the row's version still matches. Null = no guard.
   const baseVersion =
     typeof body.base_version === "number" && Number.isInteger(body.base_version) && body.base_version >= 0
       ? body.base_version
@@ -89,6 +89,23 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
 
   try {
     const sql = getDb(env);
+
+    // For a move, recompute seq to the bottom of the target bucket — but only when
+    // the bucket actually changes (so a no-op bucket PATCH doesn't reshuffle).
+    let moveSeq: number | null = null;
+    if (nextBucket) {
+      const currentRows = (await sql/* sql */ `
+        SELECT bucket FROM move_tasks WHERE id = ${id}
+      `) as { bucket: MoveBucket }[];
+      if (currentRows.length && currentRows[0].bucket !== nextBucket) {
+        const maxRows = (await sql/* sql */ `
+          SELECT MAX(seq) AS max_seq FROM move_tasks WHERE bucket = ${nextBucket}
+        `) as MaxSeqRow[];
+        moveSeq = (maxRows[0]?.max_seq ?? -1) + 1;
+      }
+    }
+    const applyMove = nextBucket !== null && moveSeq !== null;
+
     const rows = (await sql/* sql */ `
       UPDATE move_tasks
          SET title = CASE WHEN ${hasOwn(body, "title")} THEN ${typeof body.title === "string" ? body.title.trim() : null} ELSE title END,
@@ -96,27 +113,30 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
              due = CASE WHEN ${hasOwn(body, "due")} THEN ${optionalTextFromPatch(body, "due")} ELSE due END,
              status = CASE WHEN ${hasOwn(body, "status")} THEN ${body.status} ELSE status END,
              notes = CASE WHEN ${hasOwn(body, "notes")} THEN ${optionalTextFromPatch(body, "notes")} ELSE notes END,
+             buy_options = CASE WHEN ${hasBuy} THEN ${buyJson} ELSE buy_options END,
+             bucket = CASE WHEN ${applyMove} THEN ${nextBucket} ELSE bucket END,
+             seq = CASE WHEN ${applyMove} THEN ${moveSeq} ELSE seq END,
              updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now'),
              version = version + 1
        WHERE id = ${id}
          AND (${baseVersion} IS NULL OR version = ${baseVersion})
-       RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
-    `) as MoveTaskRow[];
+       RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
+    `) as MoveTaskDbRow[];
 
     if (rows.length === 0) {
       // 0 rows = either the row is gone (404) or it changed under the client (409).
       const existing = (await sql/* sql */ `
-        SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
+        SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
           FROM move_tasks
          WHERE id = ${id}
-      `) as MoveTaskRow[];
+      `) as MoveTaskDbRow[];
       if (existing.length === 0) return json({ error: "not found" }, { status: 404 });
       return json(
-        { error: "version conflict", conflict: true, current: existing[0] },
+        { error: "version conflict", conflict: true, current: serializeMoveRow(existing[0]) },
         { status: 409 },
       );
     }
-    return json(rows[0]);
+    return json(serializeMoveRow(rows[0]));
   } catch (err) {
     return json(
       { error: "move task update failed", detail: err instanceof Error ? err.message : String(err) },

@@ -1,6 +1,7 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env } from "../../_lib/auth";
+import { serializeMoveRows, type MoveTaskDbRow } from "../../_lib/move";
 
 /**
  * Natural-language agent for the /move tracker.
@@ -57,6 +58,7 @@ type AddOp = { action: "add"; bucket: MoveBucket; title: string; owner?: string 
 type UpdateOp = { action: "update"; ref: number; title?: string; owner?: string | null; due?: string | null; notes?: string | null };
 type StatusOp = { action: "status"; ref: number; status: MoveStatus };
 type DeleteOp = { action: "delete"; ref: number };
+type MoveOp = { action: "move"; ref: number; bucket: MoveBucket };
 
 type AppliedOp = { action: string; detail: string };
 type SkippedOp = { reason: string; raw: unknown };
@@ -121,10 +123,14 @@ function buildSystemPrompt(tasks: MoveTaskRow[]): string {
     '{"action":"add","bucket":"A|B|C|D","title":"...","owner":null,"due":null,"notes":null}',
     '{"action":"update","ref":N,"title":"...","owner":null,"due":null,"notes":null}   (include ONLY the fields you are changing)',
     '{"action":"status","ref":N,"status":"todo|doing|done"}',
+    '{"action":"move","ref":N,"bucket":"A|B|C|D"}   (relocate an item to a different section)',
     '{"action":"delete","ref":N}',
     "Rules:",
     "- Keep titles in the user's language; Hebrew input → Hebrew titles.",
     "- 'packing' → bucket D unless the user says otherwise. Pick the best-fit bucket when unsure.",
+    "- To MOVE an item between sections (e.g. 'move the boxes task to packing'), use the move action with the target bucket — do NOT delete and re-add.",
+    "- owner, when set, MUST be exactly one of: \"ירון\" (Yaron), \"נועה\" (Noa), \"שנינו\" (both), or null (unassigned). Never put a free-form name in owner.",
+    "- Never set or invent purchase links — there is no field for that here.",
     "- ref MUST be one of the existing ref numbers listed above. Never invent a ref.",
     "- Emit ONLY the operations the instruction asks for. If it asks for nothing actionable, return an empty ops array.",
   ].join("\n");
@@ -221,7 +227,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const rawOps = ((plan as { ops: unknown[] }).ops).slice(0, MAX_OPS);
   const applied: AppliedOp[] = [];
   const skipped: SkippedOp[] = [];
-  const counts = { added: 0, updated: 0, statusChanged: 0, deleted: 0 };
+  const counts = { added: 0, updated: 0, statusChanged: 0, deleted: 0, moved: 0 };
 
   // ---- validate + execute each op (only the 4 whitelisted shapes touch the DB) ----
   for (const opUnknown of rawOps) {
@@ -311,6 +317,29 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         continue;
       }
 
+      if (op.action === "move") {
+        const m = op as MoveOp;
+        const row = byRef.get(m.ref);
+        if (!row) { skipped.push({ reason: "unknown ref", raw: op }); continue; }
+        if (!isBucket(m.bucket)) { skipped.push({ reason: "bad bucket", raw: op }); continue; }
+        if (row.bucket === m.bucket) { skipped.push({ reason: "already in bucket", raw: op }); continue; }
+        const maxRows = (await sql/* sql */ `
+          SELECT MAX(seq) AS max_seq FROM move_tasks WHERE bucket = ${m.bucket}
+        `) as MaxSeqRow[];
+        const seq = (maxRows[0]?.max_seq ?? -1) + 1;
+        await sql/* sql */ `
+          UPDATE move_tasks
+             SET bucket = ${m.bucket},
+                 seq = ${seq},
+                 updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now'),
+                 version = version + 1
+           WHERE id = ${row.id}
+        `;
+        counts.moved++;
+        applied.push({ action: "move", detail: `${row.title} → ${m.bucket}` });
+        continue;
+      }
+
       skipped.push({ reason: "unknown action", raw: op });
     } catch (err) {
       skipped.push({ reason: err instanceof Error ? err.message : "execution error", raw: op });
@@ -318,14 +347,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   // ---- fresh list back to the client (apply-immediately: UI just re-renders) ----
-  let fresh: MoveTaskRow[] = [];
+  let fresh: MoveTaskDbRow[] = [];
   let refreshError: string | null = null;
   try {
     fresh = (await sql/* sql */ `
-      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version
+      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
         FROM move_tasks
        ORDER BY bucket ASC, seq ASC
-    `) as MoveTaskRow[];
+    `) as MoveTaskDbRow[];
   } catch (err) {
     refreshError = err instanceof Error ? err.message : String(err);
   }
@@ -335,7 +364,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     note: typeof (plan as { summary?: unknown }).summary === "string" ? (plan as { summary: string }).summary : null,
     applied,
     skipped,
-    tasks: fresh,
+    tasks: serializeMoveRows(fresh),
     refreshError,
   });
 };

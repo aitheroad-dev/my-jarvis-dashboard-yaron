@@ -1,11 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Circle, CircleDot, Loader2, Plus, SendHorizontal, Sparkles, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  ArrowLeftRight,
+  CheckCircle2,
+  Circle,
+  CircleDot,
+  ExternalLink,
+  Loader2,
+  Plus,
+  SendHorizontal,
+  ShoppingCart,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useApi } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { architectureT as T } from "../blueprint/ArchitectureBlocks";
 
 type MoveBucket = "A" | "B" | "C" | "D";
 type MoveStatus = "todo" | "doing" | "done";
+
+type BuyOption = { label: string; url: string; price?: string | null };
 
 type MoveTask = {
   id: string;
@@ -19,6 +34,7 @@ type MoveTask = {
   created_at: string;
   updated_at: string;
   version: number;
+  buy_options: BuyOption[] | null;
 };
 
 type EditableField = "title" | "owner" | "due" | "notes";
@@ -27,6 +43,11 @@ type EditingCell = {
   id: string;
   field: EditableField;
   value: string;
+};
+
+// Fields a single PATCH may carry (plus base_version, added at call time).
+type TaskPatch = Partial<Pick<MoveTask, "title" | "owner" | "due" | "notes" | "status" | "bucket">> & {
+  buy_options?: BuyOption[] | null;
 };
 
 // Poll the shared list this often so a co-editor's changes appear without a reload.
@@ -40,6 +61,16 @@ const BUCKETS: { id: MoveBucket; title: string }[] = [
   { id: "C", title: "הבית החדש" },
   { id: "D", title: "אריזה ולוגיסטיקה" },
 ];
+
+// Owner is stored as the Hebrew label directly; "" in the <select> means unassigned (null).
+const OWNER_OPTIONS = ["ירון", "נועה", "שנינו"] as const;
+const OWNER_NONE_LABEL = "ללא";
+
+// Buy-item accent — distinct from the status palette (gray/amber/green).
+const BUY_ACCENT = "#7C3AED";
+const BUY_ACCENT_SOFT = "#F3E8FF";
+
+const MAX_BUY_OPTIONS = 4;
 
 const NEXT_STATUS: Record<MoveStatus, MoveStatus> = {
   todo: "doing",
@@ -65,6 +96,14 @@ const STATUS_TONE: Record<MoveStatus, { fg: string; bg: string; bd: string }> = 
   doing: { fg: T.amber, bg: T.amberSoft, bd: T.amber },
   done: { fg: T.green, bg: T.greenSoft, bd: T.green },
 };
+
+// Shared desktop grid: status | title | owner | due | notes | actions.
+const DESKTOP_GRID =
+  "34px minmax(180px, 1.6fr) minmax(96px, 0.55fr) minmax(64px, 0.4fr) minmax(130px, 0.85fr) auto";
+
+function isBuyItem(task: MoveTask): boolean {
+  return Array.isArray(task.buy_options) && task.buy_options.length > 0;
+}
 
 function displayText(value: string | null): string {
   return value?.trim() ? value : "—";
@@ -145,29 +184,37 @@ function StatusButton({
   );
 }
 
-function DeleteButton({
-  task,
+function IconButton({
+  label,
   disabled,
-  onDelete,
+  onClick,
+  color,
+  bg,
+  border,
+  children,
 }: {
-  task: MoveTask;
+  label: string;
   disabled: boolean;
-  onDelete: (task: MoveTask) => void;
+  onClick: () => void;
+  color: string;
+  bg: string;
+  border: string;
+  children: ReactNode;
 }) {
   return (
     <button
       type="button"
-      aria-label={`מחיקה: ${task.title}`}
-      title="מחיקה"
+      aria-label={label}
+      title={label}
       disabled={disabled}
-      onClick={() => onDelete(task)}
+      onClick={onClick}
       style={{
         width: 34,
         height: 34,
         borderRadius: 8,
-        border: `1px solid ${T.line}`,
-        background: T.white,
-        color: T.red,
+        border: `1px solid ${border}`,
+        background: bg,
+        color,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -176,8 +223,101 @@ function DeleteButton({
         flex: "0 0 auto",
       }}
     >
-      <Trash2 style={{ width: 16, height: 16 }} />
+      {children}
     </button>
+  );
+}
+
+// Choose who owns a task. Stores the Hebrew label directly; "" → null (unassigned).
+function OwnerSelect({
+  task,
+  disabled,
+  onChange,
+}: {
+  task: MoveTask;
+  disabled: boolean;
+  onChange: (task: MoveTask, value: string | null) => void;
+}) {
+  return (
+    <select
+      aria-label={`מי: ${task.title}`}
+      disabled={disabled}
+      value={task.owner ?? ""}
+      onChange={(event) => onChange(task, event.currentTarget.value === "" ? null : event.currentTarget.value)}
+      style={{
+        width: "100%",
+        minWidth: 0,
+        border: `1px solid ${T.line}`,
+        background: T.white,
+        color: task.owner ? T.ink2 : T.ink3,
+        borderRadius: 6,
+        padding: "6px 8px",
+        fontSize: 12,
+        fontWeight: 600,
+        outline: "none",
+        textAlign: "right",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <option value="">{OWNER_NONE_LABEL}</option>
+      {OWNER_OPTIONS.map((name) => (
+        <option key={name} value={name}>
+          {name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// Relocate a task to another section. Value = current bucket; picking another moves it.
+function MoveSelect({
+  task,
+  disabled,
+  onMove,
+}: {
+  task: MoveTask;
+  disabled: boolean;
+  onMove: (task: MoveTask, bucket: MoveBucket) => void;
+}) {
+  return (
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flex: "0 0 auto" }}>
+      <ArrowLeftRight
+        style={{ width: 13, height: 13, color: T.ink3, position: "absolute", insetInlineStart: 7, pointerEvents: "none" }}
+      />
+      <select
+        aria-label={`העברת המשימה לסעיף אחר: ${task.title}`}
+        title="העברה לסעיף אחר"
+        disabled={disabled}
+        value={task.bucket}
+        onChange={(event) => {
+          const next = event.currentTarget.value as MoveBucket;
+          if (next !== task.bucket) onMove(task, next);
+        }}
+        style={{
+          width: 132,
+          maxWidth: "38vw",
+          border: `1px solid ${T.line}`,
+          background: T.bg2,
+          color: T.ink2,
+          borderRadius: 8,
+          padding: "7px 8px 7px 22px",
+          fontSize: 12,
+          fontWeight: 600,
+          outline: "none",
+          textAlign: "right",
+          cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.6 : 1,
+          textOverflow: "ellipsis",
+        }}
+      >
+        {BUCKETS.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.title}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -256,7 +396,58 @@ function InlineCell({
   );
 }
 
-// Mobile-only: a labeled, inline-editable meta line (owner / due / notes).
+// Title cell. A buy-item (has purchase options) renders in the buy accent and opens
+// the buy popup on click; a normal item is inline-editable as before.
+function TitleCell({
+  task,
+  editing,
+  setEditing,
+  onCommit,
+  onOpenBuy,
+}: {
+  task: MoveTask;
+  editing: EditingCell | null;
+  setEditing: (editing: EditingCell | null) => void;
+  onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
+  onOpenBuy: (task: MoveTask) => void;
+}) {
+  if (isBuyItem(task)) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenBuy(task)}
+        title="פתיחת אפשרויות קנייה"
+        style={{
+          width: "100%",
+          minWidth: 0,
+          border: 0,
+          padding: 0,
+          background: "transparent",
+          color: BUY_ACCENT,
+          fontSize: 14,
+          fontWeight: 800,
+          lineHeight: 1.45,
+          textAlign: "right",
+          cursor: "pointer",
+          wordBreak: "break-word",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <ShoppingCart style={{ width: 14, height: 14, flex: "0 0 auto" }} />
+        <span style={{ textDecoration: "underline", textDecorationColor: BUY_ACCENT_SOFT, textUnderlineOffset: 3 }}>
+          {task.title}
+        </span>
+      </button>
+    );
+  }
+  return (
+    <InlineCell task={task} field="title" placeholder="כותרת" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+  );
+}
+
+// Mobile-only: a labeled, inline-editable meta line (due / notes).
 function MetaField({
   label,
   task,
@@ -293,6 +484,77 @@ function MetaField({
   );
 }
 
+function RowActions({
+  task,
+  disabled,
+  onMove,
+  onOpenBuy,
+  onDelete,
+}: {
+  task: MoveTask;
+  disabled: boolean;
+  onMove: (task: MoveTask, bucket: MoveBucket) => void;
+  onOpenBuy: (task: MoveTask) => void;
+  onDelete: (task: MoveTask) => void;
+}) {
+  const buy = isBuyItem(task);
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+      <MoveSelect task={task} disabled={disabled} onMove={onMove} />
+      <IconButton
+        label="אפשרויות קנייה"
+        disabled={disabled}
+        onClick={() => onOpenBuy(task)}
+        color={buy ? T.white : BUY_ACCENT}
+        bg={buy ? BUY_ACCENT : BUY_ACCENT_SOFT}
+        border={BUY_ACCENT}
+      >
+        <ShoppingCart style={{ width: 16, height: 16 }} />
+      </IconButton>
+      <IconButton
+        label={`מחיקה: ${task.title}`}
+        disabled={disabled}
+        onClick={() => onDelete(task)}
+        color={T.red}
+        bg={T.white}
+        border={T.line}
+      >
+        <Trash2 style={{ width: 16, height: 16 }} />
+      </IconButton>
+    </div>
+  );
+}
+
+function DesktopHeaderRow() {
+  const cell = (align: "right" | "center" = "right"): CSSProperties => ({
+    color: T.ink3,
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.02em",
+    textAlign: align,
+  });
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: DESKTOP_GRID,
+        gap: 12,
+        alignItems: "center",
+        padding: "9px 18px",
+        borderBottom: `1px solid ${T.line}`,
+        background: T.bg2,
+      }}
+    >
+      <span />
+      <span style={cell()}>כותרת</span>
+      <span style={cell()}>מי</span>
+      <span style={cell()}>עד מתי</span>
+      <span style={cell()}>הערות</span>
+      <span style={cell("center")}>פעולות</span>
+    </div>
+  );
+}
+
 function TaskRow({
   task,
   isMobile,
@@ -301,6 +563,9 @@ function TaskRow({
   setEditing,
   onCommit,
   onToggle,
+  onSetOwner,
+  onMove,
+  onOpenBuy,
   onDelete,
 }: {
   task: MoveTask;
@@ -310,6 +575,9 @@ function TaskRow({
   setEditing: (editing: EditingCell | null) => void;
   onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
   onToggle: (task: MoveTask) => void;
+  onSetOwner: (task: MoveTask, value: string | null) => void;
+  onMove: (task: MoveTask, bucket: MoveBucket) => void;
+  onOpenBuy: (task: MoveTask) => void;
   onDelete: (task: MoveTask) => void;
 }) {
   const doneBg = task.status === "done" ? T.greenSoft : T.white;
@@ -329,21 +597,35 @@ function TaskRow({
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <StatusButton task={task} disabled={busy} onToggle={onToggle} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <InlineCell
-              task={task}
-              field="title"
-              placeholder="כותרת"
-              editing={editing}
-              setEditing={setEditing}
-              onCommit={onCommit}
-            />
+            <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} />
           </div>
-          <DeleteButton task={task} disabled={busy} onDelete={onDelete} />
+          <IconButton
+            label="אפשרויות קנייה"
+            disabled={busy}
+            onClick={() => onOpenBuy(task)}
+            color={isBuyItem(task) ? T.white : BUY_ACCENT}
+            bg={isBuyItem(task) ? BUY_ACCENT : BUY_ACCENT_SOFT}
+            border={BUY_ACCENT}
+          >
+            <ShoppingCart style={{ width: 16, height: 16 }} />
+          </IconButton>
+          <IconButton label={`מחיקה: ${task.title}`} disabled={busy} onClick={() => onDelete(task)} color={T.red} bg={T.white} border={T.line}>
+            <Trash2 style={{ width: 16, height: 16 }} />
+          </IconButton>
         </div>
         <div style={{ display: "grid", gap: 7, paddingInlineStart: 44 }}>
-          <MetaField label="מי" task={task} field="owner" placeholder="מי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ flex: "0 0 auto", minWidth: 54, color: T.ink3, fontSize: 11, fontWeight: 700 }}>מי</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <OwnerSelect task={task} disabled={busy} onChange={onSetOwner} />
+            </div>
+          </div>
           <MetaField label="עד מתי" task={task} field="due" placeholder="עד מתי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
           <MetaField label="הערות" task={task} field="notes" placeholder="הערות" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ flex: "0 0 auto", minWidth: 54, color: T.ink3, fontSize: 11, fontWeight: 700 }}>סעיף</span>
+            <MoveSelect task={task} disabled={busy} onMove={onMove} />
+          </div>
         </div>
       </div>
     );
@@ -353,7 +635,7 @@ function TaskRow({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "34px minmax(220px, 1.7fr) minmax(60px, 0.35fr) minmax(70px, 0.45fr) minmax(160px, 1fr) 34px",
+        gridTemplateColumns: DESKTOP_GRID,
         gap: 12,
         alignItems: "center",
         padding: "13px 18px",
@@ -362,11 +644,240 @@ function TaskRow({
       }}
     >
       <StatusButton task={task} disabled={busy} onToggle={onToggle} />
-      <InlineCell task={task} field="title" placeholder="כותרת" editing={editing} setEditing={setEditing} onCommit={onCommit} />
-      <InlineCell task={task} field="owner" placeholder="מי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+      <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} />
+      <OwnerSelect task={task} disabled={busy} onChange={onSetOwner} />
       <InlineCell task={task} field="due" placeholder="עד מתי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
       <InlineCell task={task} field="notes" placeholder="הערות" editing={editing} setEditing={setEditing} onCommit={onCommit} />
-      <DeleteButton task={task} disabled={busy} onDelete={onDelete} />
+      <RowActions task={task} disabled={busy} onMove={onMove} onOpenBuy={onOpenBuy} onDelete={onDelete} />
+    </div>
+  );
+}
+
+// Buy popup: shows up to 4 purchase options as store links, and lets you edit them.
+function BuyModal({
+  task,
+  busy,
+  onClose,
+  onSave,
+}: {
+  task: MoveTask;
+  busy: boolean;
+  onClose: () => void;
+  onSave: (task: MoveTask, title: string, options: BuyOption[]) => Promise<void>;
+}) {
+  const initial = task.buy_options ?? [];
+  const [title, setTitle] = useState(task.title);
+  const [options, setOptions] = useState<BuyOption[]>(initial.map((o) => ({ ...o })));
+  const [edit, setEdit] = useState(initial.length === 0);
+
+  function update(index: number, patch: Partial<BuyOption>) {
+    setOptions((current) => current.map((o, i) => (i === index ? { ...o, ...patch } : o)));
+  }
+  function add() {
+    setOptions((current) => (current.length >= MAX_BUY_OPTIONS ? current : [...current, { label: "", url: "", price: "" }]));
+  }
+  function remove(index: number) {
+    setOptions((current) => current.filter((_, i) => i !== index));
+  }
+  function save() {
+    const cleaned = options
+      .map((o) => ({ label: o.label.trim(), url: o.url.trim(), price: o.price?.trim() || null }))
+      .filter((o) => o.url !== "");
+    void onSave(task, title.trim() || task.title, cleaned);
+  }
+
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    minWidth: 0,
+    border: `1px solid ${T.line}`,
+    background: T.white,
+    color: T.ink,
+    borderRadius: 6,
+    padding: "8px 10px",
+    fontSize: 13,
+    outline: "none",
+    textAlign: "right",
+    boxSizing: "border-box",
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      dir="rtl"
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(15,23,42,0.45)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        zIndex: 1000,
+      }}
+    >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "85vh",
+          overflowY: "auto",
+          background: T.white,
+          borderRadius: 14,
+          border: `1px solid ${T.line}`,
+          boxShadow: "0 24px 60px rgba(15,23,42,0.25)",
+          padding: 20,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <ShoppingCart style={{ width: 18, height: 18, color: BUY_ACCENT, flex: "0 0 auto" }} />
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.ink, wordBreak: "break-word" }}>{task.title}</h3>
+          </div>
+          <IconButton label="סגירה" disabled={false} onClick={onClose} color={T.ink2} bg={T.white} border={T.line}>
+            <X style={{ width: 16, height: 16 }} />
+          </IconButton>
+        </div>
+
+        {!edit && options.length > 0 ? (
+          <div style={{ display: "grid", gap: 8 }}>
+            {options.map((o, i) => (
+              <a
+                key={i}
+                href={o.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  padding: "11px 13px",
+                  borderRadius: 9,
+                  border: `1px solid ${BUY_ACCENT}`,
+                  background: BUY_ACCENT_SOFT,
+                  color: BUY_ACCENT,
+                  textDecoration: "none",
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <ExternalLink style={{ width: 15, height: 15, flex: "0 0 auto" }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.label}</span>
+                </span>
+                {o.price ? <span style={{ flex: "0 0 auto", fontWeight: 800 }}>{o.price}</span> : null}
+              </a>
+            ))}
+            <button
+              type="button"
+              onClick={() => setEdit(true)}
+              style={{
+                marginTop: 4,
+                padding: "9px 12px",
+                borderRadius: 8,
+                border: `1px solid ${T.line}`,
+                background: T.white,
+                color: T.ink2,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              עריכת אפשרויות
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            <label style={{ display: "grid", gap: 5 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: T.ink3 }}>כותרת המשימה</span>
+              <input value={title} onChange={(e) => setTitle(e.currentTarget.value)} style={inputStyle} />
+            </label>
+
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.ink3 }}>אפשרויות קנייה (עד {MAX_BUY_OPTIONS})</div>
+            {options.length === 0 ? (
+              <div style={{ fontSize: 13, color: T.ink3 }}>אין עדיין אפשרויות — הוסיפו חנות וקישור.</div>
+            ) : null}
+            {options.map((o, i) => (
+              <div key={i} style={{ display: "grid", gap: 6, padding: 10, border: `1px solid ${T.line}`, borderRadius: 9, background: T.bg2 }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input placeholder="חנות (למשל bol.com)" value={o.label} onChange={(e) => update(i, { label: e.currentTarget.value })} style={{ ...inputStyle, flex: 2 }} />
+                  <input placeholder="מחיר (לא חובה)" value={o.price ?? ""} onChange={(e) => update(i, { price: e.currentTarget.value })} style={{ ...inputStyle, flex: 1 }} />
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input placeholder="https://…" value={o.url} onChange={(e) => update(i, { url: e.currentTarget.value })} style={{ ...inputStyle, flex: 1, direction: "ltr", textAlign: "left" }} />
+                  <IconButton label="הסרה" disabled={false} onClick={() => remove(i)} color={T.red} bg={T.white} border={T.line}>
+                    <Trash2 style={{ width: 15, height: 15 }} />
+                  </IconButton>
+                </div>
+              </div>
+            ))}
+
+            {options.length < MAX_BUY_OPTIONS ? (
+              <button
+                type="button"
+                onClick={add}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "9px 12px",
+                  borderRadius: 8,
+                  border: `1px dashed ${BUY_ACCENT}`,
+                  background: T.white,
+                  color: BUY_ACCENT,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  justifySelf: "start",
+                }}
+              >
+                <Plus style={{ width: 15, height: 15 }} /> הוספת אפשרות
+              </button>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={save}
+                style={{
+                  flex: 1,
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: `1px solid ${BUY_ACCENT}`,
+                  background: BUY_ACCENT,
+                  color: T.white,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  cursor: busy ? "default" : "pointer",
+                  opacity: busy ? 0.6 : 1,
+                }}
+              >
+                שמירה
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: `1px solid ${T.line}`,
+                  background: T.white,
+                  color: T.ink2,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -440,7 +951,7 @@ function BucketAddForm({
   );
 }
 
-type AgentSummary = { added: number; updated: number; statusChanged: number; deleted: number };
+type AgentSummary = { added: number; updated: number; statusChanged: number; deleted: number; moved: number };
 type AgentMessage = { text: string; tone: "ok" | "err" };
 
 // Build the Hebrew "what the agent did" line from the server's counts.
@@ -448,6 +959,7 @@ function summaryText(s: AgentSummary, skippedCount: number, note: string | null)
   const parts: string[] = [];
   if (s.added) parts.push(`נוספו ${s.added}`);
   if (s.updated) parts.push(`עודכנו ${s.updated}`);
+  if (s.moved) parts.push(`הועברו ${s.moved}`);
   if (s.statusChanged) parts.push(`שינוי סטטוס: ${s.statusChanged}`);
   if (s.deleted) parts.push(`נמחקו ${s.deleted}`);
   let msg = parts.length ? parts.join(" · ") : note?.trim() || "לא בוצעו שינויים";
@@ -501,7 +1013,7 @@ function AgentBar({
           value={value}
           onChange={(event) => onChange(event.currentTarget.value)}
           disabled={busy}
-          placeholder="כתוב לסוכן מה לעשות… למשל: תוסיף 3 דברים לאריזה"
+          placeholder="כתוב לסוכן מה לעשות… למשל: תעביר את המשימה הזו לאריזה"
           style={{
             minWidth: 0,
             border: 0,
@@ -563,6 +1075,7 @@ export function MovePage() {
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addingBucket, setAddingBucket] = useState<MoveBucket | null>(null);
+  const [buyTaskId, setBuyTaskId] = useState<string | null>(null);
   const [newTitles, setNewTitles] = useState<Record<MoveBucket, string>>({
     A: "",
     B: "",
@@ -637,7 +1150,7 @@ export function MovePage() {
     return () => window.clearInterval(handle);
   }, [api]);
 
-  async function patchTask(task: MoveTask, patch: Partial<Pick<MoveTask, EditableField | "status">>) {
+  async function patchTask(task: MoveTask, patch: TaskPatch) {
     mutationGenRef.current += 1;
     setBusyId(task.id);
     try {
@@ -653,14 +1166,16 @@ export function MovePage() {
           setRows((current) => (current ? replaceTask(current, payload.current as MoveTask) : current));
         }
         setError("המשימה עודכנה במקביל — הצגנו את הגרסה העדכנית. בדוק ועדכן שוב אם צריך.");
-        return;
+        return false;
       }
       if (!res.ok) throw await errorFromResponse("עדכון המשימה נכשל", res);
       const updated = (await res.json()) as MoveTask;
       setRows((current) => (current ? replaceTask(current, updated) : current));
       setError(null);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "עדכון המשימה נכשל");
+      return false;
     } finally {
       setBusyId(null);
     }
@@ -679,6 +1194,23 @@ export function MovePage() {
 
   function toggleStatus(task: MoveTask) {
     void patchTask(task, { status: NEXT_STATUS[task.status] });
+  }
+
+  function setOwner(task: MoveTask, value: string | null) {
+    if ((task.owner ?? null) === (value ?? null)) return;
+    void patchTask(task, { owner: value });
+  }
+
+  function moveTask(task: MoveTask, bucket: MoveBucket) {
+    if (task.bucket === bucket) return;
+    void patchTask(task, { bucket });
+  }
+
+  async function saveBuyOptions(task: MoveTask, title: string, options: BuyOption[]) {
+    const patch: TaskPatch = { buy_options: options.length ? options : null };
+    if (title && title !== task.title) patch.title = title;
+    const ok = await patchTask(task, patch);
+    if (ok) setBuyTaskId(null);
   }
 
   async function addTask(bucket: MoveBucket) {
@@ -762,6 +1294,8 @@ export function MovePage() {
   function rowsForBucket(bucket: MoveBucket): MoveTask[] {
     return (rows ?? []).filter((row) => row.bucket === bucket);
   }
+
+  const buyTask = buyTaskId ? (rows ?? []).find((row) => row.id === buyTaskId) ?? null : null;
 
   return (
     <div dir="rtl" style={{
@@ -860,6 +1394,7 @@ export function MovePage() {
                 </div>
 
                 <div style={{ display: "grid" }}>
+                  {!isMobile && rowsForBucket(bucket.id).length > 0 ? <DesktopHeaderRow /> : null}
                   {rowsForBucket(bucket.id).map((task) => (
                     <TaskRow
                       key={task.id}
@@ -870,6 +1405,9 @@ export function MovePage() {
                       setEditing={setEditing}
                       onCommit={commitEdit}
                       onToggle={toggleStatus}
+                      onSetOwner={setOwner}
+                      onMove={moveTask}
+                      onOpenBuy={(t) => setBuyTaskId(t.id)}
                       onDelete={(t) => void deleteTask(t)}
                     />
                   ))}
@@ -889,6 +1427,15 @@ export function MovePage() {
           </div>
         )}
       </div>
+
+      {buyTask ? (
+        <BuyModal
+          task={buyTask}
+          busy={busyId === buyTask.id}
+          onClose={() => setBuyTaskId(null)}
+          onSave={saveBuyOptions}
+        />
+      ) : null}
     </div>
   );
 }
