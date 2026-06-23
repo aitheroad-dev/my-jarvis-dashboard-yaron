@@ -63,7 +63,12 @@ const BUCKETS: { id: MoveBucket; title: string }[] = [
 ];
 
 // Owner is stored as the Hebrew label directly; "" in the <select> means unassigned (null).
-const OWNER_OPTIONS = ["ירון", "נועה", "שנינו"] as const;
+// "שנינו" (both) keeps its stored value but displays as "ירון/נועה".
+const OWNER_OPTIONS: { value: string; label: string }[] = [
+  { value: "ירון", label: "ירון" },
+  { value: "נועה", label: "נועה" },
+  { value: "שנינו", label: "ירון/נועה" },
+];
 const OWNER_NONE_LABEL = "ללא";
 
 // Buy-item accent — distinct from the status palette (gray/amber/green).
@@ -98,8 +103,11 @@ const STATUS_TONE: Record<MoveStatus, { fg: string; bg: string; bd: string }> = 
 };
 
 // Shared desktop grid: status | title | owner | due | notes | actions.
+// Every column is fixed-px or px-min+fr (NO `auto`/content-sized track) so the
+// header grid and each row grid — separate grid containers — resolve to identical
+// column widths and line up. The actions track holds 3 icon-buttons (move/cart/delete).
 const DESKTOP_GRID =
-  "34px minmax(180px, 1.6fr) minmax(96px, 0.55fr) minmax(64px, 0.4fr) minmax(130px, 0.85fr) auto";
+  "34px minmax(180px, 1.6fr) minmax(96px, 0.55fr) minmax(64px, 0.4fr) minmax(130px, 0.85fr) 122px";
 
 function isBuyItem(task: MoveTask): boolean {
   return Array.isArray(task.buy_options) && task.buy_options.length > 0;
@@ -261,9 +269,9 @@ function OwnerSelect({
       }}
     >
       <option value="">{OWNER_NONE_LABEL}</option>
-      {OWNER_OPTIONS.map((name) => (
-        <option key={name} value={name}>
-          {name}
+      {OWNER_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
         </option>
       ))}
     </select>
@@ -280,13 +288,30 @@ function MoveSelect({
   disabled: boolean;
   onMove: (task: MoveTask, bucket: MoveBucket) => void;
 }) {
+  // Icon-sized (34×34) like the cart/delete buttons; a transparent native <select>
+  // overlays the icon, so a tap opens the native menu listing the four section names.
   return (
-    <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flex: "0 0 auto" }}>
-      <ArrowLeftRight
-        style={{ width: 13, height: 13, color: T.ink3, position: "absolute", insetInlineStart: 7, pointerEvents: "none" }}
-      />
+    <div style={{ position: "relative", width: 34, height: 34, flex: "0 0 auto" }}>
+      <div
+        aria-hidden
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          border: `1px solid ${T.line}`,
+          background: T.bg2,
+          color: T.ink2,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          opacity: disabled ? 0.6 : 1,
+        }}
+      >
+        <ArrowLeftRight style={{ width: 16, height: 16 }} />
+      </div>
       <select
-        aria-label={`העברת המשימה לסעיף אחר: ${task.title}`}
+        aria-label={`העברה לסעיף אחר: ${task.title}`}
         title="העברה לסעיף אחר"
         disabled={disabled}
         value={task.bucket}
@@ -295,20 +320,16 @@ function MoveSelect({
           if (next !== task.bucket) onMove(task, next);
         }}
         style={{
-          width: 132,
-          maxWidth: "38vw",
-          border: `1px solid ${T.line}`,
-          background: T.bg2,
-          color: T.ink2,
-          borderRadius: 8,
-          padding: "7px 8px 7px 22px",
-          fontSize: 12,
-          fontWeight: 600,
-          outline: "none",
-          textAlign: "right",
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          margin: 0,
+          opacity: 0,
+          border: 0,
+          appearance: "none",
+          WebkitAppearance: "none",
           cursor: disabled ? "default" : "pointer",
-          opacity: disabled ? 0.6 : 1,
-          textOverflow: "ellipsis",
         }}
       >
         {BUCKETS.map((b) => (
