@@ -15,7 +15,12 @@ export const OWNERS = ["ירון", "נועה", "שנינו"] as const;
 export type BuyOption = { label: string; url: string; price?: string | null };
 export const MAX_BUY_OPTIONS = 4;
 
-// Row as stored in D1 (buy_options is raw JSON text or null).
+// A single sub-item shown in the full-page detail popup. `done` is the per-item
+// completion mark; `info` is free-text detail (account numbers, what to do, etc.).
+export type ChecklistItem = { label: string; info: string | null; done: boolean };
+export const MAX_CHECKLIST_ITEMS = 30;
+
+// Row as stored in D1 (buy_options / checklist are raw JSON text or null).
 export type MoveTaskDbRow = {
   id: string;
   bucket: MoveBucket;
@@ -29,11 +34,13 @@ export type MoveTaskDbRow = {
   updated_at: string;
   version: number;
   buy_options: string | null;
+  checklist: string | null;
 };
 
-// Row as returned to the client (buy_options parsed into an array or null).
-export type MoveTaskOut = Omit<MoveTaskDbRow, "buy_options"> & {
+// Row as returned to the client (buy_options / checklist parsed into arrays or null).
+export type MoveTaskOut = Omit<MoveTaskDbRow, "buy_options" | "checklist"> & {
   buy_options: BuyOption[] | null;
+  checklist: ChecklistItem[] | null;
 };
 
 export function isMoveBucket(value: unknown): value is MoveBucket {
@@ -103,10 +110,51 @@ export function normalizeBuyOptions(
   return { ok: true, json: out.length ? JSON.stringify(out) : null };
 }
 
-// DB row → client row (parse buy_options).
+// Parse a stored checklist TEXT value into a clean array for API output.
+export function parseChecklist(raw: unknown): ChecklistItem[] | null {
+  if (typeof raw !== "string" || raw.trim() === "") return null;
+  let arr: unknown;
+  try {
+    arr = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(arr)) return null;
+  const out: ChecklistItem[] = [];
+  for (const item of arr.slice(0, MAX_CHECKLIST_ITEMS)) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const label = typeof o.label === "string" ? o.label.trim() : "";
+    if (!label) continue;
+    const info = typeof o.info === "string" && o.info.trim() ? o.info.trim() : null;
+    out.push({ label, info, done: o.done === true });
+  }
+  return out.length ? out : null;
+}
+
+// Validate + normalize a checklist INPUT into a JSON string for storage (or null).
+// Drops items with no label. Caps at MAX_CHECKLIST_ITEMS.
+export function normalizeChecklist(
+  value: unknown,
+): { ok: true; json: string | null } | { ok: false; error: string } {
+  if (value === null || value === undefined) return { ok: true, json: null };
+  if (!Array.isArray(value)) return { ok: false, error: "checklist must be an array" };
+  const out: ChecklistItem[] = [];
+  for (const item of value.slice(0, MAX_CHECKLIST_ITEMS)) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const label = typeof o.label === "string" ? o.label.trim() : "";
+    if (!label) continue;
+    const info = typeof o.info === "string" && o.info.trim() ? o.info.trim() : null;
+    out.push({ label, info, done: o.done === true });
+  }
+  return { ok: true, json: out.length ? JSON.stringify(out) : null };
+}
+
+// DB row → client row (parse buy_options + checklist).
 export function serializeMoveRow(row: MoveTaskDbRow): MoveTaskOut {
-  const { buy_options, ...rest } = row;
-  return { ...rest, buy_options: parseBuyOptions(buy_options) };
+  const { buy_options, checklist, ...rest } = row;
+  return { ...rest, buy_options: parseBuyOptions(buy_options), checklist: parseChecklist(checklist) };
 }
 
 export function serializeMoveRows(rows: MoveTaskDbRow[]): MoveTaskOut[] {

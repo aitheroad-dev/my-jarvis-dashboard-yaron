@@ -2,14 +2,17 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import {
   ArrowLeftRight,
   CheckCircle2,
+  CheckSquare,
   Circle,
   CircleDot,
   ExternalLink,
+  ListChecks,
   Loader2,
   Plus,
   SendHorizontal,
   ShoppingCart,
   Sparkles,
+  Square,
   Trash2,
   X,
 } from "lucide-react";
@@ -21,6 +24,9 @@ type MoveBucket = "A" | "B" | "C" | "D";
 type MoveStatus = "todo" | "doing" | "done";
 
 type BuyOption = { label: string; url: string; price?: string | null };
+
+// One sub-item in the full-page detail popup: its own info + a per-item done mark.
+type ChecklistItem = { label: string; info: string | null; done: boolean };
 
 type MoveTask = {
   id: string;
@@ -35,6 +41,7 @@ type MoveTask = {
   updated_at: string;
   version: number;
   buy_options: BuyOption[] | null;
+  checklist: ChecklistItem[] | null;
 };
 
 type EditableField = "title" | "owner" | "due" | "notes";
@@ -48,6 +55,7 @@ type EditingCell = {
 // Fields a single PATCH may carry (plus base_version, added at call time).
 type TaskPatch = Partial<Pick<MoveTask, "title" | "owner" | "due" | "notes" | "status" | "bucket">> & {
   buy_options?: BuyOption[] | null;
+  checklist?: ChecklistItem[] | null;
 };
 
 // Poll the shared list this often so a co-editor's changes appear without a reload.
@@ -75,7 +83,12 @@ const OWNER_NONE_LABEL = "ללא";
 const BUY_ACCENT = "#7C3AED";
 const BUY_ACCENT_SOFT = "#F3E8FF";
 
+// Detail/checklist accent — teal, distinct from buy (purple) and status.
+const DETAIL_ACCENT = "#0F766E";
+const DETAIL_ACCENT_SOFT = "#CCFBF1";
+
 const MAX_BUY_OPTIONS = 4;
+const MAX_CHECKLIST_ITEMS = 30;
 
 const NEXT_STATUS: Record<MoveStatus, MoveStatus> = {
   todo: "doing",
@@ -107,10 +120,19 @@ const STATUS_TONE: Record<MoveStatus, { fg: string; bg: string; bd: string }> = 
 // header grid and each row grid — separate grid containers — resolve to identical
 // column widths and line up. The actions track holds 3 icon-buttons (move/cart/delete).
 const DESKTOP_GRID =
-  "34px minmax(180px, 1.6fr) minmax(96px, 0.55fr) minmax(64px, 0.4fr) minmax(130px, 0.85fr) 122px";
+  "34px minmax(180px, 1.6fr) minmax(96px, 0.55fr) minmax(64px, 0.4fr) minmax(130px, 0.85fr) 164px";
 
 function isBuyItem(task: MoveTask): boolean {
   return Array.isArray(task.buy_options) && task.buy_options.length > 0;
+}
+
+function hasChecklist(task: MoveTask): boolean {
+  return Array.isArray(task.checklist) && task.checklist.length > 0;
+}
+
+function checklistProgress(task: MoveTask): { done: number; total: number } {
+  const items = task.checklist ?? [];
+  return { done: items.filter((i) => i.done).length, total: items.length };
 }
 
 function displayText(value: string | null): string {
@@ -425,13 +447,60 @@ function TitleCell({
   setEditing,
   onCommit,
   onOpenBuy,
+  onOpenDetail,
 }: {
   task: MoveTask;
   editing: EditingCell | null;
   setEditing: (editing: EditingCell | null) => void;
   onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
   onOpenBuy: (task: MoveTask) => void;
+  onOpenDetail: (task: MoveTask) => void;
 }) {
+  if (!isBuyItem(task) && hasChecklist(task)) {
+    const { done, total } = checklistProgress(task);
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenDetail(task)}
+        title="פתיחת פירוט המשימה"
+        style={{
+          width: "100%",
+          minWidth: 0,
+          border: 0,
+          padding: 0,
+          background: "transparent",
+          color: DETAIL_ACCENT,
+          fontSize: 14,
+          fontWeight: 800,
+          lineHeight: 1.45,
+          textAlign: "right",
+          cursor: "pointer",
+          wordBreak: "break-word",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <ListChecks style={{ width: 14, height: 14, flex: "0 0 auto" }} />
+        <span style={{ textDecoration: "underline", textDecorationColor: DETAIL_ACCENT_SOFT, textUnderlineOffset: 3 }}>
+          {task.title}
+        </span>
+        <span
+          style={{
+            flex: "0 0 auto",
+            fontSize: 11,
+            fontWeight: 800,
+            color: done === total ? T.green : DETAIL_ACCENT,
+            background: done === total ? T.greenSoft : DETAIL_ACCENT_SOFT,
+            borderRadius: 999,
+            padding: "1px 7px",
+          }}
+        >
+          {done}/{total}
+        </span>
+      </button>
+    );
+  }
   if (isBuyItem(task)) {
     return (
       <button
@@ -510,18 +579,31 @@ function RowActions({
   disabled,
   onMove,
   onOpenBuy,
+  onOpenDetail,
   onDelete,
 }: {
   task: MoveTask;
   disabled: boolean;
   onMove: (task: MoveTask, bucket: MoveBucket) => void;
   onOpenBuy: (task: MoveTask) => void;
+  onOpenDetail: (task: MoveTask) => void;
   onDelete: (task: MoveTask) => void;
 }) {
   const buy = isBuyItem(task);
+  const detail = hasChecklist(task);
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
       <MoveSelect task={task} disabled={disabled} onMove={onMove} />
+      <IconButton
+        label="פירוט ומשימות משנה"
+        disabled={disabled}
+        onClick={() => onOpenDetail(task)}
+        color={detail ? T.white : DETAIL_ACCENT}
+        bg={detail ? DETAIL_ACCENT : DETAIL_ACCENT_SOFT}
+        border={DETAIL_ACCENT}
+      >
+        <ListChecks style={{ width: 16, height: 16 }} />
+      </IconButton>
       <IconButton
         label="אפשרויות קנייה"
         disabled={disabled}
@@ -587,6 +669,7 @@ function TaskRow({
   onSetOwner,
   onMove,
   onOpenBuy,
+  onOpenDetail,
   onDelete,
 }: {
   task: MoveTask;
@@ -599,6 +682,7 @@ function TaskRow({
   onSetOwner: (task: MoveTask, value: string | null) => void;
   onMove: (task: MoveTask, bucket: MoveBucket) => void;
   onOpenBuy: (task: MoveTask) => void;
+  onOpenDetail: (task: MoveTask) => void;
   onDelete: (task: MoveTask) => void;
 }) {
   const doneBg = task.status === "done" ? T.greenSoft : T.white;
@@ -618,8 +702,18 @@ function TaskRow({
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <StatusButton task={task} disabled={busy} onToggle={onToggle} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} />
+            <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} onOpenDetail={onOpenDetail} />
           </div>
+          <IconButton
+            label="פירוט ומשימות משנה"
+            disabled={busy}
+            onClick={() => onOpenDetail(task)}
+            color={hasChecklist(task) ? T.white : DETAIL_ACCENT}
+            bg={hasChecklist(task) ? DETAIL_ACCENT : DETAIL_ACCENT_SOFT}
+            border={DETAIL_ACCENT}
+          >
+            <ListChecks style={{ width: 16, height: 16 }} />
+          </IconButton>
           <IconButton
             label="אפשרויות קנייה"
             disabled={busy}
@@ -665,11 +759,11 @@ function TaskRow({
       }}
     >
       <StatusButton task={task} disabled={busy} onToggle={onToggle} />
-      <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} />
+      <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} onOpenDetail={onOpenDetail} />
       <OwnerSelect task={task} disabled={busy} onChange={onSetOwner} />
       <InlineCell task={task} field="due" placeholder="עד מתי" editing={editing} setEditing={setEditing} onCommit={onCommit} />
       <InlineCell task={task} field="notes" placeholder="הערות" editing={editing} setEditing={setEditing} onCommit={onCommit} />
-      <RowActions task={task} disabled={busy} onMove={onMove} onOpenBuy={onOpenBuy} onDelete={onDelete} />
+      <RowActions task={task} disabled={busy} onMove={onMove} onOpenBuy={onOpenBuy} onOpenDetail={onOpenDetail} onDelete={onDelete} />
     </div>
   );
 }
@@ -903,6 +997,394 @@ function BuyModal({
   );
 }
 
+// Full-page detail popup: breaks a task into sub-items, each with its own info and a done
+// checkbox. Ticking an item in view mode persists immediately; edit mode lets you add /
+// remove / reword items and Save them as one version-guarded write. Opens for ANY task —
+// an empty task starts in edit mode so you can build its breakdown from scratch.
+function DetailModal({
+  task,
+  busy,
+  isMobile,
+  onClose,
+  onToggleItem,
+  onSave,
+  onRename,
+}: {
+  task: MoveTask;
+  busy: boolean;
+  isMobile: boolean;
+  onClose: () => void;
+  onToggleItem: (task: MoveTask, items: ChecklistItem[]) => void;
+  onSave: (task: MoveTask, items: ChecklistItem[]) => Promise<boolean>;
+  onRename: (task: MoveTask, title: string) => void;
+}) {
+  const items = task.checklist ?? [];
+  const [edit, setEdit] = useState(items.length === 0);
+  // Draft items carry a transient _k so React keys stay stable across add/remove (caret
+  // doesn't jump to another row). _k is stripped on save — it never reaches the server.
+  const keyRef = useRef(0);
+  const makeDraft = (src: ChecklistItem[]) => src.map((i) => ({ ...i, _k: keyRef.current++ }));
+  const [draft, setDraft] = useState<(ChecklistItem & { _k: number })[]>(() => makeDraft(items));
+  // Editable task title (mirrors the buy modal, which also renames from the popup).
+  const [titleDraft, setTitleDraft] = useState(task.title);
+
+  // Re-sync from the task when NOT editing the list (a toggle persisted, a 409 advanced the row
+  // to a co-editor's version, or the poll merged). Because save() drops out of edit mode after
+  // ANY attempt, this rebases the draft to the authoritative checklist — so a conflicted re-save
+  // can't carry a stale array over someone else's write (the tracker's never-overwrite rule).
+  useEffect(() => {
+    if (!edit) setDraft(makeDraft(task.checklist ?? []));
+    setTitleDraft(task.title);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.version, edit]);
+
+  const { done, total } = checklistProgress(task);
+
+  function commitTitle() {
+    const t = titleDraft.trim();
+    if (t && t !== task.title) onRename(task, t);
+    else setTitleDraft(task.title);
+  }
+
+  function toggle(index: number) {
+    const next = items.map((it, i) => (i === index ? { ...it, done: !it.done } : it));
+    onToggleItem(task, next);
+  }
+  function updateDraft(index: number, patch: Partial<ChecklistItem>) {
+    setDraft((cur) => cur.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  }
+  function addDraft() {
+    setDraft((cur) =>
+      cur.length >= MAX_CHECKLIST_ITEMS ? cur : [...cur, { label: "", info: "", done: false, _k: keyRef.current++ }],
+    );
+  }
+  function removeDraft(index: number) {
+    setDraft((cur) => cur.filter((_, i) => i !== index));
+  }
+  function save() {
+    const cleaned: ChecklistItem[] = draft
+      .map((it) => ({ label: it.label.trim(), info: it.info?.trim() || null, done: it.done }))
+      .filter((it) => it.label !== "");
+    // Leave edit mode after ANY attempt — success OR 409/error. On a 409 the parent advances this
+    // row to the co-editor's version and shows the conflict banner; dropping to view mode lets the
+    // resync effect rebase `draft`, so a re-save can never silently overwrite their checklist.
+    void onSave(task, cleaned).finally(() => setEdit(false));
+  }
+
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    minWidth: 0,
+    border: `1px solid ${T.line}`,
+    background: T.white,
+    color: T.ink,
+    borderRadius: 6,
+    padding: "8px 10px",
+    fontSize: 13,
+    outline: "none",
+    textAlign: "right",
+    boxSizing: "border-box",
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      dir="rtl"
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(15,23,42,0.5)",
+        display: "flex",
+        alignItems: isMobile ? "stretch" : "center",
+        justifyContent: "center",
+        padding: isMobile ? 0 : 24,
+        zIndex: 1000,
+      }}
+    >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: isMobile ? "100%" : 760,
+          height: isMobile ? "100%" : "auto",
+          maxHeight: isMobile ? "100%" : "92vh",
+          overflowY: "auto",
+          background: T.white,
+          borderRadius: isMobile ? 0 : 16,
+          border: isMobile ? "none" : `1px solid ${T.line}`,
+          boxShadow: "0 24px 60px rgba(15,23,42,0.25)",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: isMobile ? "18px 18px 14px" : "22px 26px 16px",
+            borderBottom: `1px solid ${T.line}`,
+            position: "sticky",
+            top: 0,
+            background: T.white,
+            zIndex: 1,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <ListChecks style={{ width: 20, height: 20, color: DETAIL_ACCENT, flex: "0 0 auto" }} />
+              <input
+                value={titleDraft}
+                aria-label="כותרת המשימה"
+                onChange={(e) => setTitleDraft(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") {
+                    setTitleDraft(task.title);
+                    e.currentTarget.blur();
+                  }
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = `1px solid ${T.line}`;
+                  e.currentTarget.style.background = T.white;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = "1px solid transparent";
+                  e.currentTarget.style.background = "transparent";
+                  commitTitle();
+                }}
+                style={{
+                  margin: 0,
+                  minWidth: 0,
+                  flex: 1,
+                  border: "1px solid transparent",
+                  borderRadius: 6,
+                  padding: "2px 6px",
+                  fontSize: isMobile ? 17 : 20,
+                  fontWeight: 800,
+                  color: T.ink,
+                  background: "transparent",
+                  outline: "none",
+                  textAlign: "right",
+                  fontFamily: "inherit",
+                }}
+              />
+            </div>
+            {total > 0 ? (
+              <span style={{ fontSize: 12, fontWeight: 700, color: done === total ? T.green : DETAIL_ACCENT }}>
+                {done}/{total} בוצעו
+              </span>
+            ) : (
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.ink3 }}>עדיין אין משימות משנה</span>
+            )}
+          </div>
+          <IconButton label="סגירה" disabled={false} onClick={onClose} color={T.ink2} bg={T.white} border={T.line}>
+            <X style={{ width: 16, height: 16 }} />
+          </IconButton>
+        </div>
+
+        <div style={{ padding: isMobile ? "16px 18px 22px" : "20px 26px 26px", display: "grid", gap: 16 }}>
+          {/* Task-level notes (read-only context) */}
+          {task.notes?.trim() ? (
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 10,
+                border: `1px solid ${T.line}`,
+                background: T.bg2,
+                color: T.ink2,
+                fontSize: 13,
+                lineHeight: 1.6,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {task.notes}
+            </div>
+          ) : null}
+
+          {/* View mode: tickable list */}
+          {!edit ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              {items.map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: `1px solid ${item.done ? T.green : T.line}`,
+                    background: item.done ? T.greenSoft : T.white,
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-label={item.done ? `בטל סימון: ${item.label}` : `סמן כבוצע: ${item.label}`}
+                    disabled={busy}
+                    onClick={() => toggle(i)}
+                    style={{
+                      flex: "0 0 auto",
+                      border: 0,
+                      background: "transparent",
+                      padding: 0,
+                      marginTop: 1,
+                      cursor: busy ? "default" : "pointer",
+                      color: item.done ? T.green : DETAIL_ACCENT,
+                      opacity: busy ? 0.6 : 1,
+                      lineHeight: 0,
+                    }}
+                  >
+                    {item.done ? (
+                      <CheckSquare style={{ width: 22, height: 22 }} />
+                    ) : (
+                      <Square style={{ width: 22, height: 22 }} />
+                    )}
+                  </button>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: item.done ? T.ink3 : T.ink,
+                        textDecoration: item.done ? "line-through" : "none",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {item.label}
+                    </div>
+                    {item.info ? (
+                      <div style={{ marginTop: 3, fontSize: 13, color: T.ink2, lineHeight: 1.55, wordBreak: "break-word" }}>
+                        {item.info}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setEdit(true)}
+                style={{
+                  marginTop: 4,
+                  padding: "9px 12px",
+                  borderRadius: 8,
+                  border: `1px solid ${T.line}`,
+                  background: T.white,
+                  color: T.ink2,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  justifySelf: "start",
+                }}
+              >
+                עריכת הפריטים
+              </button>
+            </div>
+          ) : (
+            /* Edit mode: add / remove / reword */
+            <div style={{ display: "grid", gap: 12 }}>
+              {draft.length === 0 ? (
+                <div style={{ fontSize: 13, color: T.ink3 }}>אין עדיין משימות משנה — הוסיפו את הפריט הראשון.</div>
+              ) : null}
+              {draft.map((item, i) => (
+                <div key={item._k} style={{ display: "grid", gap: 6, padding: 10, border: `1px solid ${T.line}`, borderRadius: 10, background: T.bg2 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      placeholder="שם הפריט (למשל: בנק / ביטוח / KvK)"
+                      value={item.label}
+                      onChange={(e) => updateDraft(i, { label: e.currentTarget.value })}
+                      style={{ ...inputStyle, flex: 1, fontWeight: 700 }}
+                    />
+                    <IconButton label="הסרה" disabled={false} onClick={() => removeDraft(i)} color={T.red} bg={T.white} border={T.line}>
+                      <Trash2 style={{ width: 15, height: 15 }} />
+                    </IconButton>
+                  </div>
+                  <textarea
+                    placeholder="פרטים — מספר לקוח, מה צריך לעשות…"
+                    value={item.info ?? ""}
+                    onChange={(e) => updateDraft(i, { info: e.currentTarget.value })}
+                    rows={2}
+                    style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
+                  />
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: T.ink2, cursor: "pointer" }}>
+                    <input type="checkbox" checked={item.done} onChange={(e) => updateDraft(i, { done: e.currentTarget.checked })} />
+                    בוצע
+                  </label>
+                </div>
+              ))}
+
+              {draft.length < MAX_CHECKLIST_ITEMS ? (
+                <button
+                  type="button"
+                  onClick={addDraft}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    border: `1px dashed ${DETAIL_ACCENT}`,
+                    background: T.white,
+                    color: DETAIL_ACCENT,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    justifySelf: "start",
+                  }}
+                >
+                  <Plus style={{ width: 15, height: 15 }} /> הוספת פריט
+                </button>
+              ) : null}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={save}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1px solid ${DETAIL_ACCENT}`,
+                    background: DETAIL_ACCENT,
+                    color: T.white,
+                    fontSize: 14,
+                    fontWeight: 800,
+                    cursor: busy ? "default" : "pointer",
+                    opacity: busy ? 0.6 : 1,
+                  }}
+                >
+                  שמירה
+                </button>
+                <button
+                  type="button"
+                  onClick={items.length === 0 ? onClose : () => setEdit(false)}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: `1px solid ${T.line}`,
+                    background: T.white,
+                    color: T.ink2,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BucketAddForm({
   bucket,
   value,
@@ -1097,6 +1579,7 @@ export function MovePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addingBucket, setAddingBucket] = useState<MoveBucket | null>(null);
   const [buyTaskId, setBuyTaskId] = useState<string | null>(null);
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [newTitles, setNewTitles] = useState<Record<MoveBucket, string>>({
     A: "",
     B: "",
@@ -1115,9 +1598,12 @@ export function MovePage() {
   // version can't advance under the modal and a concurrent edit yields a clean 409
   // on save instead of a silent overwrite.
   const buyTaskIdRef = useRef<string | null>(buyTaskId);
+  // Same protection for the task whose detail popup is open.
+  const detailTaskIdRef = useRef<string | null>(detailTaskId);
   editingRef.current = editing;
   busyRef.current = busyId;
   buyTaskIdRef.current = buyTaskId;
+  detailTaskIdRef.current = detailTaskId;
 
   // Bumped at the start of every mutation. A poll that began before a mutation
   // landed bails before its (now stale) snapshot can revert/hide/resurrect a row.
@@ -1166,7 +1652,8 @@ export function MovePage() {
           // A mutation started while this GET was in flight → its snapshot may be
           // stale; drop it and let the next tick (or the mutation's own setRows) win.
           if (gen !== mutationGenRef.current) return;
-          const protectedId = editingRef.current?.id ?? busyRef.current ?? buyTaskIdRef.current ?? null;
+          const protectedId =
+            editingRef.current?.id ?? busyRef.current ?? buyTaskIdRef.current ?? detailTaskIdRef.current ?? null;
           setRows((current) => mergeServerRows(server, current, protectedId));
         } catch {
           // transient network blip — next tick retries
@@ -1237,6 +1724,18 @@ export function MovePage() {
     if (title && title !== task.title) patch.title = title;
     const ok = await patchTask(task, patch);
     if (ok) setBuyTaskId(null);
+  }
+
+  // Persist the whole checklist (edit-mode Save). Returns ok so the modal can leave edit
+  // mode only on success; the popup stays open either way.
+  async function saveChecklist(task: MoveTask, items: ChecklistItem[]): Promise<boolean> {
+    return patchTask(task, { checklist: items.length ? items : null });
+  }
+
+  // Immediate per-item done toggle from view mode — fire-and-forget; the row re-renders
+  // from the server response (or surfaces a clean 409 if a co-editor changed it first).
+  function toggleChecklistItem(task: MoveTask, items: ChecklistItem[]) {
+    void patchTask(task, { checklist: items.length ? items : null });
   }
 
   async function addTask(bucket: MoveBucket) {
@@ -1322,6 +1821,7 @@ export function MovePage() {
   }
 
   const buyTask = buyTaskId ? (rows ?? []).find((row) => row.id === buyTaskId) ?? null : null;
+  const detailTask = detailTaskId ? (rows ?? []).find((row) => row.id === detailTaskId) ?? null : null;
 
   return (
     <div dir="rtl" style={{
@@ -1434,6 +1934,7 @@ export function MovePage() {
                       onSetOwner={setOwner}
                       onMove={moveTask}
                       onOpenBuy={(t) => setBuyTaskId(t.id)}
+                      onOpenDetail={(t) => setDetailTaskId(t.id)}
                       onDelete={(t) => void deleteTask(t)}
                     />
                   ))}
@@ -1460,6 +1961,18 @@ export function MovePage() {
           busy={busyId === buyTask.id}
           onClose={() => setBuyTaskId(null)}
           onSave={saveBuyOptions}
+        />
+      ) : null}
+
+      {detailTask ? (
+        <DetailModal
+          task={detailTask}
+          busy={busyId === detailTask.id}
+          isMobile={isMobile}
+          onClose={() => setDetailTaskId(null)}
+          onToggleItem={toggleChecklistItem}
+          onSave={saveChecklist}
+          onRename={(t, title) => void patchTask(t, { title })}
         />
       ) : null}
     </div>

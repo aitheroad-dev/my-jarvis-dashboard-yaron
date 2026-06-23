@@ -4,6 +4,7 @@ import { json, requireUser, type Env } from "../../_lib/auth";
 import {
   isMoveBucket,
   normalizeBuyOptions,
+  normalizeChecklist,
   serializeMoveRow,
   serializeMoveRows,
   type MoveTaskDbRow,
@@ -18,6 +19,7 @@ type CreateMoveTaskBody = {
   due?: unknown;
   notes?: unknown;
   buy_options?: unknown;
+  checklist?: unknown;
 };
 
 function optionalText(value: unknown): string | null {
@@ -37,7 +39,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
-      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
+      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options, checklist
         FROM move_tasks
        ORDER BY bucket ASC, seq ASC
        LIMIT 1000
@@ -82,6 +84,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const buy = normalizeBuyOptions(body.buy_options);
   if (!buy.ok) return json({ error: buy.error }, { status: 400 });
 
+  const checklist = normalizeChecklist(body.checklist);
+  if (!checklist.ok) return json({ error: checklist.error }, { status: 400 });
+
   try {
     const sql = getDb(env);
     const maxRows = (await sql/* sql */ `
@@ -90,7 +95,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const seq = (maxRows[0]?.max_seq ?? -1) + 1;
     const id = crypto.randomUUID();
     const rows = (await sql/* sql */ `
-      INSERT INTO move_tasks (id, bucket, seq, title, owner, due, status, notes, buy_options)
+      INSERT INTO move_tasks (id, bucket, seq, title, owner, due, status, notes, buy_options, checklist)
       VALUES (
         ${id},
         ${body.bucket},
@@ -100,9 +105,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         ${optionalText(body.due)},
         'todo',
         ${optionalText(body.notes)},
-        ${buy.json}
+        ${buy.json},
+        ${checklist.json}
       )
-      RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
+      RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options, checklist
     `) as MoveTaskDbRow[];
 
     return json(serializeMoveRow(rows[0]), { status: 201 });

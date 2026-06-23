@@ -5,6 +5,7 @@ import {
   isMoveBucket,
   isMoveStatus,
   normalizeBuyOptions,
+  normalizeChecklist,
   serializeMoveRow,
   type MoveBucket,
   type MoveTaskDbRow,
@@ -21,6 +22,8 @@ type PatchMoveTaskBody = {
   bucket?: unknown;
   // Full replacement of the purchase options (array of {label,url,price?}) or null.
   buy_options?: unknown;
+  // Full replacement of the detail checklist (array of {label,info?,done}) or null.
+  checklist?: unknown;
   // Optimistic concurrency: the integer version the client last saw for this row.
   base_version?: unknown;
 };
@@ -80,6 +83,11 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
   if (buy && !buy.ok) return json({ error: buy.error }, { status: 400 });
   const buyJson = buy && buy.ok ? buy.json : null;
 
+  const hasChecklist = hasOwn(body, "checklist");
+  const checklist = hasChecklist ? normalizeChecklist(body.checklist) : null;
+  if (checklist && !checklist.ok) return json({ error: checklist.error }, { status: 400 });
+  const checklistJson = checklist && checklist.ok ? checklist.json : null;
+
   // Optimistic-concurrency guard: when the client sends the version it last saw,
   // the UPDATE only lands if the row's version still matches. Null = no guard.
   const baseVersion =
@@ -114,19 +122,20 @@ export const onRequestPatch: PagesFunction<Env, "id"> = async ({ request, env, p
              status = CASE WHEN ${hasOwn(body, "status")} THEN ${body.status} ELSE status END,
              notes = CASE WHEN ${hasOwn(body, "notes")} THEN ${optionalTextFromPatch(body, "notes")} ELSE notes END,
              buy_options = CASE WHEN ${hasBuy} THEN ${buyJson} ELSE buy_options END,
+             checklist = CASE WHEN ${hasChecklist} THEN ${checklistJson} ELSE checklist END,
              bucket = CASE WHEN ${applyMove} THEN ${nextBucket} ELSE bucket END,
              seq = CASE WHEN ${applyMove} THEN ${moveSeq} ELSE seq END,
              updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now'),
              version = version + 1
        WHERE id = ${id}
          AND (${baseVersion} IS NULL OR version = ${baseVersion})
-       RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
+       RETURNING id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options, checklist
     `) as MoveTaskDbRow[];
 
     if (rows.length === 0) {
       // 0 rows = either the row is gone (404) or it changed under the client (409).
       const existing = (await sql/* sql */ `
-        SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
+        SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options, checklist
           FROM move_tasks
          WHERE id = ${id}
       `) as MoveTaskDbRow[];

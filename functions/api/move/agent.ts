@@ -353,7 +353,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   let refreshError: string | null = null;
   try {
     fresh = (await sql/* sql */ `
-      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options
+      SELECT id, bucket, seq, title, owner, due, status, notes, created_at, updated_at, version, buy_options, checklist
         FROM move_tasks
        ORDER BY bucket ASC, seq ASC
     `) as MoveTaskDbRow[];
