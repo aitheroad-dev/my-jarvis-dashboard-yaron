@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { grantedEmails } from "./pages";
 
 export interface Env {
   /** Cloudflare D1 (SQLite) — the dashboard's data store. Replaces Neon. */
@@ -69,6 +70,16 @@ function allowList(env: Env): Set<string> {
   // Always include every owner identity so the owner cannot be locked out.
   for (const owner of ownerEmails(env)) emails.push(owner);
   return new Set(emails);
+}
+
+export async function allowListAsync(env: Env, db: D1Database): Promise<Set<string>> {
+  const emails = allowList(env);
+  try {
+    for (const email of await grantedEmails(db)) emails.add(email);
+  } catch {
+    return emails;
+  }
+  return emails;
 }
 
 function ownerEmails(env: Env): Set<string> {
@@ -153,7 +164,7 @@ export async function identifyAccessUser(
   } catch {
     return null;
   }
-  if (!email || !allowList(env).has(email)) return null;
+  if (!email || !(await allowListAsync(env, env.DB)).has(email)) return null;
   return { email, role: roleFor(email, env) };
 }
 
@@ -176,7 +187,7 @@ export async function requireUser(
   if (!email) {
     throw unauthorized("verified token carries no email claim");
   }
-  if (!allowList(env).has(email)) {
+  if (!(await allowListAsync(env, env.DB)).has(email)) {
     throw unauthorized(`email ${email} not authorized for this dashboard`);
   }
 

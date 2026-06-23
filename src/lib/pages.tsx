@@ -22,6 +22,7 @@ import { KnowledgeBaseListPage } from "@/components/atomic-crm/knowledge-base-li
 import { KbBlueprintPage } from "@/components/atomic-crm/blueprint/KbBlueprintPage";
 import { MeetingsPage } from "@/components/atomic-crm/pages/MeetingsPage";
 import { MeetingDetailPage } from "@/components/atomic-crm/pages/MeetingDetailPage";
+import { ToolsPage } from "@/components/atomic-crm/pages/ToolsPage";
 
 /**
  * The grantable-page render manifest — ONE source of truth for which routes each
@@ -82,4 +83,5 @@ export const PAGES: PageDef[] = [
       { path: "/meetings/:id", element: <MeetingDetailPage /> },
     ],
   },
+  { key: "tools", routes: [{ path: "/tools", element: <ToolsPage /> }] },
 ];

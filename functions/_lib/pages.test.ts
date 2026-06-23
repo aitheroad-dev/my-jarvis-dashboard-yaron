@@ -12,16 +12,24 @@ test("owner gets 'all'", () => {
   expect(grantFor("aitheroad@gmail.com", {}, true)).toBe("all");
 });
 
-test("known guest gets exactly their pages", () => {
-  expect(grantFor("noabarkai@gmail.com", {}, false)).toEqual(["move", "rental"]);
+// Page grants now live in D1 (see resolveGrant); the code default is empty, so
+// grantFor is purely the owner + ACCESS_GRANTS-env override path. A known guest
+// whose grant lives only in D1 is invisible to grantFor → []. (D1-backed
+// resolution is covered separately by resolveGrant, which grantFor delegates
+// the D1 read to in production.)
+test("guest with no env grant is deny-by-default (grantFor sees no D1)", () => {
+  expect(grantFor("noabarkai@gmail.com", {}, false)).toEqual([]);
 });
 
 test("unknown guest is deny-by-default (empty grant)", () => {
   expect(grantFor("stranger@example.com", {}, false)).toEqual([]);
 });
 
-test("email match is case-insensitive", () => {
-  expect(grantFor("NoaBarkai@Gmail.com", {}, false)).toEqual(["move", "rental"]);
+test("email match is case-insensitive for env-grant resolution", () => {
+  const env = {
+    ACCESS_GRANTS: JSON.stringify({ "noabarkai@gmail.com": ["move", "rental"] }),
+  };
+  expect(grantFor("NoaBarkai@Gmail.com", env, false)).toEqual(["move", "rental"]);
 });
 
 test("ACCESS_GRANTS env overrides the default grant", () => {
@@ -36,9 +44,9 @@ test("ACCESS_GRANTS env drops invalid page keys, keeps valid", () => {
   expect(grantFor("bob@example.com", env, false)).toEqual(["goals"]);
 });
 
-test("malformed ACCESS_GRANTS falls back to defaults (never throws)", () => {
+test("malformed ACCESS_GRANTS is ignored, never throws (deny-by-default)", () => {
   const env = { ACCESS_GRANTS: "{not json" };
-  expect(grantFor("noabarkai@gmail.com", env, false)).toEqual(["move", "rental"]);
+  expect(grantFor("noabarkai@gmail.com", env, false)).toEqual([]);
 });
 
 // --- prefix derivation ------------------------------------------------------

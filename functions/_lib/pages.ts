@@ -10,8 +10,8 @@
  * Model: the owner gets `"all"`; every other allow-listed user gets an explicit
  * set of page keys (deny-by-default — an unknown guest sees nothing but their own
  * self-scoped endpoints). To share a page with someone: add their email to the
- * allow-list (ACCESS_ALLOWED_EMAILS + CF Access edge) AND give them a grant here
- * (or via the ACCESS_GRANTS env override). Phase 3 moves grants to D1 + a UI.
+ * allow-list (ACCESS_ALLOWED_EMAILS + CF Access edge) AND give them a grant in
+ * D1 (or via the ACCESS_GRANTS env override).
  */
 
 export type PageKey =
@@ -27,7 +27,8 @@ export type PageKey =
   | "skills"
   | "memory"
   | "knowledge-base"
-  | "meetings";
+  | "meetings"
+  | "tools";
 
 export const ALL_PAGE_KEYS: PageKey[] = [
   "home",
@@ -43,6 +44,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "memory",
   "knowledge-base",
   "meetings",
+  "tools",
 ];
 
 /**
@@ -65,6 +67,9 @@ export const PAGE_API_PREFIXES: Record<PageKey, string[]> = {
   memory: ["/api/memories"],
   "knowledge-base": ["/api/kb"],
   meetings: ["/api/meetings"],
+  // Tools page embeds the external pai-tools Worker (own origin + own key auth);
+  // it needs no internal /api/* access, so no prefixes are granted here.
+  tools: [],
 };
 
 /**
@@ -77,18 +82,21 @@ export const ALWAYS_ALLOWED_API = ["/api/me", "/api/version", "/api/settings"];
 export type Grant = "all" | PageKey[];
 
 /**
- * Default grant map (Phase 1 — code constant). Owner is handled separately as
- * `"all"`; never list the owner here. Env `ACCESS_GRANTS` (JSON) overrides/extends
- * this at deploy time without a code change.
- *
- * Today: Noa is scoped to the move tracker + the rental search.
+ * Default grant map. Owner is handled separately as `"all"`; never list the
+ * owner here. Env `ACCESS_GRANTS` (JSON) overrides/extends this at deploy time
+ * without a code change. Page grants now live in D1.
  */
-const DEFAULT_GRANTS: Record<string, PageKey[]> = {
-  "noabarkai@gmail.com": ["move", "rental"],
-};
+const DEFAULT_GRANTS: Record<string, PageKey[]> = {};
 
 interface GrantEnv {
   ACCESS_GRANTS?: string;
+}
+
+type PageGrantRow = { page_key: string };
+type GrantedEmailRow = { email: string };
+
+function isPageKey(value: string): value is PageKey {
+  return (ALL_PAGE_KEYS as string[]).includes(value);
 }
 
 /** Parse the optional ACCESS_GRANTS env JSON; malformed input is ignored. */
@@ -100,9 +108,7 @@ function envGrants(env: GrantEnv): Record<string, PageKey[]> {
     const out: Record<string, PageKey[]> = {};
     for (const [email, keys] of Object.entries(parsed as Record<string, unknown>)) {
       if (!Array.isArray(keys)) continue;
-      const valid = keys.filter(
-        (k): k is PageKey => typeof k === "string" && (ALL_PAGE_KEYS as string[]).includes(k),
-      );
+      const valid = keys.filter((k): k is PageKey => typeof k === "string" && isPageKey(k));
       out[email.toLowerCase()] = valid;
     }
     return out;
@@ -120,6 +126,52 @@ export function grantFor(email: string, env: GrantEnv, isOwner: boolean): Grant 
   const key = email.toLowerCase();
   const merged = { ...DEFAULT_GRANTS, ...envGrants(env) };
   return merged[key] ?? [];
+}
+
+/**
+ * Resolve a verified email's runtime grant from D1 plus the emergency env
+ * override. Owner → "all"; unknown non-owner → [] (deny-by-default).
+ */
+export async function resolveGrant(
+  email: string,
+  env: GrantEnv,
+  isOwner: boolean,
+  db: D1Database,
+): Promise<Grant> {
+  if (isOwner) return "all";
+  const key = email.toLowerCase();
+  const granted = new Set<PageKey>(envGrants(env)[key] ?? []);
+
+  try {
+    const { results } = await db
+      .prepare("SELECT page_key FROM page_grants WHERE email = ?1")
+      .bind(key)
+      .all<PageGrantRow>();
+    for (const row of results ?? []) {
+      if (typeof row.page_key === "string" && isPageKey(row.page_key)) {
+        granted.add(row.page_key);
+      }
+    }
+  } catch {
+    return [...granted];
+  }
+
+  return [...granted];
+}
+
+/** Distinct grant-recipient emails from D1, lowercased. */
+export async function grantedEmails(db: D1Database): Promise<Set<string>> {
+  const { results } = await db
+    .prepare("SELECT DISTINCT email FROM page_grants")
+    .all<GrantedEmailRow>();
+  const emails = new Set<string>();
+  for (const row of results ?? []) {
+    if (typeof row.email === "string") {
+      const email = row.email.trim().toLowerCase();
+      if (email) emails.add(email);
+    }
+  }
+  return emails;
 }
 
 /** Granted page keys as a set ("all" → every key). */

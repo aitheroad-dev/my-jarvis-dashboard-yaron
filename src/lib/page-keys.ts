@@ -19,7 +19,8 @@ export type PageKey =
   | "skills"
   | "memory"
   | "knowledge-base"
-  | "meetings";
+  | "meetings"
+  | "tools";
 
 export const ALL_PAGE_KEYS: PageKey[] = [
   "home",
@@ -35,4 +36,5 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "memory",
   "knowledge-base",
   "meetings",
+  "tools",
 ];

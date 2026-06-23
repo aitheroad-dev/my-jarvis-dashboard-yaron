@@ -1,6 +1,6 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import { identifyAccessUser, isOwnerEmail, type Env } from "./_lib/auth";
-import { allowedApiPrefixes, apiPathAllowed, grantFor } from "./_lib/pages";
+import { allowedApiPrefixes, apiPathAllowed, resolveGrant } from "./_lib/pages";
 
 /**
  * Server-side authorization wall (page-grant RBAC).
@@ -63,7 +63,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   if (isOwnerEmail(user.email, env)) return next();
 
   // Non-owner: enforce the grant. BOTH raw and decoded forms must be allowed.
-  const prefixes = allowedApiPrefixes(grantFor(user.email, env, false));
+  const prefixes = allowedApiPrefixes(await resolveGrant(user.email, env, false, env.DB));
   if (
     decoded !== null &&
     apiPathAllowed(raw, prefixes) &&

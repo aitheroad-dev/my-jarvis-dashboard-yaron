@@ -13,6 +13,7 @@ import {
   Users,
   Video,
   Wallet,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ export const navItems: NavItem[] = [
   { key: "memory", label: "Memory", to: "/memory", icon: Brain },
   { key: "knowledge-base", label: "Knowledge Base", to: "/knowledge-base", icon: Library },
   { key: "meetings", label: "Meetings", to: "/meetings", icon: Video },
+  { key: "tools", label: "Tools", to: "/tools", icon: Wrench },
 ];
 
 export function NavLink({ item }: { item: NavItem }) {
