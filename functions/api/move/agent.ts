@@ -268,14 +268,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           skipped.push({ reason: "no fields to update", raw: op });
           continue;
         }
-        const nextTitle = hasTitle ? cleanText(u.title) : row.title;
-        if (hasTitle && !nextTitle) { skipped.push({ reason: "empty title", raw: op }); continue; }
+        if (hasTitle && !cleanText(u.title)) { skipped.push({ reason: "empty title", raw: op }); continue; }
+        // Update ONLY the columns this op provides, reading the live value for the
+        // rest (CASE on current row) — never echo the pre-plan snapshot back, which
+        // would revert a sibling op or a concurrent human edit.
         await sql/* sql */ `
           UPDATE move_tasks
-             SET title = ${nextTitle},
-                 owner = ${hasOwner ? cleanText(u.owner) : row.owner},
-                 due = ${hasDue ? cleanText(u.due) : row.due},
-                 notes = ${hasNotes ? cleanText(u.notes) : row.notes},
+             SET title = CASE WHEN ${hasTitle} THEN ${hasTitle ? cleanText(u.title) : null} ELSE title END,
+                 owner = CASE WHEN ${hasOwner} THEN ${hasOwner ? cleanText(u.owner) : null} ELSE owner END,
+                 due = CASE WHEN ${hasDue} THEN ${hasDue ? cleanText(u.due) : null} ELSE due END,
+                 notes = CASE WHEN ${hasNotes} THEN ${hasNotes ? cleanText(u.notes) : null} ELSE notes END,
                  updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now'),
                  version = version + 1
            WHERE id = ${row.id}

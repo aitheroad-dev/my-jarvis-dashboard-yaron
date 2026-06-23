@@ -1090,8 +1090,13 @@ export function MovePage() {
   // re-subscribing it every keystroke.
   const editingRef = useRef<EditingCell | null>(editing);
   const busyRef = useRef<string | null>(busyId);
+  // The row whose buy popup is open is also protected from the poll merge, so its
+  // version can't advance under the modal and a concurrent edit yields a clean 409
+  // on save instead of a silent overwrite.
+  const buyTaskIdRef = useRef<string | null>(buyTaskId);
   editingRef.current = editing;
   busyRef.current = busyId;
+  buyTaskIdRef.current = buyTaskId;
 
   // Bumped at the start of every mutation. A poll that began before a mutation
   // landed bails before its (now stale) snapshot can revert/hide/resurrect a row.
@@ -1140,7 +1145,7 @@ export function MovePage() {
           // A mutation started while this GET was in flight → its snapshot may be
           // stale; drop it and let the next tick (or the mutation's own setRows) win.
           if (gen !== mutationGenRef.current) return;
-          const protectedId = editingRef.current?.id ?? busyRef.current ?? null;
+          const protectedId = editingRef.current?.id ?? busyRef.current ?? buyTaskIdRef.current ?? null;
           setRows((current) => mergeServerRows(server, current, protectedId));
         } catch {
           // transient network blip — next tick retries

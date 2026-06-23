@@ -58,10 +58,20 @@ export function parseBuyOptions(raw: unknown): BuyOption[] | null {
   for (const item of arr.slice(0, MAX_BUY_OPTIONS)) {
     if (!item || typeof item !== "object") continue;
     const o = item as Record<string, unknown>;
-    if (typeof o.url !== "string" || o.url.trim() === "") continue;
-    const label = typeof o.label === "string" && o.label.trim() ? o.label.trim() : o.url;
+    const rawUrl = typeof o.url === "string" ? o.url.trim() : "";
+    if (!rawUrl) continue;
+    // Defense-in-depth: only surface http(s) links even on the way OUT, so a value
+    // written straight to the DB can never render javascript:/data: as an <a href>.
+    let parsed: URL | null = null;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || (parsed.protocol !== "http:" && parsed.protocol !== "https:")) continue;
+    const label = typeof o.label === "string" && o.label.trim() ? o.label.trim() : parsed.hostname;
     const price = typeof o.price === "string" && o.price.trim() ? o.price.trim() : null;
-    out.push({ label, url: o.url, price });
+    out.push({ label, url: parsed.toString(), price });
   }
   return out.length ? out : null;
 }
