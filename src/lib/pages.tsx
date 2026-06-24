@@ -11,6 +11,7 @@ import { ProjectsListPage } from "@/components/atomic-crm/projects-dashboard/Pro
 import { ProjectDetailPage } from "@/components/atomic-crm/projects-dashboard/ProjectDetailPage";
 import { PortfolioPage } from "@/components/atomic-crm/pages/PortfolioPage";
 import { SpendPage } from "@/components/atomic-crm/spend/SpendPage";
+import { DeployedSitesPage } from "@/components/atomic-crm/deployed-sites/DeployedSitesPage";
 import { MovePage } from "@/components/atomic-crm/move/MovePage";
 import { RentalPage } from "@/components/atomic-crm/rental/RentalPage";
 import { SituationPage } from "@/components/atomic-crm/situation/SituationPage";
@@ -57,6 +58,7 @@ export const PAGES: PageDef[] = [
   },
   { key: "portfolio", routes: [{ path: "/portfolio", element: <PortfolioPage /> }] },
   { key: "spend", routes: [{ path: "/spend", element: <SpendPage /> }] },
+  { key: "deployed-sites", routes: [{ path: "/deployed-sites", element: <DeployedSitesPage /> }] },
   { key: "move", routes: [{ path: "/move", element: <MovePage /> }] },
   { key: "rental", routes: [{ path: "/rental", element: <RentalPage /> }] },
   { key: "situation", routes: [{ path: "/situation", element: <SituationPage /> }] },

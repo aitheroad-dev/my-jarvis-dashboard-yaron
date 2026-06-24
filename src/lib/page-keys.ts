@@ -12,6 +12,7 @@ export type PageKey =
   | "projects"
   | "portfolio"
   | "spend"
+  | "deployed-sites"
   | "move"
   | "rental"
   | "situation"
@@ -28,6 +29,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "projects",
   "portfolio",
   "spend",
+  "deployed-sites",
   "move",
   "rental",
   "situation",

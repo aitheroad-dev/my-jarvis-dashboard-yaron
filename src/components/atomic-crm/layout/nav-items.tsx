@@ -2,6 +2,7 @@ import { Link, matchPath, useLocation } from "react-router-dom";
 import {
   Brain,
   Briefcase,
+  Globe,
   Home,
   Library,
   MapPin,
@@ -38,6 +39,7 @@ export const navItems: NavItem[] = [
   { key: "projects", label: "Projects", to: "/projects-list", icon: Briefcase },
   { key: "portfolio", label: "Portfolio", to: "/portfolio", icon: PieChart },
   { key: "spend", label: "Spend", to: "/spend", icon: Wallet },
+  { key: "deployed-sites", label: "Sites", to: "/deployed-sites", icon: Globe },
   { key: "move", label: "מעבר דירה", to: "/move", icon: Truck },
   { key: "rental", label: "Rental", to: "/rental", icon: MapPin },
   { key: "situation", label: "Situation", to: "/situation", icon: Radar },

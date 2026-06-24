@@ -20,6 +20,7 @@ export type PageKey =
   | "projects"
   | "portfolio"
   | "spend"
+  | "deployed-sites"
   | "move"
   | "rental"
   | "situation"
@@ -36,6 +37,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "projects",
   "portfolio",
   "spend",
+  "deployed-sites",
   "move",
   "rental",
   "situation",
@@ -59,6 +61,7 @@ export const PAGE_API_PREFIXES: Record<PageKey, string[]> = {
   projects: ["/api/projects"],
   portfolio: ["/api/portfolio"],
   spend: ["/api/spend"],
+  "deployed-sites": ["/api/deployed-sites"],
   move: ["/api/move"],
   rental: ["/api/rental"],
   situation: ["/api/situation"],
