@@ -1,5 +1,14 @@
 # Stack Notes — Cloudflare Pages + Neon + WorkOS AuthKit
 
+> **⚠️ HISTORICAL — TEMPLATE ERA.** This file documents the original
+> **template-era stack: Neon Postgres + WorkOS AuthKit** (the multi-tenant
+> `my-jarvis-dashboard-template` lineage). Yaron's **live** `my-jarvis-dashboard-yaron`
+> fork no longer uses any of it. The live stack is **Cloudflare D1 (SQLite) +
+> Cloudflare R2 + Cloudflare Access** — no Neon, no real WorkOS (a local
+> `src/lib/workos-shim` keeps the old call sites compiling). For the current
+> architecture see `docs/ARCHITECTURE.md` and the repo `CLAUDE.md`. Everything
+> below is kept as historical reference only.
+
 First-client-on-this-stack notes. The goal is: second client takes 30 minutes, not 4 hours.
 
 Auth switched from Clerk to WorkOS AuthKit so the dashboard and the MyJarvis MCP Worker share a single identity provider — one sign-in covers both surfaces.

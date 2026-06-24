@@ -1,84 +1,135 @@
-# MyJarvis Dashboard — Template
+# MyJarvis Dashboard — Yaron's LIVE instance
 
-This is the **canonical template** for per-tenant MyJarvis dashboards. Every tenant's dashboard is a fork of this repo (via the Provisioning Worker) with tenant-specific placeholders substituted.
+This repo (`my-jarvis-dashboard-yaron`) is **Yaron's live, single-tenant MyJarvis
+dashboard** — deployed to Cloudflare Pages at `my-jarvis-dashboard-yaron.pages.dev`,
+gated by Cloudflare Access. It is NOT the template.
 
-## Placeholders
-
-Before this repo becomes a running dashboard, these placeholders must be substituted. The Provisioning Worker (`erezgit/my-jarvis-provisioning`) does this automatically on tenant creation. For manual setups, run the substitution yourself.
-
-| Placeholder | Example | Filled by |
-|---|---|---|
-| `__TENANT__` | `lilach`, `daniel`, `yogev` | Provisioning Worker at fork time (step 3: github-substitute-placeholders) |
-| `__VOICE_PUBLIC_URL__` | `https://pub-abc123.r2.dev` | Provisioning Worker after R2 bucket create (step 6) |
-| `{{tenant_slug}}` | `lilach` | In `sql/099_seed.sql` body text (skills/KB) |
-| `{{operator_name}}` | `Lilach` | In `sql/099_seed.sql` body text — capitalized first name |
-| `{{operator_handle}}` | `lilachi` | In `sql/099_seed.sql` body text — lowercase login handle |
-| `{{neon_project_id}}` | `green-meadow-12345678` | In `sql/099_seed.sql` body text |
-| `{{r2_public_host}}` | `pub-abc123.r2.dev` | In `sql/099_seed.sql` body text |
-
-Two more values are CF Pages secrets, NOT committed:
-
-| Secret | Purpose |
-|---|---|
-| `TENANT_OWNER_USER_ID` | WorkOS `user.id` — enforced in every `/api/*` handler so only the owner can use their dashboard |
-| `DATABASE_URL` | Neon pooled connection string for this tenant's own DB |
-| `WORKOS_CLIENT_SECRET` | WorkOS backend secret (shared across tenants) |
-| `OPENAI_API_KEY` | OpenAI Bearer for TTS (shared across tenants) |
-| `VOICE_API_KEY` | Shared bearer the MCP Worker uses to authenticate POST `/api/voice` |
-
-Files touched by placeholder substitution:
-- `package.json` — `name`, deploy script `--project-name`
-- `wrangler.toml` — `name`, `VOICE_PUBLIC_URL`, R2 `bucket_name`
-- `scripts/smoke.mjs` — `BASE` URL
-
-Manual substitution recipe:
-```bash
-sed -i '' 's/__TENANT__/<slug>/g' package.json wrangler.toml scripts/smoke.mjs
-sed -i '' "s|__VOICE_PUBLIC_URL__|$VOICE_PUBLIC_URL|g" wrangler.toml
-```
-
-After substitution, `grep -rn __TENANT__ .` should return zero hits.
+> **Looking for the multi-tenant template?** The provisioning machinery,
+> placeholder substitution (`__TENANT__`, `__VOICE_PUBLIC_URL__`, `{{…}}`), and the
+> per-tenant fork flow live in the **separate `my-jarvis-dashboard-template` repo**,
+> not here. This instance is a long-since-diverged fork of that template; treat any
+> "template" framing in older docs as historical lineage.
 
 ## Stack
 
-- **Frontend:** React 19 + Vite + Tailwind + shadcn
-- **Backend:** Cloudflare Pages Functions (in `functions/`)
-- **DB:** Neon Postgres (per-tenant project)
-- **Auth:** WorkOS AuthKit — single shared MyJarvis org, tenant ownership enforced via `TENANT_OWNER_USER_ID` secret at every `/api/*` handler
-- **Voice:** shared `my-jarvis-voice-channel` Worker with per-tenant Durable Object instances; R2 per tenant
+- **Frontend:** React 19 + React Router v7 (`react-router-dom`) + Vite 7 + Tailwind v4 + `@radix-ui` primitives (individual `@radix-ui/react-*` packages — there is no `shadcn` dependency) + `lucide-react` icons. `@tanstack/react-query` is present but not the primary data pattern (pages mostly use a thin `useApi()` fetch + `useState`). UI styling uses inline-style design tokens — the `T` object in `src/components/atomic-crm/blueprint/ArchitectureBlocks.tsx`.
+- **Backend:** Cloudflare **Pages Functions** (file-routed under `functions/api/`).
+- **Database:** Cloudflare **D1 (SQLite)** — binding `DB`, database `mjd-yaron-db`. Query helper `getDb(env)` in `functions/_lib/db.ts` (D1-backed tagged-template SQL).
+- **Media / voice:** Cloudflare **R2** — binding `VOICE_BUCKET`, bucket `mjd-yaron-voice`; public audio at `${VOICE_PUBLIC_URL}/<id>.mp3`.
+- **AI:** Cloudflare **Workers AI** — binding `AI`, powers the `/move` natural-language agent (`functions/api/move/agent.ts`).
+- **Auth:** Cloudflare **Access**. `functions/_lib/auth.ts` `requireUser()` verifies the signed `Cf-Access-Jwt-Assertion` JWT (RS256) against the team JWKS — issuer + audience + signature — and derives the email from the verified claims (never the spoofable `Cf-Access-Authenticated-User-Email` header).
 
-## Consolidated voice-channel Worker
+## Environment bindings & vars
 
-The `VoiceChannel` Durable Object class lives in a separate repo (`my-jarvis-voice-channel`) — **one shared Worker across all tenants**, per-tenant DO instances keyed by `__TENANT__`. This template does NOT ship a `workers/voice-channel/` directory. `wrangler.toml`'s `[[durable_objects.bindings]]` points at the shared Worker via `script_name = "my-jarvis-voice-channel"`.
+What the **live code** actually references (in `wrangler.toml` and `functions/_lib/auth.ts`):
 
-Deploying a bad change to the voice-channel Worker affects every tenant — use caution. Revisit per-tenant workers after ~10 tenants if blast radius becomes an issue.
+| Name | Kind | Purpose |
+|---|---|---|
+| `DB` | D1 binding | The SQLite database (`mjd-yaron-db`). |
+| `VOICE_BUCKET` | R2 binding | Voice-clip audio store (`mjd-yaron-voice`). |
+| `AI` | Workers-AI binding | Powers the `/move` agent. |
+| `VOICE_PUBLIC_URL` | var | Public R2 base; `audio_url = ${VOICE_PUBLIC_URL}/<id>.mp3`. |
+| `TENANT_OWNER_EMAIL` | var | Owner identity (`aitheroad@gmail.com`); full, lockout-safe access. |
+| `ACCESS_TEAM_DOMAIN` | var | CF Access team domain (issuer base for JWKS). |
+| `ACCESS_AUD` | var | This app's Application Audience (AUD) tag. |
+| `ACCESS_ALLOWED_EMAILS` | var | Comma-separated allow-list. |
+| `ACCESS_MOVE_ONLY_EMAILS` | var | Emails restricted to the move tracker only (role `move`); owner force-excluded in code. |
+| `ACCESS_GRANTS` | var (optional) | JSON override of per-page grants. |
 
-## Pre-push gate
+Per-page guest access is stored in the D1 table `page_grants` (via `/api/grants`) and
+enforced by `functions/_middleware.ts` using `PAGE_API_PREFIXES` from `functions/_lib/pages.ts`.
+Owner → `"all"`; every other allow-listed user is deny-by-default.
 
-Every change must pass before push (CF Pages auto-deploys `main`; a failed deploy = user-facing outage):
+**No longer used by this live instance's code** (template/Neon-era carry-overs — do not
+rely on them, and note that we can't see CF Pages secrets from the repo): `DATABASE_URL`
+(Neon), `WORKOS_CLIENT_SECRET` (real WorkOS), `TENANT_OWNER_USER_ID`, `OPENAI_API_KEY`,
+`VOICE_API_KEY`. The front end imports a local `src/lib/workos-shim` (a single-tenant
+drop-in that returns a fixed user and routes sign-out to `/cdn-cgi/access/logout`); the
+real `@workos-inc/authkit-react` SDK is still a dependency but is no longer used by the
+live auth path — the network-layer Cloudflare Access gate replaced it.
 
+## SQL — D1 migrations
+
+Schema and data live in Cloudflare D1. Migrations are numbered files in `sql/d1/NNN_description.sql`,
+applied with:
+
+```bash
+wrangler d1 execute mjd-yaron-db --remote --file=sql/d1/NNN_description.sql
 ```
-npm run typecheck && npm run lint && npm run build
+
+(use `--local` to target the dev DB). The latest is `sql/d1/014_deployed_sites.sql`. SQLite
+stores JSON as TEXT — store JSON strings (`json(...)`), never Postgres `::jsonb`. The
+root-level `sql/0NN_*.sql` files are frozen Neon/Postgres-era history (see `sql/README.md`).
+
+## Deploy & build gate
+
+Deploy is **direct-upload**:
+
+```bash
+npm run deploy
+# = npm run build && wrangler pages deploy dist \
+#     --project-name my-jarvis-dashboard-yaron --branch main --commit-dirty=true
 ```
 
-## SQL — schema + seed
+**`git push` does NOT deploy.** Use `node`/`npm` for the wrangler upload (bun hangs it).
+Data-only changes (a `wrangler d1 execute`) need no redeploy — Functions read D1 at request time.
 
-The template ships **three layers** of SQL, applied in order by the provisioner against a freshly created Neon project:
+Build gate before deploy:
 
-1. **Core schema** — `sql/001_init.sql` (users, meetings, etc.) + `sql/002_meetings.sql`.
-2. **Brain schema** — `sql/008_dashboard_brain.sql` (projects, goals, tickets, agents, memories), `sql/009_skills.sql` (skills table), `sql/010_mcp_activity.sql` (MCP audit feed).
-3. **Seed rows** — `sql/099_seed.sql`. Jarvis agent, one Project/Goal/Ticket pointing at TELOS onboarding, 5 skills (telos, ceo, dashboard, pitch-deck, mjos-algorithm), 7 system-standards KB pages, 3 demo pitch decks.
+- `npm run build` = `tsc --noEmit -p tsconfig.app.json && vite build`.
+- Functions are typechecked separately: `tsc --noEmit -p functions/tsconfig.json` (run `npm run typecheck` for both).
+- `npm run lint` (ESLint over `src/**` + `functions/**`) is advisory.
 
-The seed file uses `{{operator_name}}` / `{{tenant_slug}}` / `{{operator_handle}}` / `{{neon_project_id}}` / `{{r2_public_host}}` placeholders inside skill + KB bodies; the provisioner substitutes them before applying the SQL. Regenerate the seed from the live source dashboard with `node scripts/gen-seed.mjs` (reads from `integrations/erez-database-url` — only runs on the home machine).
+A broken upload is a user-facing outage — never deploy on a red build.
 
-## Pages — what ships out of the box
+Verify every deploy with the **Interceptor** skill (real Chrome) against the live URL.
 
-The default sidebar (8 entries) and the routes in `src/components/atomic-crm/root/CRM.tsx` reflect the dashboard's locked **page taxonomy**: Home, Goals, Projects, Tickets, Agents, Skills, Memory, Knowledge Base. Plus catchalls `/kb-doc/*` and `/pitch-doc/*`. Plus per-domain detail routes (`/goals/:slug`, `/projects/:slug`, `/tickets/:slug`, `/skills/:slug`). Plus `/dashboard-architecture` and `/settings`.
+## Pages (15)
 
-**Meetings** route is registered in `CRM.tsx` but the sidebar entry is off by default — flip it on in `nav-items.tsx` once the tenant is using meetings.
+The dashboard exposes 15 grantable pages. The page set is defined in `src/lib/page-keys.ts`
+(client) and `functions/_lib/pages.ts` (server) — they must stay in sync — rendered from the
+`PAGES` manifest in `src/lib/pages.tsx` (via `src/components/atomic-crm/root/CRM.tsx`) with
+sidebar entries in `src/components/atomic-crm/layout/nav-items.tsx` and labels in
+`SettingsPage.tsx`.
 
-The seeded TELOS onboarding (ticket `MJOS-001`) is the first thing a new operator interacts with. `HomePage.tsx` surfaces it as the primary affordance.
+| Key | Sidebar label | Route |
+|---|---|---|
+| `home` | Home | `/home` |
+| `goals` | Goals | `/goals-list` (+ `/goals/:slug`) |
+| `projects` | Projects | `/projects-list` (+ `/projects/:slug`) |
+| `portfolio` | Portfolio | `/portfolio` |
+| `spend` | Spend | `/spend` |
+| `deployed-sites` | Sites | `/deployed-sites` |
+| `move` | מעבר דירה (Move) | `/move` |
+| `rental` | Rental | `/rental` |
+| `situation` | Situation | `/situation` |
+| `agents` | Agents | `/agents` |
+| `skills` | Skills | `/skills` (+ `/skills/:slug`) |
+| `memory` | Memory | `/memory` |
+| `knowledge-base` | Knowledge Base | `/knowledge-base` (+ `/kb-doc/*`) |
+| `meetings` | Meetings | `/meetings` (+ `/meetings/:id`) |
+| `tools` | Tools | `/tools` |
+
+- **"Tickets" was removed and replaced by "Situation"** — there is no `tickets` page key, route, or API anywhere in the live code.
+- **Meetings is ON in the sidebar** (a normal `navItems` entry).
+- Owner-only chrome routes outside the grantable set: `/` (redirect) and `/settings`.
+
+To add a page, register the key in `page-keys.ts` AND `functions/_lib/pages.ts` (+ a
+`PAGE_API_PREFIXES` entry), add the `PAGE_LABELS` entry in `SettingsPage.tsx`, add the route
+to the `PAGES` manifest in `pages.tsx`, add the sidebar entry in `nav-items.tsx`, and add the
+handler at `functions/api/<name>/index.ts`. See the `myjarvis-dashboard` skill for the full recipe.
 
 ## Known debt
 
-- `scripts/smoke.mjs` still imports `@clerk/backend` from the Clerk era. The dashboard runs on WorkOS AuthKit now. Smoke is broken until it's ported to WorkOS user-management. Do not rely on `npm run smoke` yet.
+- `scripts/smoke.mjs` still imports `@clerk/backend` from the long-dead Clerk era. The dashboard runs on Cloudflare Access now, so this smoke test is broken — do not rely on `npm run smoke` until it's rewritten.
+
+---
+
+## Template lineage — not used by this live instance
+
+Older docs in this repo describe a multi-tenant **template** that the Provisioning Worker
+forked per tenant, substituting `__TENANT__` / `__VOICE_PUBLIC_URL__` placeholders and
+provisioning a per-tenant Neon project + WorkOS AuthKit + a shared voice-channel Durable
+Object. **None of that applies to this live single-tenant fork** — there are no remaining
+placeholders to substitute, no Neon, and no real WorkOS in the live path. For the actual
+template + provisioning system, see the separate `my-jarvis-dashboard-template` repo.

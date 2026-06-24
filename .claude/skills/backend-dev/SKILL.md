@@ -3,6 +3,15 @@ name: backend-dev
 description: Coding practices for backend development in Atomic CRM. Use when deciding whether backend logic is needed, or when creating/modifying database migrations, views, triggers, RLS policies, edge functions, or custom dataProvider methods that call Supabase APIs.
 ---
 
+> **⚠️ Does NOT apply to this dashboard.** This skill describes the upstream
+> **Atomic-CRM / Supabase** template backend (PostgreSQL + PostgREST + RLS +
+> Deno edge functions). Yaron's live `my-jarvis-dashboard-yaron` instance runs a
+> completely different stack: **Cloudflare Pages Functions + Cloudflare D1
+> (SQLite) + Cloudflare Access**. There is no Supabase, no PostgREST, no RLS, and
+> no edge functions in this repo. For backend work in THIS repo, follow the
+> `myjarvis-dashboard` skill instead. The Supabase content below is retained only
+> as upstream/template lineage.
+
 There is no custom backend server. All server-side logic uses Supabase: PostgreSQL (tables, views, triggers, RLS), Auth API, Storage, and Edge Functions.
 
 Prefer frontend-only solutions via custom dataProvider methods calling the PostgREST API.

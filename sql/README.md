@@ -1,50 +1,53 @@
-# sql/ — tenant database schema
+# sql/ — database schema & migrations
 
-Two layers. Never mix them.
+> **Live store: Cloudflare D1 (SQLite).** The live migrations are in
+> [`sql/d1/`](./d1/). The root-level `0NN_*.sql` files (`001_init.sql`,
+> `008_dashboard_brain.sql`, `099_seed.sql`, …) and any `psql` / Neon /
+> `DATABASE_URL` instructions are **template/Neon-era history** — kept for
+> reference, not applied to the live dashboard.
 
-## `001_init.sql` — platform-universal
+## Live migrations — `sql/d1/NNN_description.sql`
 
-Applied to **every** new tenant's Neon project by the Provisioning Worker
-(`my-jarvis-provisioning`) at step 10 (`apply_tenant_schema`).
+Yaron's `my-jarvis-dashboard-yaron` instance stores all data in a Cloudflare D1
+database, `mjd-yaron-db` (declared in `wrangler.toml` under `[[d1_databases]]`,
+binding `DB`). Schema and data migrations live in `sql/d1/`, numbered in apply
+order. Apply one against the live (remote) database with:
 
-Contains ONLY the tables every MyJarvis dashboard needs:
+```bash
+wrangler d1 execute mjd-yaron-db --remote --file=sql/d1/NNN_description.sql
+```
 
-| Table | Used by |
-|---|---|
-| `user_settings` | `GET/PATCH /api/settings` |
-| `voice_samples` | `POST /api/voice`, `GET /api/voice/feed` (shared voice stack) |
-| `page_content` | `src/components/kb/*` via `GET /api/kb/:slug` + `GET /api/kb` |
+Use `--local` instead of `--remote` to target the local dev database. The latest
+migration is `sql/d1/014_deployed_sites.sql`. Others include `002_meetings_vexa`,
+`005_calendar`, `007_move_tasks`, `011_spend`, `012_spend_usage`, and
+`013_page_grants` (the per-page guest-grant table).
 
-Rule: if a table isn't needed by the voice stack, the KB renderer, or the
-settings layer — it doesn't belong here.
+Read a quick query without a file:
 
-## `sql/tenant/<slug>.sql` — per-tenant content schema
+```bash
+wrangler d1 execute mjd-yaron-db --remote --command "SELECT * FROM projects LIMIT 5"
+```
 
-When a tenant needs their own content shape (Lilach's coaching tables,
-Daniel's client roster, OS-merged's agency schema), it lives in a tenant-
-specific SQL file applied alongside the tenant's data migration. NOT in
-the template.
+## Hard rules (still apply — SQLite/D1)
 
-The Provisioning Worker at step 10 also optionally looks for
-`sql/tenant/<slug>.sql` in the newly-forked repo and applies it after
-`001_init.sql`. If the file is absent, step 10 runs platform-universal
-only. Tenants who don't need extra tables skip this file entirely.
-
-This directory ships empty intentionally — it's a convention, not a
-content pool. The tenant's own repo populates it during Ship 5 migration
-or when Erez sets up a fresh dashboard.
-
-## Hard rules
-
-1. **`user_id` columns are `TEXT`, never `UUID`.** WorkOS subjects are
-   strings (`user_01XXX...`), not UUIDs. A `UUID` column silently breaks
-   every row-insert from the Pages Functions. Noa caught this the
-   Daniel way; it's now a template-level invariant.
+1. **`user_id` / identity columns are `TEXT`, never `UUID`.** Cloudflare Access
+   identities are email strings, not UUIDs, and SQLite has no native UUID type.
+   Bind identity values as text.
 2. **Everything idempotent.** `CREATE TABLE IF NOT EXISTS`,
-   `CREATE INDEX IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`,
-   etc. The provisioning pipeline retries on transient failures — a
-   non-idempotent statement breaks re-runs.
-3. **No tenant content in 001_init.sql — ever.** Lilach's `clients` /
-   `sessions` / `coach_reflections` used to live here; that was a time
-   bomb that came within one migration of shipping to Daniel. Schema
-   shape belongs with schema data, not with the template.
+   `CREATE INDEX IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN` guarded for re-run,
+   etc. Migrations may be re-applied; a non-idempotent statement breaks re-runs.
+3. **JSON is stored as `TEXT`.** SQLite has no `jsonb`. Store
+   `JSON.stringify(x)` (or use `json(...)`), and `JSON.parse` on read. The
+   `getDb()` helper in `functions/_lib/db.ts` JSON-encodes object/array binds
+   automatically.
+
+---
+
+## Template lineage (historical — not the live store)
+
+The multi-tenant `my-jarvis-dashboard-template` repo provisioned a per-tenant
+**Neon Postgres** project and applied `sql/001_init.sql` (and friends) via `psql`
+using a `DATABASE_URL` connection string. That model — and the `sql/tenant/<slug>.sql`
+per-tenant content convention — belongs to the template repo, not to this live
+single-tenant fork. The root `0NN_*.sql` files here are the frozen Postgres-era
+schema; the live D1 migrations in `sql/d1/` superseded them.

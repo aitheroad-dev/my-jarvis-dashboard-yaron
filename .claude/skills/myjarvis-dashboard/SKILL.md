@@ -5,103 +5,112 @@ description: Update the MyJarvis dashboard — read data, write data, edit layou
 
 # MyJarvis Dashboard
 
-The user's MyJarvis dashboard is a React app. **Layout is in code (TSX). Data is in their own Neon Postgres.** Both are managed through the **MyJarvis MCP** — no git, no npm, no shell.
+Yaron's MyJarvis dashboard (`my-jarvis-dashboard-yaron`, live at
+`my-jarvis-dashboard-yaron.pages.dev`) is a React SPA on **Cloudflare Pages** with
+**Cloudflare Pages Functions** for the API, **Cloudflare D1 (SQLite)** for data,
+**R2** for voice audio, and **Cloudflare Access** for auth. **Layout is in code
+(TSX). Data is in D1.** You manage both with **local file edits + `npm` + `wrangler`**
+— ordinary git/shell workflow, no special MCP required.
 
-## Three operations — that's the whole job
+## The whole job — three operations
 
-| Goal | Tool | Notes |
-|---|---|---|
-| **Read data** | `query_db("SELECT …")` | Read-only against the live database. |
-| **Write data** | `apply_migration("INSERT/UPDATE/DELETE …" or DDL)` | 2-phase: tested on a Neon preview branch first, auto-promoted on success. Despite the name, this is the right tool for both schema changes AND data writes. |
-| **Edit layout** | `push_files([…], branch="preview/<topic>")` → `poll_build_status(branch)` until `success` → `ship(branch)` | Build gate is automatic; `ship` only merges if green. |
+| Goal | How |
+|---|---|
+| **Read data** | `wrangler d1 execute mjd-yaron-db --remote --command "SELECT …"` (read-only; use `--local` for the dev DB). |
+| **Write data / change schema** | Add a numbered migration `sql/d1/NNN_description.sql`, then `wrangler d1 execute mjd-yaron-db --remote --file=sql/d1/NNN_description.sql`. SQLite stores JSON as TEXT — store a JSON string (or `json(...)`), never Postgres `::jsonb`. |
+| **Edit layout / API** | Edit the local TSX / functions files, then `npm run build && npm run deploy` (direct-upload). Verify the deploy with the **Interceptor** skill (real Chrome) against `my-jarvis-dashboard-yaron.pages.dev`. |
 
-Anything that doesn't fit one of these three is probably out of scope for this skill.
+Deploy is **direct-upload** — `npm run deploy` runs `npm run build && wrangler pages deploy dist …`. **`git push` does NOT deploy.** Use `node`/`npm` for the wrangler upload (bun hangs it).
 
 ## Where things live in the code
 
 ```
+src/lib/page-keys.ts              # client PageKey union + ALL_PAGE_KEYS
+src/lib/pages.tsx                 # PAGES manifest — route → element for every page
 src/components/atomic-crm/
-├── root/CRM.tsx                  # routes — every page is a <Route> here
-├── layout/CrmSidebar.tsx         # sidebar — top items + expandable groups
-├── pages/<Name>Page.tsx          # one TSX file per dashboard page
-└── …
-src/components/kb/
-├── KbPage.tsx                    # generic renderer for content stored in page_content
-└── sections/                     # 13 section types (markdown, table, kpi_cards, …)
+├── root/CRM.tsx                  # renders the PAGES manifest (owner: all; guest: granted subset). NOT hand-edited per page.
+├── layout/nav-items.tsx          # sidebar entries (navItems), keyed by PageKey
+├── layout/CrmSidebar.tsx         # consumes navItems
+├── pages/SettingsPage.tsx        # PAGE_LABELS map + page-sharing UI
+├── <domain>/<Name>Page.tsx       # one TSX page per dashboard domain
+└── blueprint/KbBlueprintPage.tsx # generic renderer for page_content (KB docs)
+functions/
+├── _lib/db.ts                    # getDb(env) — D1 tagged-template SQL
+├── _lib/auth.ts                  # requireUser() — verifies the CF Access JWT
+├── _lib/pages.ts                 # server PageKey union + PAGE_API_PREFIXES (grant authority)
+└── api/<name>/index.ts           # one handler dir per endpoint (+ [id].ts / [slug].ts)
 ```
 
-## Where things live in the data
+## Where things live in the data (D1)
 
 | Table | What |
 |---|---|
-| `page_content` (jsonb) | Long-form pages rendered by `<KbPage slug="…" />`. One row per slug. |
-| `<your-domain-tables>` | Typed tenant data (e.g. `contacts`, `tasks`, `paamon_groups`). Read in TSX via the dashboard's `/api/[resource]` endpoint with the per-table allowlist. |
-
-To add a brand-new domain table: write a `CREATE TABLE` via `apply_migration`, then add the table name to the allowlist in `functions/api/[resource]/index.ts` (a code edit + ship).
+| `page_content` (JSON-as-TEXT) | Long-form KB pages rendered by `KbBlueprintPage`. One row per slug. |
+| `page_grants` | Per-page guest access (email → page_key); drives `/api/grants` + `_middleware.ts`. |
+| `<domain tables>` | Typed data (`projects`, `goals`, `agents`, `memories`, `meetings`, `spend`, `move_*`, `deployed_sites`, …). Read in TSX via the matching `/api/<domain>` endpoint. |
 
 ## Recipes
 
 ### Read data
 
-```
-query_db("SELECT * FROM contacts WHERE created_at > now() - interval '7 days'")
-```
-
-### Add or edit knowledge base content (no redeploy)
-
-```
-apply_migration("""
-  INSERT INTO page_content (page_slug, content) VALUES
-  ('my-new-page', '{"sections":[{"type":"markdown","body":"…"}]}'::jsonb)
-  ON CONFLICT (page_slug) DO UPDATE SET content = EXCLUDED.content
-""")
+```bash
+wrangler d1 execute mjd-yaron-db --remote --command \
+  "SELECT slug, name FROM projects ORDER BY updated_at DESC LIMIT 10"
 ```
 
-If the route already exists in `CRM.tsx`, you're done. Otherwise: register a route (one TSX edit + ship) so the page is reachable.
+### Add or edit knowledge base content
 
-### Add a page with custom layout (redeploy)
+Write a migration that upserts into `page_content`, then apply it:
 
-```
-push_files([
-  { path: "src/components/atomic-crm/pages/MyNewPage.tsx", content: "<full TSX>" },
-  { path: "src/components/atomic-crm/root/CRM.tsx", content: "<patched routes>" },
-  { path: "src/components/atomic-crm/layout/CrmSidebar.tsx", content: "<patched nav>" }
-], branch="preview/add-mynewpage", message="feat: add MyNewPage")
-
-poll_build_status("preview/add-mynewpage")  # repeat until status='success'
-ship("preview/add-mynewpage", "feat: MyNewPage")
+```sql
+-- sql/d1/0NN_kb_my_new_page.sql
+INSERT INTO page_content (page_slug, content) VALUES
+  ('my-new-page', json('{"sections":[{"type":"markdown","body":"…"}]}'))
+ON CONFLICT (page_slug) DO UPDATE SET content = excluded.content;
 ```
 
-### Change a sidebar entry / hide a page / move to KB
-
-Edit `CrmSidebar.tsx` (and remove the route from `CRM.tsx` if hiding entirely). Same `push_files → poll → ship` flow.
-
-### Add a new domain table
-
-```
-apply_migration("CREATE TABLE my_table ( … )")
+```bash
+wrangler d1 execute mjd-yaron-db --remote --file=sql/d1/0NN_kb_my_new_page.sql
 ```
 
-Then a code edit + ship to add `'my_table'` to the allowlist in `functions/api/[resource]/index.ts` if you want the frontend to read it.
+### Add a new page (full slice)
 
-## Sidebar convention
+A page key must be registered in **both** the client and server vocabularies, plus
+the manifest, labels, sidebar, and an API handler:
 
-- Keep ~6 high-priority pages in the sidebar. Group them with `NavGroupSection` (top items + expandable groups).
-- Everything else lives in the knowledge base — surfaced through the `/knowledge-base` list page.
-- Icons come from `lucide-react`. Pick the closest semantic match to the page's content.
+1. `src/lib/page-keys.ts` — add the key to the `PageKey` union + `ALL_PAGE_KEYS`.
+2. `functions/_lib/pages.ts` — add the same key to the `PageKey` union + `ALL_PAGE_KEYS`, and a `PAGE_API_PREFIXES` entry (the `/api/*` prefixes the page may reach).
+3. `src/components/atomic-crm/pages/SettingsPage.tsx` — add the `PAGE_LABELS` entry.
+4. `src/lib/pages.tsx` — add the `{ key, routes: [...] }` entry to the `PAGES` manifest (CRM.tsx renders it; you do NOT edit CRM.tsx).
+5. `src/components/atomic-crm/layout/nav-items.tsx` — add the sidebar `navItems` entry (icon from `lucide-react`).
+6. `functions/api/<name>/index.ts` — add the API handler (+ `[id].ts`/`[slug].ts` for item routes).
+
+Then `npm run build && npm run deploy`, and verify with Interceptor.
+
+### Change a sidebar entry / share a page
+
+Sidebar label/order: edit `nav-items.tsx`. Guest sharing: insert a row into the D1
+`page_grants` table (or use the Settings page-sharing UI) — `_middleware.ts` derives
+the allow/deny from `PAGE_API_PREFIXES`. Owner always sees `"all"`.
 
 ## Build gate — what to do when it fails
 
-`poll_build_status` returns one of:
+`npm run build` = `tsc --noEmit -p tsconfig.app.json && vite build`; functions are
+typechecked separately via `tsc -p functions/tsconfig.json` (run `npm run typecheck`
+for both). Lint (`npm run lint`) is advisory. If the build fails, fix the TS/Vite
+error locally and rebuild — never `npm run deploy` on a red build (a broken upload is
+a user-facing outage). There is no remote preview branch; deploy is direct-upload, so
+the gate is your local build.
 
-- `status: "success"` → safe to `ship`.
-- `status: "failed"` → call `get_build_logs(deploy_id)`, fix the error, push again to the same preview branch.
-- `retry.escalated: true` → 3 strikes. **Stop.** Tell the user, don't keep retrying. The branch is poisoned; abandon it.
+## Legacy MCP flow (pre-D1)
 
-Never call `ship` until you've seen `status: "success"` on the preview branch. `ship` re-checks before merging, but you should never make it do that work.
+The old MyJarvis MCP tools (`query_db` / `apply_migration` / `push_files` / `ship`)
+**predate the D1 migration** — they were built for the Neon-Postgres era. Prefer the
+local-files + `wrangler d1 execute` + `npm run deploy` flow above. If you do reach for
+the MCP tools, verify they actually target this D1 database before relying on them.
 
 ## What this skill does NOT cover
 
-- **Voice, MCP setup, provisioning** — separate skills/tools.
-- **Atomic-CRM upstream conventions** (ra-core forms, shadcn primitives) — see `frontend-dev` in the same repo.
-- **Design vocabulary** (Studio vs Editorial typography, ColorBlocks, etc.) — separate skill, coming later.
+- **Voice, provisioning** — separate skills/tools.
+- **Atomic-CRM upstream conventions** (ra-core forms, `@radix-ui` primitives) — see `frontend-dev` in the same repo.
+- **Design vocabulary** (Studio vs Editorial typography, ColorBlocks, etc.) — separate skill.
