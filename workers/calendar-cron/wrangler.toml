@@ -18,3 +18,5 @@ VEXA_API_BASE = "https://api.cloud.vexa.ai"
 
 # Secrets set out-of-band (wrangler secret / API), never committed:
 #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CAL_TOKEN_KEY, VEXA_API_KEY, TRIGGER_SECRET
+#   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID  (owner alerts on silent Vexa failures;
+#   notify no-ops if either is unset — the feature depends on both being present here)

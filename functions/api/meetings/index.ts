@@ -28,7 +28,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
       SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status,
-             summary, started_at, ended_at, created_at
+             summary, started_at, ended_at, created_at, last_error, error_status
         FROM meetings
        ORDER BY created_at DESC
        LIMIT ${limit}
@@ -153,7 +153,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   });
 
   if (!bot.ok) {
-    await sql/* sql */ `UPDATE meetings SET status = 'failed' WHERE id = ${inserted.id}`;
+    // Persist the Vexa rejection reason (same as the auto-dispatch path) so a
+    // failed manual create isn't silent on the list. The UI also gets it inline
+    // from the 502 below; no Telegram here (the operator is already watching).
+    await sql/* sql */ `
+      UPDATE meetings
+         SET status = 'failed', last_error = ${bot.detail},
+             error_status = ${bot.status && bot.status > 0 ? bot.status : null}
+       WHERE id = ${inserted.id}
+    `;
     return json(
       {
         error: "bot create failed",

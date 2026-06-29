@@ -10,6 +10,7 @@
 import { getDb } from "../../../functions/_lib/db";
 import { getAccessToken, syncEvents, dispatchDue } from "../../../functions/_lib/calendar";
 import { reconcileActiveMeetings } from "../../../functions/_lib/meetings";
+import { notifyTelegram } from "../../../functions/_lib/notify";
 
 export interface Env {
   DB: unknown; // D1Database — bound in wrangler.toml
@@ -19,6 +20,9 @@ export interface Env {
   VEXA_API_BASE?: string;
   VEXA_API_KEY: string;
   TRIGGER_SECRET?: string;
+  // Owner alerting for silent Vexa failures (optional — notify no-ops if unset).
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
 }
 
 // _lib helpers are typed against the dashboard's env shapes; the Worker env is
@@ -43,6 +47,17 @@ export default {
     const r = await runPass(env);
     if (r.dispatched > 0 || r.errors.length) {
       console.log(`[calendar-cron] dispatched=${r.dispatched} errors=${JSON.stringify(r.errors)}`);
+    }
+    // Alert the owner on a real bot-create failure (the silent failure today).
+    // Drop the `token:` early-return: it would fire every single minute while a
+    // Google token is dead — a dead token shows on the dashboard's calendar card
+    // instead. Bot-create errors are backoff-gated (~1 per 5 min per event).
+    const botErrors = r.errors.filter((e) => !e.startsWith("token:"));
+    if (botErrors.length) {
+      await notifyTelegram(
+        env,
+        `🔴 Auto-join couldn't start a notetaker (${botErrors.length}): ${botErrors.join(" | ")}`,
+      );
     }
   },
 

@@ -8,12 +8,18 @@ import {
   type VexaEnv,
 } from "./vexa";
 import { redactMeetingUrl } from "./meeting-url";
+import { notifyTelegram, type NotifyEnv } from "./notify";
 
 // A meeting auto-ends when Vexa reports its bot is no longer running (the call
 // ended / everyone left). Bot-absence is only trusted after a join grace, since
 // a freshly-created bot takes ~30-60s to appear. 12h is the absolute ceiling.
 export const JOIN_GRACE_MS = 2 * 60_000;
 export const HARD_CAP_MS = 12 * 3600_000;
+// A bot confirmed present in a call this long with ZERO transcript captured is
+// flagged as possibly deaf (wrong language pin, never admitted, dead Vexa
+// session) — the silent failure that looks healthy. 8 min keeps a genuinely
+// quiet opening stretch from crying wolf. Flagged + alerted exactly once.
+export const STALL_THRESHOLD_MS = 8 * 60_000;
 
 export type MeetingRow = {
   id: number;
@@ -30,6 +36,12 @@ export type MeetingRow = {
   // Present on the detail query; absent (undefined) on the list query.
   last_segment_sig?: string | null;
   last_activity_at?: string | null;
+  // Silent-failure feedback (migration 015). last_error/error_status carry the
+  // Vexa rejection reason on a 'failed' row, or the stall reason on a deaf
+  // 'live' row; alerted_at dedups the per-minute Telegram stall sweep.
+  last_error?: string | null;
+  error_status?: number | null;
+  alerted_at?: string | null;
 };
 
 /**
@@ -89,7 +101,15 @@ export async function createMeetingWithBot(
     botName: "Notetaker",
   });
   if (!bot.ok) {
-    await sql/* sql */ `UPDATE meetings SET status = 'failed' WHERE id = ${meetingId}`;
+    // Persist WHY Vexa rejected the bot — without this the reason is lost and
+    // the failure is silent (the original bug). status 0 = transport error (no
+    // HTTP response) → store NULL so it isn't confused with a real status code.
+    await sql/* sql */ `
+      UPDATE meetings
+         SET status = 'failed', last_error = ${bot.detail},
+             error_status = ${bot.status && bot.status > 0 ? bot.status : null}
+       WHERE id = ${meetingId}
+    `;
     return { ok: false, status: bot.status, detail: bot.detail };
   }
   const botRef = bot.data?.id != null ? String(bot.data.id) : args.nativeMeetingId;
@@ -148,17 +168,49 @@ export async function maybeEndMeeting(
  * eligible (the late-join fix). A single bad row never blocks the sweep.
  */
 export async function reconcileActiveMeetings(
-  env: VexaEnv,
+  env: VexaEnv & NotifyEnv,
   sql: ReturnType<typeof getDb>,
 ): Promise<void> {
   const active = (await sql/* sql */ `
     SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status, summary,
-           started_at, ended_at, created_at
+           started_at, ended_at, created_at, alerted_at
       FROM meetings WHERE status IN ('live','starting')
   `) as MeetingRow[];
   for (const m of active) {
     try {
-      await maybeEndMeeting(env, sql, m, false);
+      const status = await maybeEndMeeting(env, sql, m, false);
+      // Deaf-bot detection runs ONLY for a genuinely-live row (not a stuck
+      // 'starting' that may never have joined, not an ended call).
+      if (status !== "live") continue;
+      if (m.alerted_at) continue; // cheap pre-filter; the atomic claim below is the real guard
+      const started = m.started_at ? Date.parse(m.started_at) : NaN;
+      if (!Number.isFinite(started) || Date.now() - started < STALL_THRESHOLD_MS) continue;
+      if (!m.platform || !m.native_meeting_id) continue;
+      const cnt = (await sql/* sql */ `
+        SELECT COUNT(*) AS n FROM meeting_transcript WHERE meeting_id = ${m.id}
+      `) as { n: number }[];
+      if ((cnt[0]?.n ?? 0) > 0) continue; // capturing fine — not stalled
+      // CONFIRM the bot is actually present this sweep. maybeEndMeeting returns
+      // 'live' even when its Vexa probe ERRORED (it refuses to end on
+      // uncertainty), so without this an outage would mislabel many meetings as
+      // "deaf". Only a positive presence probe (ok && data===true) alerts.
+      const present = await botRunning(env, m.platform as Platform, m.native_meeting_id);
+      if (!present.ok || present.data !== true) continue;
+      const mins = Math.round((Date.now() - started) / 60_000);
+      // Atomic claim — mirrors dispatchDue. Two overlapping minute-ticks can't
+      // both alert: only the one whose UPDATE flips alerted_at gets a row back.
+      const claim = (await sql/* sql */ `
+        UPDATE meetings
+           SET last_error = ${`No transcript after ${mins}m (bot confirmed in call)`},
+               alerted_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+         WHERE id = ${m.id} AND alerted_at IS NULL
+        RETURNING id
+      `) as unknown[];
+      if (!claim[0]) continue; // another sweep already claimed + alerted
+      await notifyTelegram(
+        env,
+        `⚠️ Meeting "${m.title}" — the notetaker is in the call but has recorded nothing after ${mins} min. It may be deaf (wrong language pin / not admitted), or the call may simply be silent. Worth a look.`,
+      );
     } catch {
       // never let one vendor hiccup abort the rest of the sweep
     }

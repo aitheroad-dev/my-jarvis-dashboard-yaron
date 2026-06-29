@@ -15,6 +15,8 @@ const T = {
   greenSoft: "#E8F3EC",
   red: "#B23A3A",
   redSoft: "#F7E5E2",
+  amber: "#9A6B16",
+  amberSoft: "#FBF0DD",
   blue: "#3B6BA5",
   blueSoft: "#E3EDF7",
   codeBg: "#F5EFE8",
@@ -32,6 +34,8 @@ type Meeting = {
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
+  last_error: string | null;
+  error_status: number | null;
 };
 
 type CalStatus = { configured: boolean; connected: boolean; email?: string | null };
@@ -285,6 +289,7 @@ function StatusBadge({ status }: { status: string }) {
     starting: { bg: T.blueSoft, fg: T.blue, label: "Starting" },
     ended: { bg: "#F0EAE3", fg: T.ink3, label: "Ended" },
     failed: { bg: T.redSoft, fg: T.red, label: "Failed" },
+    stalled: { bg: T.amberSoft, fg: T.amber, label: "No audio" },
     scheduled: { bg: "#F0EAE3", fg: T.ink3, label: "Scheduled" },
   };
   const c = cfg[status] ?? { bg: "#F0EAE3", fg: T.ink3, label: status };
@@ -812,6 +817,20 @@ export function MeetingsPage() {
                     >
                       {m.meeting_url}
                     </div>
+                    {m.last_error && (
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          color: m.status === "live" ? T.amber : T.red,
+                          marginTop: 6,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {m.status === "live"
+                          ? `⚠️ ${m.last_error}`
+                          : `Vexa rejected the bot${m.error_status ? ` (${m.error_status})` : ""}: ${m.last_error}`}
+                      </div>
+                    )}
                   </div>
                   <div
                     style={{
@@ -821,7 +840,9 @@ export function MeetingsPage() {
                       gap: 6,
                     }}
                   >
-                    <StatusBadge status={m.status} />
+                    <StatusBadge
+                      status={m.status === "live" && m.last_error ? "stalled" : m.status}
+                    />
                     <div style={{ fontSize: 12, color: T.ink3 }}>
                       {fmtDate(m.created_at)}
                     </div>
