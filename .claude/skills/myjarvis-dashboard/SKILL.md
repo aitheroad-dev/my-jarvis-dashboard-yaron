@@ -84,8 +84,9 @@ the manifest, labels, sidebar, and an API handler:
 4. `src/lib/pages.tsx` — add the `{ key, routes: [...] }` entry to the `PAGES` manifest (CRM.tsx renders it; you do NOT edit CRM.tsx).
 5. `src/components/atomic-crm/layout/nav-items.tsx` — add the sidebar `navItems` entry (icon from `lucide-react`).
 6. `functions/api/<name>/index.ts` — add the API handler (+ `[id].ts`/`[slug].ts` for item routes).
+7. **Make it mobile + desktop ready — mandatory.** Follow `docs/MOBILE_READY_STANDARD.md`: list data goes through `SortableTable` (auto stacked-cards on mobile); custom rows get a `useIsMobile()` stacked-card branch (title full-width with `overflowWrap: "anywhere"`, actions on their own row); page padding/headings use `clamp()`. Never ship a fixed-column `<table>`/grid as the only layout.
 
-Then `npm run build && npm run deploy`, and verify with Interceptor.
+Then `npm run build && npm run deploy`, and verify with Interceptor — **including at 390px width** (per the standard's verification gate).
 
 ### Change a sidebar entry / share a page
 

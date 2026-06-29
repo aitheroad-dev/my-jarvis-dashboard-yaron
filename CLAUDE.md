@@ -119,6 +119,12 @@ To add a page, register the key in `page-keys.ts` AND `functions/_lib/pages.ts` 
 to the `PAGES` manifest in `pages.tsx`, add the sidebar entry in `nav-items.tsx`, and add the
 handler at `functions/api/<name>/index.ts`. See the `myjarvis-dashboard` skill for the full recipe.
 
+**Every page must be mobile + desktop ready — hard gate.** New or changed pages must
+follow `docs/MOBILE_READY_STANDARD.md`: list data renders through `SortableTable` (auto
+stacked-cards on mobile), custom rows use a `useIsMobile()` stacked-card branch, page
+padding/headings are fluid (`clamp()`), and the page is verified at 390px before deploy.
+Do not hand-roll a fixed-column `<table>`/grid as the only layout — that breaks on phones.
+
 ## Known debt
 
 - `scripts/smoke.mjs` still imports `@clerk/backend` from the long-dead Clerk era. The dashboard runs on Cloudflare Access now, so this smoke test is broken — do not rely on `npm run smoke` until it's rewritten.
