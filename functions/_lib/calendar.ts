@@ -7,7 +7,7 @@ import {
 } from "./google";
 import { parseMeetingUrl } from "./meeting-url";
 import { createMeetingWithBot } from "./meetings";
-import { type VexaEnv } from "./vexa";
+import { isTransientVexaStatus, type VexaEnv } from "./vexa";
 
 // A bot is dispatched this long before start so it's in the room before humans.
 const DISPATCH_LEAD_MS = 3 * 60_000;
@@ -171,7 +171,7 @@ export async function dispatchDue(
   env: GoogleEnv & VexaEnv,
   sql: ReturnType<typeof getDb>,
   nowMs: number,
-): Promise<{ dispatched: number; errors: string[] }> {
+): Promise<{ dispatched: number; errors: string[]; alertable: string[] }> {
   const candidates = (await sql/* sql */ `
     SELECT google_event_id, title, start_time, end_time, meeting_url, platform,
            native_meeting_id, auto_join, dispatched_meeting_id,
@@ -182,7 +182,8 @@ export async function dispatchDue(
 
   const backoffCutoffIso = new Date(nowMs - RETRY_BACKOFF_MS).toISOString();
   let dispatched = 0;
-  const errors: string[] = [];
+  const errors: string[] = []; // every failure (logged/returned for debugging)
+  const alertable: string[] = []; // subset worth a Telegram (hard or cap-exhausted)
   for (const ev of candidates) {
     const startMs = ev.start_time ? Date.parse(ev.start_time) : NaN;
     if (!Number.isFinite(startMs)) continue;
@@ -245,7 +246,29 @@ export async function dispatchDue(
       dispatched++;
     } else {
       errors.push(`${ev.google_event_id}: ${r.detail}`);
+      // Alert gate. createBot already retried Vexa's safe transient statuses
+      // inline, so a failure here is worth paging only when it (a) is HARD (Vexa
+      // won't recover from it), (b) has spent the per-event attempt cap, or (c) is
+      // the LAST attempt that still fits this occurrence's window — no later tick
+      // will retry it, so a dead key on a SHORT meeting (which never reaches the
+      // 6-attempt cap before its window closes) still pages (Forge #2). An
+      // ordinary transient blip that WILL retry next tick is NOT alerted — that's
+      // the spam the feedback feature kept producing. A statusless failure is a
+      // local DB/logic fault (createMeetingWithBot), not Vexa flakiness, so it is
+      // treated HARD and never goes silent (Forge #3).
+      const transient = r.status === undefined ? false : isTransientVexaStatus(r.status);
+      const exhausted = ev.attempt_count + 1 >= MAX_ATTEMPTS;
+      const lastInWindow = nowMs + RETRY_BACKOFF_MS > endMs + END_GRACE_MS;
+      if (!transient || exhausted || lastInWindow) {
+        const label = ev.title?.trim() || ev.google_event_id;
+        const why = !transient
+          ? ""
+          : exhausted
+            ? ` (no bot after ${ev.attempt_count + 1} attempts)`
+            : ` (no bot before the meeting window closed)`;
+        alertable.push(`${label}: ${r.detail}${why}`);
+      }
     }
   }
-  return { dispatched, errors };
+  return { dispatched, errors, alertable };
 }

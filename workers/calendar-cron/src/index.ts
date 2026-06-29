@@ -29,11 +29,13 @@ export interface Env {
 // structurally compatible (same binding + secret names), so cast at the seam.
 type LibEnv = Parameters<typeof getAccessToken>[0] & Parameters<typeof dispatchDue>[0];
 
-async function runPass(env: Env): Promise<{ dispatched: number; errors: string[] }> {
+async function runPass(
+  env: Env,
+): Promise<{ dispatched: number; errors: string[]; alertable: string[] }> {
   const e = env as unknown as LibEnv;
   const sql = getDb(env as unknown as Parameters<typeof getDb>[0]);
   const tok = await getAccessToken(e, sql);
-  if (!tok.ok) return { dispatched: 0, errors: [`token: ${tok.detail}`] };
+  if (!tok.ok) return { dispatched: 0, errors: [`token: ${tok.detail}`], alertable: [] };
   const now = Date.now();
   await syncEvents(sql, tok.accessToken, now);
   // End empty/stale bots before dispatching so an empty-room meeting can flip to
@@ -48,15 +50,16 @@ export default {
     if (r.dispatched > 0 || r.errors.length) {
       console.log(`[calendar-cron] dispatched=${r.dispatched} errors=${JSON.stringify(r.errors)}`);
     }
-    // Alert the owner on a real bot-create failure (the silent failure today).
-    // Drop the `token:` early-return: it would fire every single minute while a
-    // Google token is dead — a dead token shows on the dashboard's calendar card
-    // instead. Bot-create errors are backoff-gated (~1 per 5 min per event).
-    const botErrors = r.errors.filter((e) => !e.startsWith("token:"));
-    if (botErrors.length) {
+    // Alert only on alertable failures — hard (config/code) errors or the
+    // attempt cap spent without a bot. Vexa's transient 401/503 flakiness is
+    // retried inline by createBot and again next tick, so it is NOT alerted:
+    // that's the spam the silent-failure feedback feature kept producing on the
+    // vendor's normal hiccups. Token errors never reach `alertable` (a dead
+    // Google token shows on the dashboard's calendar card instead).
+    if (r.alertable.length) {
       await notifyTelegram(
         env,
-        `🔴 Auto-join couldn't start a notetaker (${botErrors.length}): ${botErrors.join(" | ")}`,
+        `🔴 Auto-join couldn't start a notetaker (${r.alertable.length}): ${r.alertable.join(" | ")}`,
       );
     }
   },
