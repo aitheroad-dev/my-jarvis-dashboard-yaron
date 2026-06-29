@@ -3,10 +3,13 @@ main = "src/index.ts"
 compatibility_date = "2024-11-06"
 compatibility_flags = ["nodejs_compat"]
 
-# Fire every minute; the handler dispatches bots for opt-in meetings whose
-# start time has arrived. Shares the dashboard's D1 + the same _lib code.
+# RETIRED 2026-06-29 — Vexa auto-dispatch archived (Path 6 owned recorder replaces it).
+# Empty schedule = worker stays deployable but NEVER fires (an omitted [triggers]
+# section does NOT prune an existing cron — you must pass crons = []). To restore
+# Vexa auto-join, set the cron back to ["* * * * *"] and redeploy. The new recorder's
+# auto-trigger is built separately (box-local).
 [triggers]
-crons = ["* * * * *"]
+crons = []
 
 [[d1_databases]]
 binding = "DB"
