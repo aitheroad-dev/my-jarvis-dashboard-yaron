@@ -32,6 +32,8 @@ const PAGE_LABELS: Record<PageKey, string> = {
   "deployed-sites": "Sites",
   move: "Move",
   rental: "Rental",
+  koop: "Koop",
+  report: "Report",
   situation: "Situation",
   agents: "Agents",
   skills: "Skills",

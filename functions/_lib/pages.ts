@@ -23,6 +23,8 @@ export type PageKey =
   | "deployed-sites"
   | "move"
   | "rental"
+  | "koop"
+  | "report"
   | "situation"
   | "agents"
   | "skills"
@@ -40,6 +42,8 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "deployed-sites",
   "move",
   "rental",
+  "koop",
+  "report",
   "situation",
   "agents",
   "skills",
@@ -64,6 +68,9 @@ export const PAGE_API_PREFIXES: Record<PageKey, string[]> = {
   "deployed-sites": ["/api/deployed-sites"],
   move: ["/api/move"],
   rental: ["/api/rental"],
+  koop: ["/api/koop"],
+  // Report page embeds a static HTML report from /public — no internal /api/* access.
+  report: [],
   situation: ["/api/situation"],
   agents: ["/api/agents"],
   skills: ["/api/skills"],

@@ -14,6 +14,8 @@ import { SpendPage } from "@/components/atomic-crm/spend/SpendPage";
 import { DeployedSitesPage } from "@/components/atomic-crm/deployed-sites/DeployedSitesPage";
 import { MovePage } from "@/components/atomic-crm/move/MovePage";
 import { RentalPage } from "@/components/atomic-crm/rental/RentalPage";
+import { KoopPage } from "@/components/atomic-crm/koop/KoopPage";
+import { ReportPage } from "@/components/atomic-crm/report/ReportPage";
 import { SituationPage } from "@/components/atomic-crm/situation/SituationPage";
 import { AgentsPage } from "@/components/atomic-crm/agents/AgentsPage";
 import { SkillsPage } from "@/components/atomic-crm/skills/SkillsPage";
@@ -61,6 +63,8 @@ export const PAGES: PageDef[] = [
   { key: "deployed-sites", routes: [{ path: "/deployed-sites", element: <DeployedSitesPage /> }] },
   { key: "move", routes: [{ path: "/move", element: <MovePage /> }] },
   { key: "rental", routes: [{ path: "/rental", element: <RentalPage /> }] },
+  { key: "koop", routes: [{ path: "/koop", element: <KoopPage /> }] },
+  { key: "report", routes: [{ path: "/report", element: <ReportPage /> }] },
   { key: "situation", routes: [{ path: "/situation", element: <SituationPage /> }] },
   { key: "agents", routes: [{ path: "/agents", element: <AgentsPage /> }] },
   {
