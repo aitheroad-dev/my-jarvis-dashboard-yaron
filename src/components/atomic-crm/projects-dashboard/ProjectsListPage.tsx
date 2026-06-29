@@ -134,7 +134,7 @@ export function ProjectsListPage() {
     <div style={{
       fontFamily: "Inter, sans-serif",
       boxSizing: "border-box",
-      padding: "40px 48px 80px",
+      padding: "clamp(20px, 5vw, 40px) clamp(14px, 5vw, 48px) 80px",
     }}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         <div style={{ textAlign: "center", padding: "32px 20px 40px", marginBottom: 28 }}>
@@ -145,7 +145,7 @@ export function ProjectsListPage() {
             My Dashboard · Operations
           </div>
           <h1 style={{
-            fontSize: 34, fontWeight: 800, color: T.ink,
+            fontSize: "clamp(26px, 7vw, 34px)", fontWeight: 800, color: T.ink,
             margin: "0 0 14px", letterSpacing: "-0.02em", lineHeight: 1.15,
           }}>
             Projects

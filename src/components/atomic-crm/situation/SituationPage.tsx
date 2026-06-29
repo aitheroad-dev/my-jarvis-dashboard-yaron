@@ -105,7 +105,7 @@ export function SituationPage() {
   const harvestStale = harvestAge !== null && harvestAge >= 2;
 
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", boxSizing: "border-box", padding: "40px 48px 80px" }}>
+    <div style={{ fontFamily: "Inter, sans-serif", boxSizing: "border-box", padding: "clamp(20px, 5vw, 40px) clamp(14px, 5vw, 48px) 80px" }}>
       <div style={{ maxWidth: 920, margin: "0 auto" }}>
         <div style={{ textAlign: "center", padding: "32px 20px 24px" }}>
           <div style={{
@@ -114,7 +114,7 @@ export function SituationPage() {
           }}>
             My Dashboard · Operations
           </div>
-          <h1 style={{ fontSize: 34, fontWeight: 800, color: T.ink, margin: "0 0 14px", letterSpacing: "-0.02em" }}>
+          <h1 style={{ fontSize: "clamp(26px, 7vw, 34px)", fontWeight: 800, color: T.ink, margin: "0 0 14px", letterSpacing: "-0.02em" }}>
             Situation
           </h1>
           <p style={{ fontSize: 16, color: T.ink2, lineHeight: 1.65, maxWidth: 700, margin: "0 auto" }}>

@@ -13,6 +13,7 @@
 
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { architectureT as T } from "./ArchitectureBlocks";
 
 export type SortDir = "asc" | "desc";
@@ -49,6 +50,7 @@ export function SortableTable<R extends Record<string, unknown>>({
   rows, columns, detailHref, rowKey, defaultSort, emptyMessage = "No rows.",
 }: Props<R>) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
   const [sortDir, setSortDir] = useState<SortDir>(defaultSort?.dir ?? "asc");
 
@@ -83,6 +85,53 @@ export function SortableTable<R extends Record<string, unknown>>({
         background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
       }}>
         {emptyMessage}
+      </div>
+    );
+  }
+
+  // Mobile (≤767px): a table with desktop columns squeezes cells into unreadable
+  // slivers. Render each row as a stacked card instead — every column gets a full-
+  // width label/value block, so long text (descriptions, RTL Hebrew) wraps normally.
+  // The whole card stays clickable → detail page, matching the desktop row contract.
+  if (isMobile) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {sortedRows.map(row => {
+          const href = detailHref(row);
+          return (
+            <div
+              key={getKey(row)}
+              onClick={() => navigate(href)}
+              style={{
+                cursor: "pointer",
+                background: T.white,
+                border: `1px solid ${T.line}`,
+                borderRadius: 12,
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              {columns.map(col => (
+                <div key={col.key} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.06em", color: T.skyDark,
+                  }}>
+                    {col.label}
+                  </span>
+                  <div style={{
+                    fontSize: 14, color: T.ink, lineHeight: 1.5,
+                    wordBreak: "break-word", overflowWrap: "anywhere",
+                  }}>
+                    {col.render ? col.render(row) : ((row[col.key] as React.ReactNode) ?? "—")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
     );
   }

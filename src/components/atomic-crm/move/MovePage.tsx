@@ -371,6 +371,7 @@ function InlineCell({
   editing,
   setEditing,
   onCommit,
+  mobileTitleWrap = false,
 }: {
   task: MoveTask;
   field: EditableField;
@@ -378,9 +379,11 @@ function InlineCell({
   editing: EditingCell | null;
   setEditing: (editing: EditingCell | null) => void;
   onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
+  mobileTitleWrap?: boolean;
 }) {
   const isEditing = editing?.id === task.id && editing.field === field;
   const value = textForField(task, field);
+  const mobileTitleWrapStyle: CSSProperties = mobileTitleWrap ? { overflowWrap: "anywhere" } : {};
 
   if (isEditing) {
     return (
@@ -432,6 +435,7 @@ function InlineCell({
         textAlign: "right",
         cursor: "text",
         wordBreak: "break-word",
+        ...mobileTitleWrapStyle,
       }}
     >
       {displayText(value)}
@@ -448,6 +452,7 @@ function TitleCell({
   onCommit,
   onOpenBuy,
   onOpenDetail,
+  isMobile = false,
 }: {
   task: MoveTask;
   editing: EditingCell | null;
@@ -455,7 +460,13 @@ function TitleCell({
   onCommit: (task: MoveTask, field: EditableField, value: string) => Promise<void>;
   onOpenBuy: (task: MoveTask) => void;
   onOpenDetail: (task: MoveTask) => void;
+  isMobile?: boolean;
 }) {
+  const mobileTitleButtonStyle: CSSProperties = isMobile ? { overflowWrap: "anywhere" } : {};
+  const mobileTitleTextStyle: CSSProperties = isMobile
+    ? { minWidth: 0, flex: "1 1 auto", wordBreak: "break-word", overflowWrap: "anywhere", lineHeight: 1.35 }
+    : {};
+
   if (!isBuyItem(task) && hasChecklist(task)) {
     const { done, total } = checklistProgress(task);
     return (
@@ -477,12 +488,20 @@ function TitleCell({
           cursor: "pointer",
           wordBreak: "break-word",
           display: "inline-flex",
-          alignItems: "center",
+          alignItems: isMobile ? "flex-start" : "center",
           gap: 6,
+          ...mobileTitleButtonStyle,
         }}
       >
         <ListChecks style={{ width: 14, height: 14, flex: "0 0 auto" }} />
-        <span style={{ textDecoration: "underline", textDecorationColor: DETAIL_ACCENT_SOFT, textUnderlineOffset: 3 }}>
+        <span
+          style={{
+            textDecoration: "underline",
+            textDecorationColor: DETAIL_ACCENT_SOFT,
+            textUnderlineOffset: 3,
+            ...mobileTitleTextStyle,
+          }}
+        >
           {task.title}
         </span>
         <span
@@ -521,19 +540,35 @@ function TitleCell({
           cursor: "pointer",
           wordBreak: "break-word",
           display: "inline-flex",
-          alignItems: "center",
+          alignItems: isMobile ? "flex-start" : "center",
           gap: 6,
+          ...mobileTitleButtonStyle,
         }}
       >
         <ShoppingCart style={{ width: 14, height: 14, flex: "0 0 auto" }} />
-        <span style={{ textDecoration: "underline", textDecorationColor: BUY_ACCENT_SOFT, textUnderlineOffset: 3 }}>
+        <span
+          style={{
+            textDecoration: "underline",
+            textDecorationColor: BUY_ACCENT_SOFT,
+            textUnderlineOffset: 3,
+            ...mobileTitleTextStyle,
+          }}
+        >
           {task.title}
         </span>
       </button>
     );
   }
   return (
-    <InlineCell task={task} field="title" placeholder="כותרת" editing={editing} setEditing={setEditing} onCommit={onCommit} />
+    <InlineCell
+      task={task}
+      field="title"
+      placeholder="כותרת"
+      editing={editing}
+      setEditing={setEditing}
+      onCommit={onCommit}
+      mobileTitleWrap={isMobile}
+    />
   );
 }
 
@@ -699,11 +734,21 @@ function TaskRow({
           background: doneBg,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <StatusButton task={task} disabled={busy} onToggle={onToggle} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <TitleCell task={task} editing={editing} setEditing={setEditing} onCommit={onCommit} onOpenBuy={onOpenBuy} onOpenDetail={onOpenDetail} />
+          <div style={{ flex: "1 1 auto", minWidth: 0, wordBreak: "break-word", overflowWrap: "anywhere" }}>
+            <TitleCell
+              task={task}
+              editing={editing}
+              setEditing={setEditing}
+              onCommit={onCommit}
+              onOpenBuy={onOpenBuy}
+              onOpenDetail={onOpenDetail}
+              isMobile
+            />
           </div>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, paddingInlineStart: 44 }}>
           <IconButton
             label="פירוט ומשימות משנה"
             disabled={busy}
