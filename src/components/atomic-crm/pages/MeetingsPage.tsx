@@ -285,8 +285,10 @@ function CalendarSection() {
 
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; fg: string; label: string }> = {
+    requested: { bg: T.amberSoft, fg: T.amber, label: "Queued" },
     live: { bg: T.greenSoft, fg: T.green, label: "Live" },
     starting: { bg: T.blueSoft, fg: T.blue, label: "Starting" },
+    transcribing: { bg: T.blueSoft, fg: T.blue, label: "Transcribing" },
     ended: { bg: "#F0EAE3", fg: T.ink3, label: "Ended" },
     failed: { bg: T.redSoft, fg: T.red, label: "Failed" },
     stalled: { bg: T.amberSoft, fg: T.amber, label: "No audio" },
@@ -828,7 +830,7 @@ export function MeetingsPage() {
                       >
                         {m.status === "live"
                           ? `⚠️ ${m.last_error}`
-                          : `Vexa rejected the bot${m.error_status ? ` (${m.error_status})` : ""}: ${m.last_error}`}
+                          : `Recording failed${m.error_status ? ` (${m.error_status})` : ""}: ${m.last_error}`}
                       </div>
                     )}
                   </div>

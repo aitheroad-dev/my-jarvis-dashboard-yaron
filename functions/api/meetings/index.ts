@@ -1,10 +1,14 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import { getDb } from "../../_lib/db";
 import { json, requireUser, type Env as AuthEnv } from "../../_lib/auth";
-import { vexaConfigured, type VexaEnv } from "../../_lib/vexa";
-import { maybeEndMeeting, type MeetingRow } from "../../_lib/meetings";
+import { type VexaEnv } from "../../_lib/vexa";
+import { type MeetingRow } from "../../_lib/meetings";
+import { parseMeetingUrl } from "../../_lib/meeting-url";
 
 interface Env extends AuthEnv, VexaEnv {}
+
+// Languages the transcriber understands; anything else → stored NULL (box default he).
+const ALLOWED_LANGUAGES = new Set(["he", "en", "auto", "es", "fr", "de"]);
 
 /** GET /api/meetings — list meetings, newest first. */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
@@ -33,19 +37,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
        LIMIT ${limit}
     `) as MeetingRow[];
 
-    // Self-heal stale 'live'/'starting' rows: if the Meet has ended (Vexa bot
-    // gone), flip them here so just opening the list reflects reality without a
-    // manual Stop. changed=false → maybeEndMeeting probes bot status. Bounded to
-    // the few non-terminal rows; vendor errors leave status untouched.
-    await Promise.all(
-      rows.map(async (m) => {
-        if (m.status === "live" || m.status === "starting") {
-          m.status = await maybeEndMeeting(env, sql, m, false);
-        }
-      }),
-    );
-
-    return json({ meetings: rows, configured: vexaConfigured(env) });
+    // Vexa is retired — the box recorder owns the meeting lifecycle now (poller
+    // sets 'starting', the completion webhook sets 'ended', the box sweep fails
+    // stale rows). So we no longer probe a vendor here; the list is a pure D1 read.
+    // configured:true always now — the owned recorder bot is the engine.
+    return json({ meetings: rows, configured: true });
   } catch (err) {
     return json(
       { error: "list failed", detail: err instanceof Error ? err.message : String(err) },
@@ -55,15 +51,15 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 };
 
 /**
- * POST /api/meetings — RETIRED 2026-06-29.
+ * POST /api/meetings — queue a recording for the owned recorder bot (Path 6).
  *
- * The Vexa recording engine has been archived in favour of the owned recorder
- * bot (Path 6 — pai-meeting-recorder, screenappai/meeting-bot on the Hetzner
- * box). This manual-create path no longer sends a Vexa bot; it returns 410. The
- * dashboard create + ingest flow is being rebuilt on top of the recorder bot
- * (slices 3–4). The GET above still serves meeting history. The previous Vexa
- * create implementation lives in git history (commit before this change) — to
- * restore Vexa, revert this file and re-enable the calendar-cron schedule.
+ * The dashboard (Cloudflare) cannot reach the box's localhost bot port, so this
+ * does NOT call the bot directly. It writes a `status='requested'` row; a
+ * box-local poller (the meeting-transcriber service, which already holds a D1
+ * token + can reach the bot at localhost:3000) claims it, sends the bot in, and
+ * flips it to 'starting'. On completion the bot's webhook → transcriber correlates
+ * back to this exact row (via teamId=mtg-<id>) and fills the transcript. This is
+ * the manual-create path; calendar auto-join reuses the same queue.
  */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -73,12 +69,42 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     throw res;
   }
 
-  return json(
-    {
-      error: "retired",
-      detail:
-        "Vexa has been retired. Recording now runs on the owned recorder bot (Path 6); the dashboard trigger is being rebuilt on top of it.",
-    },
-    { status: 410 },
-  );
+  let body: { title?: unknown; meeting_url?: unknown; language?: unknown };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ error: "invalid JSON body" }, { status: 400 });
+  }
+
+  const title = typeof body.title === "string" ? body.title.trim() : "";
+  const rawUrl = typeof body.meeting_url === "string" ? body.meeting_url : "";
+  if (!title) return json({ error: "title is required" }, { status: 400 });
+
+  const parsed = parseMeetingUrl(rawUrl);
+  if (!parsed.ok) return json({ error: parsed.error }, { status: 400 });
+
+  const language =
+    typeof body.language === "string" && ALLOWED_LANGUAGES.has(body.language)
+      ? body.language
+      : null;
+
+  // Single-tenant private instance: store the URL as given so the box poller has
+  // everything it needs to hand the bot (incl. any Zoom ?pwd=). Not multi-tenant.
+  const meetingUrl = rawUrl.trim();
+
+  try {
+    const sql = getDb(env);
+    const rows = (await sql/* sql */ `
+      INSERT INTO meetings (title, meeting_url, status, platform, native_meeting_id, language)
+      VALUES (${title}, ${meetingUrl}, 'requested', ${parsed.platform}, ${parsed.nativeMeetingId}, ${language})
+      RETURNING id
+    `) as { id: number }[];
+    const id = rows[0]?.id;
+    return json({ ok: true, id, status: "requested" }, { status: 201 });
+  } catch (err) {
+    return json(
+      { error: "could not queue recording", detail: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
 };

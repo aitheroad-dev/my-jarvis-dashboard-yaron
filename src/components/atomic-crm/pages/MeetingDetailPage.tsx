@@ -46,8 +46,10 @@ type Segment = {
 
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { bg: string; fg: string; label: string }> = {
+    requested: { bg: "#F0EAE3", fg: T.ink3, label: "Queued" },
     live: { bg: T.greenSoft, fg: T.green, label: "Live" },
     starting: { bg: T.blueSoft, fg: T.blue, label: "Starting" },
+    transcribing: { bg: T.blueSoft, fg: T.blue, label: "Transcribing" },
     ended: { bg: "#F0EAE3", fg: T.ink3, label: "Ended" },
     failed: { bg: T.redSoft, fg: T.red, label: "Failed" },
     scheduled: { bg: "#F0EAE3", fg: T.ink3, label: "Scheduled" },
