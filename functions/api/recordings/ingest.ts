@@ -24,14 +24,16 @@ import {
 
 interface Env extends AuthEnv, RecorderProducerEnv {}
 
-// Status rank — monotonic guard so an at-least-once redelivered 'starting' cannot
-// clobber a row that already reached 'ended'. 'failed' may always be set.
+// Status rank — monotonic guard for at-least-once redelivery. 'ended' (set by the
+// result path) is the highest terminal state, so a late redelivered 'failed' or
+// 'starting' can never clobber a settled recording. Status pings apply only when
+// strictly advancing (next > cur).
 const RANK: Record<string, number> = {
   requested: 0,
   starting: 1,
   transcribing: 2,
-  ended: 3,
   failed: 3,
+  ended: 4,
 };
 
 // Match the box's existing transcript column set (see transcriber/d1.ts SEG_COLS).
@@ -71,9 +73,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (msg.kind === "status") {
     const cur = RANK[row.status] ?? 0;
     const next = RANK[msg.status] ?? 0;
-    if (next < cur && msg.status !== "failed") {
-      console.log(`[ingest] job_id=${msg.job_id} non-monotonic ${row.status}→${msg.status} ignored`);
-      return json({ ok: true, ignored: "non-monotonic", from: row.status, to: msg.status });
+    // Apply only when strictly advancing — a redelivered/late 'starting' or 'failed'
+    // can never move a settled row backwards or clobber terminal 'ended'.
+    if (next <= cur) {
+      console.log(`[ingest] job_id=${msg.job_id} non-advancing ${row.status}→${msg.status} ignored`);
+      return json({ ok: true, ignored: "non-advancing", from: row.status, to: msg.status });
     }
     await sql`
       UPDATE meetings

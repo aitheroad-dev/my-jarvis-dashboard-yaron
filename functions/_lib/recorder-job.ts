@@ -24,6 +24,11 @@ export interface JobContract {
   language: string | null; // he|en|auto|es|fr|de ; null = box default (he)
   ingest_url: string; // this fork's POST /api/recordings/ingest
   ingest_secret: string; // per-fork HMAC key for the callback (not a DB token)
+  // Per-fork audio isolation: the bucket this fork's recording should land in.
+  // Carried NOW so the contract is forward-compatible; the box-side per-fork upload
+  // routing is wired in P1 (P0 uses the box's single configured bucket).
+  r2_bucket: string | null;
+  audio_ref: string | null; // optional pointer to the stored recording (set on result)
   created_at: string; // ISO
   attempts: number; // producer sets 0
 }
@@ -108,4 +113,5 @@ export interface RecorderProducerEnv {
   INGEST_SECRET?: string;
   RECORDER_TENANT_ID?: string;
   RECORDER_INGEST_URL?: string;
+  RECORDER_R2_BUCKET?: string; // this fork's audio bucket (forward-compat; P1 wiring)
 }

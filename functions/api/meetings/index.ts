@@ -30,6 +30,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 
   try {
     const sql = getDb(env);
+    // Fork-side stale sweep (ISC-46): in queue mode the box no longer runs the D1
+    // sweep, so fail rows that never completed within 4h (covers enqueued-but-never-
+    // pulled orphans). Best-effort — never block the list. Idempotent + safe in both
+    // d1poll and queue modes.
+    const staleCutoff = new Date(Date.now() - 4 * 3600_000).toISOString();
+    await sql`
+      UPDATE meetings SET status='failed', last_error='stale: no completion within 4h'
+       WHERE status IN ('requested','starting') AND created_at < ${staleCutoff}
+    `.catch(() => []);
+
     const rows = (await sql/* sql */ `
       SELECT id, title, meeting_url, platform, native_meeting_id, bot_id, status,
              summary, started_at, ended_at, created_at, last_error, error_status
@@ -122,6 +132,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         language,
         ingest_url: env.RECORDER_INGEST_URL,
         ingest_secret: env.INGEST_SECRET,
+        r2_bucket: env.RECORDER_R2_BUCKET ?? null,
+        audio_ref: null,
         created_at: new Date().toISOString(),
         attempts: 0,
       };
