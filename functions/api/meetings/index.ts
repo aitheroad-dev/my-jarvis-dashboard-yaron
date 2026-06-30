@@ -4,8 +4,9 @@ import { json, requireUser, type Env as AuthEnv } from "../../_lib/auth";
 import { type VexaEnv } from "../../_lib/vexa";
 import { type MeetingRow } from "../../_lib/meetings";
 import { parseMeetingUrl } from "../../_lib/meeting-url";
+import { type JobContract, type RecorderProducerEnv } from "../../_lib/recorder-job";
 
-interface Env extends AuthEnv, VexaEnv {}
+interface Env extends AuthEnv, VexaEnv, RecorderProducerEnv {}
 
 // Languages the transcriber understands; anything else → stored NULL (box default he).
 const ALLOWED_LANGUAGES = new Set(["he", "en", "auto", "es", "fr", "de"]);
@@ -88,19 +89,57 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       ? body.language
       : null;
 
-  // Single-tenant private instance: store the URL as given so the box poller has
-  // everything it needs to hand the bot (incl. any Zoom ?pwd=). Not multi-tenant.
+  // Store the URL as given so the recorder has everything it needs to hand the
+  // bot (incl. any Zoom ?pwd=).
   const meetingUrl = rawUrl.trim();
+
+  // Tenant-scoped correlation key (multi-tenant P0): the box echoes this through
+  // the bot teamId and the ingest callback matches the completed recording back to
+  // this row by job_id — replacing the single-DB mtg-<id> trick.
+  const jobId = crypto.randomUUID();
 
   try {
     const sql = getDb(env);
     const rows = (await sql/* sql */ `
-      INSERT INTO meetings (title, meeting_url, status, platform, native_meeting_id, language)
-      VALUES (${title}, ${meetingUrl}, 'requested', ${parsed.platform}, ${parsed.nativeMeetingId}, ${language})
+      INSERT INTO meetings (title, meeting_url, status, platform, native_meeting_id, language, job_id)
+      VALUES (${title}, ${meetingUrl}, 'requested', ${parsed.platform}, ${parsed.nativeMeetingId}, ${language}, ${jobId})
       RETURNING id
     `) as { id: number }[];
     const id = rows[0]?.id;
-    return json({ ok: true, id, status: "requested" }, { status: 201 });
+
+    // Best-effort enqueue onto the shared control plane. The 'requested' row above
+    // is the source of truth; if the queue is unbound/down this is a NO-OP and the
+    // legacy box D1-poller still picks the row up. Failure is logged LOUDLY (never
+    // silently swallowed) so a chronically-failing queue is visible BEFORE cutover.
+    let enqueued = false;
+    if (env.RECORDER_QUEUE && env.INGEST_SECRET && env.RECORDER_INGEST_URL) {
+      const job: JobContract = {
+        job_id: jobId,
+        tenant_id: env.RECORDER_TENANT_ID ?? "yaron",
+        meeting_url: meetingUrl,
+        platform: parsed.platform,
+        native_id: parsed.nativeMeetingId,
+        language,
+        ingest_url: env.RECORDER_INGEST_URL,
+        ingest_secret: env.INGEST_SECRET,
+        created_at: new Date().toISOString(),
+        attempts: 0,
+      };
+      try {
+        await env.RECORDER_QUEUE.send(job);
+        enqueued = true;
+      } catch (e) {
+        console.error(
+          `[recorder] ENQUEUE FAILED job_id=${jobId} id=${id}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    } else {
+      console.warn(
+        `[recorder] queue not bound (need RECORDER_QUEUE+INGEST_SECRET+RECORDER_INGEST_URL) — job_id=${jobId} relies on d1poll`,
+      );
+    }
+
+    return json({ ok: true, id, status: "requested", job_id: jobId, enqueued }, { status: 201 });
   } catch (err) {
     return json(
       { error: "could not queue recording", detail: err instanceof Error ? err.message : String(err) },

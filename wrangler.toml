@@ -19,6 +19,10 @@ ACCESS_ALLOWED_EMAILS = "aitheroad@gmail.com,noabarkai@gmail.com"
 ACCESS_MOVE_ONLY_EMAILS = "noabarkai@gmail.com"
 # Public base URL of the R2 voice bucket; audio_url = ${VOICE_PUBLIC_URL}/<id>.mp3
 VOICE_PUBLIC_URL = "https://pub-6fcd8a707615437da46fb97b8be570ba.r2.dev"
+# Multi-tenant recorder (P0): this fork's identity + the callback URL the box uses
+# to hand results back. INGEST_SECRET is a Pages SECRET (not here). See ISA_MULTITENANT.md.
+RECORDER_TENANT_ID = "yaron"
+RECORDER_INGEST_URL = "https://my-jarvis-dashboard-yaron.pages.dev/api/recordings/ingest"
 
 # Data store: Cloudflare D1 (SQLite). Replaces Neon Postgres — no DATABASE_URL secret.
 [[d1_databases]]
@@ -35,3 +39,11 @@ bucket_name = "mjd-yaron-voice"
 # In-platform, no API key, EU edge. Bound as env.AI.
 [ai]
 binding = "AI"
+
+# Multi-tenant meeting recorder (P0) — shared control plane. POST /api/meetings
+# enqueues a job here; the box PULLS it (HTTP pull consumer) and hands results back
+# via POST /api/recordings/ingest (HMAC INGEST_SECRET). The box never holds this
+# fork's D1 token. See pai-meeting-recorder/ISA_MULTITENANT.md.
+[[queues.producers]]
+queue = "recorder-jobs"
+binding = "RECORDER_QUEUE"
