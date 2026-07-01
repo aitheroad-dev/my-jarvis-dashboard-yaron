@@ -21,23 +21,44 @@ export interface CreateRecordingJobArgs {
 }
 
 export type CreateRecordingJobResult =
-  | { ok: true; id: number; jobId: string; enqueued: boolean }
+  | { ok: true; id: number; jobId: string; enqueued: boolean; reused?: boolean }
   | { ok: false; detail: string };
 
 /**
- * Write the local `requested` row (uuid job_id) and enqueue the job. The row is
- * the source of truth; a failed enqueue returns `enqueued:false` + is logged
- * LOUDLY — NEVER swallowed as success (feedback_failed_query_not_negative). The
- * caller decides how to surface `enqueued:false` (the manual POST reports it; the
- * calendar path marks the row 'failed' so it's visible + retryable in-window).
+ * Idempotently start ONE recording per meeting code. Both triggers call this — the
+ * manual button and the calendar auto-join cron — and auto_join defaults ON for
+ * every Meet event, so the SAME occurrence can arrive from both paths. The shared
+ * in-flight reuse guard + a partial unique index (migration 020) make "one active
+ * recording per code" atomic even under a simultaneous manual-click + cron-tick →
+ * never two bots on one meeting (Forge C1).
+ *
+ * On enqueue failure the row is marked 'failed' HERE so a phantom 'requested' can
+ * never suppress the cron safety net (Forge C2): a failed enqueue is a real
+ * non-record, surfaced + logged LOUDLY, NEVER a silent success
+ * (feedback_failed_query_not_negative). Returns reused:true when an in-flight row
+ * already existed (no second job enqueued).
  */
 export async function createRecordingJob(
   env: RecorderProducerEnv,
   sql: ReturnType<typeof getDb>,
   args: CreateRecordingJobArgs,
 ): Promise<CreateRecordingJobResult> {
-  const jobId = crypto.randomUUID();
+  // Reuse an already-in-flight recording for this code instead of starting a second
+  // (manual button + cron both target auto_join meetings). Tradeoff: a genuinely
+  // stuck in-flight row from a PRIOR occurrence would be reused — acceptable because
+  // the 4h stale sweep flips stuck rows to 'failed' and recurring occurrences are
+  // >24h apart, so it never bites in practice.
+  const existing = (await sql/* sql */ `
+    SELECT id, job_id FROM meetings
+     WHERE platform = ${args.platform} AND native_meeting_id = ${args.nativeId}
+       AND status IN ('requested','starting','transcribing')
+     LIMIT 1
+  `) as { id: number; job_id: string | null }[];
+  if (existing[0]) {
+    return { ok: true, id: existing[0].id, jobId: existing[0].job_id ?? "", enqueued: false, reused: true };
+  }
 
+  const jobId = crypto.randomUUID();
   let id: number | undefined;
   try {
     const rows = (await sql/* sql */ `
@@ -47,6 +68,17 @@ export async function createRecordingJob(
     `) as { id: number }[];
     id = rows[0]?.id;
   } catch (e) {
+    // Partial unique index tripped — a concurrent producer won the race for this
+    // code. Reuse its in-flight row rather than double-enqueue.
+    const raced = (await sql/* sql */ `
+      SELECT id, job_id FROM meetings
+       WHERE platform = ${args.platform} AND native_meeting_id = ${args.nativeId}
+         AND status IN ('requested','starting','transcribing')
+       LIMIT 1
+    `) as { id: number; job_id: string | null }[];
+    if (raced[0]) {
+      return { ok: true, id: raced[0].id, jobId: raced[0].job_id ?? "", enqueued: false, reused: true };
+    }
     return { ok: false, detail: `insert failed: ${e instanceof Error ? e.message : String(e)}` };
   }
   if (id === undefined) return { ok: false, detail: "insert returned no row" };
@@ -79,6 +111,17 @@ export async function createRecordingJob(
     console.warn(
       `[recorder] queue not bound (need RECORDER_QUEUE+INGEST_SECRET+RECORDER_INGEST_URL) — job_id=${jobId} id=${id}`,
     );
+  }
+
+  if (!enqueued) {
+    // Row written but the job never reached the queue → in queue mode it will NEVER
+    // record. Mark it 'failed' so /meetings shows it, callers report the truth, and
+    // the cron handled-check (which excludes 'failed') can retry within the window.
+    // A phantom 'requested' would instead silently suppress every future cron tick.
+    await sql/* sql */ `
+      UPDATE meetings SET status = 'failed', last_error = 'enqueue failed (queue unbound/down)'
+       WHERE id = ${id}
+    `.catch(() => {});
   }
 
   return { ok: true, id, jobId, enqueued };

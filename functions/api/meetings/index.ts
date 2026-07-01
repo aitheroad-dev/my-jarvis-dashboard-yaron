@@ -35,10 +35,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     // sweep, so fail rows that never completed within 4h (covers enqueued-but-never-
     // pulled orphans). Best-effort — never block the list. Idempotent + safe in both
     // d1poll and queue modes.
+    // Include 'transcribing': the recorder partial unique index (migration 020)
+    // makes 'transcribing' an ACTIVE state, so a row wedged there (box crash mid-
+    // transcription) would block the next occurrence of a recurring Meet code
+    // forever. The 4h cutoff safely exceeds max transcription time (~1.4x realtime).
     const staleCutoff = new Date(Date.now() - 4 * 3600_000).toISOString();
     await sql`
       UPDATE meetings SET status='failed', last_error='stale: no completion within 4h'
-       WHERE status IN ('requested','starting') AND created_at < ${staleCutoff}
+       WHERE status IN ('requested','starting','transcribing') AND created_at < ${staleCutoff}
     `.catch(() => []);
 
     const rows = (await sql/* sql */ `
@@ -118,8 +122,25 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (!result.ok) {
     return json({ error: "could not queue recording", detail: result.detail }, { status: 500 });
   }
+  if (result.reused) {
+    // An in-flight recording for this meeting already exists (e.g. the calendar cron
+    // already sent the bot) — idempotent success, no second bot (Forge C1).
+    return json(
+      { ok: true, id: result.id, status: "requested", job_id: result.jobId, enqueued: false, reused: true },
+      { status: 200 },
+    );
+  }
+  if (!result.enqueued) {
+    // Row written but the recorder queue was unreachable — the row is marked 'failed'
+    // and this is surfaced as a real error so the user retries. Returning 201 here
+    // would be a silent non-record behind a success code (Forge C2).
+    return json(
+      { error: "recorder queue unavailable — meeting not started, please retry", id: result.id, job_id: result.jobId },
+      { status: 503 },
+    );
+  }
   return json(
-    { ok: true, id: result.id, status: "requested", job_id: result.jobId, enqueued: result.enqueued },
+    { ok: true, id: result.id, status: "requested", job_id: result.jobId, enqueued: true },
     { status: 201 },
   );
 };

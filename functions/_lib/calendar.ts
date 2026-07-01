@@ -358,27 +358,23 @@ export async function enqueueDue(
     });
 
     const label = ev.title?.trim() || ev.google_event_id;
-    if (r.ok && r.enqueued) {
-      // Success. Do NOT reset attempt_count (the cap bounds total dispatches per
-      // occurrence — the empty-room storm guard; the handled-check stops dispatch
-      // once a bot captures transcript).
+    if (r.ok && (r.enqueued || r.reused)) {
+      // Enqueued a fresh job, OR an in-flight recording already exists for this code
+      // (the manual button beat the cron — createRecordingJob reused it). Either way
+      // the occurrence is now being handled: record the row id. Do NOT reset
+      // attempt_count (the cap bounds total dispatches per occurrence — the empty-
+      // room storm guard). Only a fresh enqueue counts as a dispatch.
       await sql/* sql */ `
         UPDATE calendar_events SET dispatched_meeting_id = ${r.id}
          WHERE google_event_id = ${ev.google_event_id}
       `;
-      dispatched++;
+      if (r.enqueued) dispatched++;
     } else {
-      // Failure — surfaced, never silent (feedback_failed_query_not_negative). If
-      // the row WAS written but the enqueue failed, mark it 'failed' + last_error so
-      // it shows on /meetings AND the occurrence handled-check (which excludes
-      // 'failed') lets a later in-window tick retry. In queue mode a row that never
-      // reached the queue will never record, so this is a real failure, not a blip.
+      // Failure — surfaced, never silent (feedback_failed_query_not_negative). When
+      // the row was written but the enqueue failed, createRecordingJob already marked
+      // it 'failed' + last_error, so /meetings shows it AND the occurrence handled-
+      // check (which excludes 'failed') lets a later in-window tick retry.
       const detail = r.ok ? "enqueue failed (queue unbound/down)" : r.detail;
-      if (r.ok) {
-        await sql/* sql */ `
-          UPDATE meetings SET status = 'failed', last_error = ${detail} WHERE id = ${r.id}
-        `;
-      }
       errors.push(`${ev.google_event_id}: ${detail}`);
       const exhausted = ev.attempt_count + 1 >= MAX_ATTEMPTS;
       const lastInWindow = nowMs + RETRY_BACKOFF_MS > endMs + END_GRACE_MS;

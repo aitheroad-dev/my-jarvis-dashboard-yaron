@@ -16,6 +16,8 @@ export type PageKey =
   | "move"
   | "rental"
   | "koop"
+  | "koop-plots"
+  | "finding-a-farm"
   | "report"
   | "situation"
   | "agents"
@@ -35,6 +37,8 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "move",
   "rental",
   "koop",
+  "koop-plots",
+  "finding-a-farm",
   "report",
   "situation",
   "agents",

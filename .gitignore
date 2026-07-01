@@ -25,3 +25,4 @@ dist-ssr
 *.playwright
 lilach-*.png
 .secrets/
+public/farm-view/

@@ -24,6 +24,8 @@ export type PageKey =
   | "move"
   | "rental"
   | "koop"
+  | "koop-plots"
+  | "finding-a-farm"
   | "report"
   | "situation"
   | "agents"
@@ -43,6 +45,8 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "move",
   "rental",
   "koop",
+  "koop-plots",
+  "finding-a-farm",
   "report",
   "situation",
   "agents",
@@ -69,6 +73,9 @@ export const PAGE_API_PREFIXES: Record<PageKey, string[]> = {
   move: ["/api/move"],
   rental: ["/api/rental"],
   koop: ["/api/koop"],
+  "koop-plots": ["/api/koop-plots"],
+  // Finding a Farm embeds a static export from /public (/farm-view) — no internal /api/* access.
+  "finding-a-farm": [],
   // Report page embeds a static HTML report from /public — no internal /api/* access.
   report: [],
   situation: ["/api/situation"],

@@ -4,13 +4,13 @@ import { useApi } from "@/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { architectureT as T } from "../blueprint/ArchitectureBlocks";
 
-// Read-only mirror of the NL FOR-SALE value radar. Data comes from D1
-// (`/api/koop`), repopulated nightly (02:00) by the Hetzner box: the top-200
-// most-underpriced koop listings nationally by PEER-RELATIVE €/m² (each home vs
-// comparable homes — same type, similar size, same locality). Fresh-listings
-// radar (NL koop is ~110k listings; coverage accumulates).
+// Read-only mirror of the NL FOR-SALE large-plots radar. Data comes from D1
+// (`/api/koop-plots`), repopulated nightly (02:00) by the Hetzner box: koop
+// listings whose PLOT (land) area is ≥1,000 m², ranked by the CHEAPEST €/m² of
+// plot (asking price ÷ plot size = best land value first). Plot size is parsed
+// from each Funda card's raw text. Sibling of KoopPage (the value radar).
 
-type KoopDeal = {
+type PlotDeal = {
   id: string;
   rank: number | null;
   url: string;
@@ -19,29 +19,25 @@ type KoopDeal = {
   province: string | null;
   postcode: string | null;
   price_eur: number | null;
-  area_m2: number | null;
-  eur_per_m2: number | null;
+  plot_m2: number | null;
+  living_m2: number | null;
+  eur_per_plot_m2: number | null;
   property_type: string | null;
-  peer_tier: string | null;
-  peer_count: number | null;
-  peer_median_eur_per_m2: number | null;
-  delta_pct: number | null;
 };
 
-type KoopSummary = {
+type PlotSummary = {
   count: number;
-  best: number | null;
+  cheapest: number | null;
   median: number | null;
+  biggestPlot: number | null;
   houses: number;
   apartments: number;
-  cityTier: number;
   lastSync: string;
 };
 
-type KoopResponse = { deals: KoopDeal[]; summary: KoopSummary };
+type PlotResponse = { deals: PlotDeal[]; summary: PlotSummary };
 
 type TypeFilter = "all" | "house" | "apartment";
-type TierFilter = "all" | "city" | "province";
 
 function euro(v: number | null): string {
   if (v == null) return "—";
@@ -53,12 +49,12 @@ function perM2(v: number | null): string {
   return "€" + Math.round(v).toLocaleString("nl-NL");
 }
 
-function deltaText(v: number | null): string {
+function area(v: number | null): string {
   if (v == null) return "—";
-  return (v > 0 ? "+" : "") + v.toFixed(0) + "%";
+  return Math.round(v).toLocaleString("nl-NL") + " m²";
 }
 
-function locationText(d: KoopDeal): string {
+function locationText(d: PlotDeal): string {
   const city = d.city ? d.city.replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
   return d.province ? `${city} · ${d.province.replace(/-/g, " ")}` : city;
 }
@@ -91,7 +87,7 @@ function Badge({ text, fg, bg, bd }: { text: string; fg: string; bg: string; bd:
   );
 }
 
-function TypeBadge({ d }: { d: KoopDeal }) {
+function TypeBadge({ d }: { d: PlotDeal }) {
   if (d.property_type === "apartment") return <Badge text="Apartment" fg={T.skyDark} bg={T.skySoft} bd={T.sky} />;
   if (d.property_type === "house") return <Badge text="House" fg={T.green} bg={T.greenSoft} bd={T.green} />;
   return <Badge text={d.property_type ?? "—"} fg={T.ink3} bg={T.bg2} bd={T.line} />;
@@ -127,9 +123,9 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-const GRID = "44px minmax(180px, 2.2fr) minmax(130px, 1.2fr) 100px 70px 80px 90px 96px";
+const GRID = "44px minmax(170px, 2.1fr) minmax(120px, 1.1fr) 104px 96px 84px 84px 96px";
 
-type SortKey = "rank" | "listing" | "location" | "price" | "size" | "eur_per_m2" | "delta" | "type";
+type SortKey = "rank" | "listing" | "location" | "price" | "plot" | "eur_per_plot_m2" | "living" | "type";
 type SortDir = "asc" | "desc";
 
 // Header columns in grid order. Every column is click-to-sort.
@@ -138,27 +134,27 @@ const SORT_COLS: { key: SortKey; label: string }[] = [
   { key: "listing", label: "LISTING" },
   { key: "location", label: "LOCATION" },
   { key: "price", label: "PRICE" },
-  { key: "size", label: "SIZE" },
-  { key: "eur_per_m2", label: "€/M²" },
-  { key: "delta", label: "VS PEERS" },
+  { key: "plot", label: "PLOT" },
+  { key: "eur_per_plot_m2", label: "€/M²" },
+  { key: "living", label: "LIVING" },
   { key: "type", label: "TYPE" },
 ];
 
-function sortValue(d: KoopDeal, key: SortKey): number | string | null {
+function sortValue(d: PlotDeal, key: SortKey): number | string | null {
   switch (key) {
     case "rank": return d.rank;
     case "listing": return (d.title?.trim() || d.city || d.url || "").toLowerCase();
     case "location": return locationText(d).toLowerCase();
     case "price": return d.price_eur;
-    case "size": return d.area_m2;
-    case "eur_per_m2": return d.eur_per_m2;
-    case "delta": return d.delta_pct;
+    case "plot": return d.plot_m2;
+    case "eur_per_plot_m2": return d.eur_per_plot_m2;
+    case "living": return d.living_m2;
     case "type": return d.property_type;
   }
 }
 
 // Stable sort; missing values (null / NaN) always sink to the bottom regardless of direction.
-function sortDeals(deals: KoopDeal[], key: SortKey, dir: SortDir): KoopDeal[] {
+function sortDeals(deals: PlotDeal[], key: SortKey, dir: SortDir): PlotDeal[] {
   return [...deals].sort((a, b) => {
     const av = sortValue(a, key);
     const bv = sortValue(b, key);
@@ -175,9 +171,8 @@ function sortDeals(deals: KoopDeal[], key: SortKey, dir: SortDir): KoopDeal[] {
   });
 }
 
-function DealRow({ d, isMobile }: { d: KoopDeal; isMobile: boolean }) {
+function DealRow({ d, isMobile }: { d: PlotDeal; isMobile: boolean }) {
   const title = d.title?.trim() || d.city || d.url;
-  const strong = d.delta_pct != null && d.delta_pct <= -25;
 
   if (isMobile) {
     return (
@@ -186,16 +181,13 @@ function DealRow({ d, isMobile }: { d: KoopDeal; isMobile: boolean }) {
           <a href={d.url} target="_blank" rel="noreferrer" style={{ color: T.ink, fontWeight: 700, fontSize: 14, lineHeight: 1.35, textDecoration: "none", wordBreak: "break-word" }}>
             {d.rank != null ? `#${d.rank} · ` : ""}{title}
           </a>
-          <div style={{ fontWeight: 800, color: strong ? T.green : T.ink, whiteSpace: "nowrap" }}>{deltaText(d.delta_pct)}</div>
+          <div style={{ fontWeight: 800, color: T.green, whiteSpace: "nowrap" }}>{perM2(d.eur_per_plot_m2)}/m²</div>
         </div>
         <div style={{ color: T.ink2, fontSize: 12, marginTop: 4 }}>
-          {locationText(d)} · {euro(d.price_eur)} · {d.area_m2 != null ? `${Math.round(d.area_m2)} m²` : "—"} · {perM2(d.eur_per_m2)}/m²
+          {locationText(d)} · {euro(d.price_eur)} · plot {area(d.plot_m2)} · living {area(d.living_m2)}
         </div>
-        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ marginTop: 8 }}>
           <TypeBadge d={d} />
-          <span style={{ color: T.ink3, fontSize: 11, fontWeight: 700 }}>
-            vs {perM2(d.peer_median_eur_per_m2)}/m² ({d.peer_tier}, n={d.peer_count ?? "—"})
-          </span>
         </div>
       </div>
     );
@@ -209,25 +201,22 @@ function DealRow({ d, isMobile }: { d: KoopDeal; isMobile: boolean }) {
       </a>
       <span style={{ color: T.ink2, fontSize: 13 }}>{locationText(d)}</span>
       <span style={{ color: T.ink, fontSize: 13, fontWeight: 700 }}>{euro(d.price_eur)}</span>
-      <span style={{ color: T.ink2, fontSize: 13 }}>{d.area_m2 != null ? `${Math.round(d.area_m2)}m²` : "—"}</span>
-      <span style={{ color: T.ink2, fontSize: 13 }}>{perM2(d.eur_per_m2)}</span>
-      <span style={{ color: strong ? T.green : T.ink2, fontSize: 13, fontWeight: strong ? 800 : 500 }} title={`vs local peer median ${perM2(d.peer_median_eur_per_m2)}/m² (${d.peer_tier}, n=${d.peer_count ?? "—"})`}>
-        {deltaText(d.delta_pct)}
-      </span>
+      <span style={{ color: T.ink, fontSize: 13, fontWeight: 700 }}>{area(d.plot_m2)}</span>
+      <span style={{ color: T.green, fontSize: 13, fontWeight: 800 }} title="asking price ÷ plot size">{perM2(d.eur_per_plot_m2)}</span>
+      <span style={{ color: T.ink2, fontSize: 13 }}>{area(d.living_m2)}</span>
       <TypeBadge d={d} />
     </div>
   );
 }
 
-export function KoopPage() {
+export function KoopPlotsPage() {
   const api = useApi();
   const isMobile = useIsMobile();
-  const [data, setData] = useState<KoopResponse | null>(null);
+  const [data, setData] = useState<PlotResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<TypeFilter>("all");
-  const [tier, setTier] = useState<TierFilter>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("rank");
+  const [sortKey, setSortKey] = useState<SortKey>("eur_per_plot_m2");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const onSort = useCallback((key: SortKey) => {
@@ -236,7 +225,6 @@ export function KoopPage() {
         setSortDir((d) => (d === "asc" ? "desc" : "asc"));
         return prevKey;
       }
-      // New column: numbers default low→high (cheapest / best-deal first); text A→Z.
       setSortDir("asc");
       return key;
     });
@@ -245,13 +233,13 @@ export function KoopPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api("/api/koop");
+      const res = await api("/api/koop-plots");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as KoopResponse;
+      const json = (await res.json()) as PlotResponse;
       setData(json);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load deals");
+      setError(e instanceof Error ? e.message : "Failed to load plots");
     } finally {
       setLoading(false);
     }
@@ -264,7 +252,6 @@ export function KoopPage() {
   const all = data?.deals ?? [];
   const filtered = all.filter((d) => {
     if (type !== "all" && d.property_type !== type) return false;
-    if (tier !== "all" && d.peer_tier !== tier) return false;
     return true;
   });
   const sorted = sortDeals(filtered, sortKey, sortDir);
@@ -277,7 +264,7 @@ export function KoopPage() {
         <div style={{ marginBottom: 22 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: T.skyDark, marginBottom: 8 }}>NL FOR SALE</div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.ink, margin: 0, letterSpacing: "-0.02em" }}>🔑 Value radar</h1>
+            <h1 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.ink, margin: 0, letterSpacing: "-0.02em" }}>🌳 Large plots</h1>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 12, color: T.ink3, fontWeight: 600 }}>Updated {s ? lastSyncText(s.lastSync) : "—"}</span>
               <button
@@ -293,17 +280,17 @@ export function KoopPage() {
             </div>
           </div>
           <p style={{ fontSize: isMobile ? 14 : 15, color: T.ink2, lineHeight: 1.6, margin: "10px 0 0", maxWidth: 820 }}>
-            The 200 most <strong>underpriced</strong> for-sale homes in NL by <strong>€/m² vs local peers</strong> (same type, similar size, same city/province).
-            Scraped from Funda nightly. A negative number = below its local market. Biggest discounts skew to cheaper regions + fixer-uppers; <strong>city-tier</strong> rows are underpriced even for their own city.
+            For-sale homes on a <strong>large plot</strong> (≥1,000 m² of land), ranked by the <strong>cheapest €/m² of plot</strong> (asking price ÷ plot size).
+            Plot size is read from each Funda card. Lowest €/m² = best land value — these skew to rural regions where land is cheap.
           </p>
         </div>
 
         {/* Summary cards */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
-          <SummaryCard label="DEALS" value={s?.count ?? "—"} accent={T.ink} />
-          <SummaryCard label="BEST" value={s?.best != null ? deltaText(s.best) : "—"} accent={T.green} />
-          <SummaryCard label="MEDIAN" value={s?.median != null ? deltaText(s.median) : "—"} accent={T.skyDark} />
-          <SummaryCard label="CITY-TIER" value={s?.cityTier ?? "—"} accent={T.amber} />
+          <SummaryCard label="PLOTS" value={s?.count ?? "—"} accent={T.ink} />
+          <SummaryCard label="CHEAPEST €/M²" value={s?.cheapest != null ? perM2(s.cheapest) : "—"} accent={T.green} />
+          <SummaryCard label="MEDIAN €/M²" value={s?.median != null ? perM2(s.median) : "—"} accent={T.skyDark} />
+          <SummaryCard label="BIGGEST PLOT" value={s?.biggestPlot != null ? area(s.biggestPlot) : "—"} accent={T.amber} />
           <SummaryCard label="HOUSES" value={s?.houses ?? "—"} accent={T.ink3} />
           <SummaryCard label="APTS" value={s?.apartments ?? "—"} accent={T.ink3} />
         </div>
@@ -313,10 +300,6 @@ export function KoopPage() {
           <FilterChip label="All types" active={type === "all"} onClick={() => setType("all")} />
           <FilterChip label="Houses" active={type === "house"} onClick={() => setType("house")} />
           <FilterChip label="Apartments" active={type === "apartment"} onClick={() => setType("apartment")} />
-          <span style={{ width: 1, height: 22, background: T.line, margin: "0 4px" }} />
-          <FilterChip label="All tiers" active={tier === "all"} onClick={() => setTier("all")} />
-          <FilterChip label="City" active={tier === "city"} onClick={() => setTier("city")} />
-          <FilterChip label="Province" active={tier === "province"} onClick={() => setTier("province")} />
           {isMobile && (
             <select
               value={`${sortKey}:${sortDir}`}
@@ -325,17 +308,16 @@ export function KoopPage() {
                 setSortKey(k as SortKey);
                 setSortDir(dir as SortDir);
               }}
-              aria-label="Sort deals"
+              aria-label="Sort plots"
               style={{ marginLeft: "auto", border: `1px solid ${T.line}`, background: T.white, color: T.ink2, borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
             >
-              <option value="rank:asc">Sort: Rank</option>
+              <option value="eur_per_plot_m2:asc">€/m² ↑ (cheapest)</option>
+              <option value="eur_per_plot_m2:desc">€/m² ↓</option>
+              <option value="plot:desc">Plot ↓ (biggest)</option>
+              <option value="plot:asc">Plot ↑</option>
               <option value="price:asc">Price ↑</option>
               <option value="price:desc">Price ↓</option>
-              <option value="size:asc">Size ↑</option>
-              <option value="size:desc">Size ↓</option>
-              <option value="eur_per_m2:asc">€/m² ↑</option>
-              <option value="eur_per_m2:desc">€/m² ↓</option>
-              <option value="delta:asc">vs peers ↑</option>
+              <option value="living:desc">Living ↓</option>
               <option value="location:asc">Location A–Z</option>
             </select>
           )}
@@ -385,18 +367,18 @@ export function KoopPage() {
               <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} /> Loading…
             </div>
           ) : sorted.length === 0 ? (
-            <div style={{ padding: 28, fontSize: 14, color: T.ink3 }}>No deals for this filter.</div>
+            <div style={{ padding: 28, fontSize: 14, color: T.ink3 }}>No large plots for this filter.</div>
           ) : (
             sorted.map((d) => <DealRow key={d.id} d={d} isMobile={isMobile} />)
           )}
         </div>
 
         <div style={{ marginTop: 12, fontSize: 12, color: T.ink3 }}>
-          Showing {filtered.length} of {all.length} ranked deals · source: Funda koop via the box pipeline (nightly).
+          Showing {sorted.length} of {all.length} large-plot listings · plot ≥ 1,000 m² · source: Funda koop via the box pipeline (nightly).
         </div>
       </div>
     </div>
   );
 }
 
-(KoopPage as unknown as { path: string }).path = "/koop";
+(KoopPlotsPage as unknown as { path: string }).path = "/koop-plots";
