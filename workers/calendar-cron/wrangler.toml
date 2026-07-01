@@ -3,23 +3,36 @@ main = "src/index.ts"
 compatibility_date = "2024-11-06"
 compatibility_flags = ["nodejs_compat"]
 
-# RETIRED 2026-06-29 — Vexa auto-dispatch archived (Path 6 owned recorder replaces it).
-# Empty schedule = worker stays deployable but NEVER fires (an omitted [triggers]
-# section does NOT prune an existing cron — you must pass crons = []). To restore
-# Vexa auto-join, set the cron back to ["* * * * *"] and redeploy. The new recorder's
-# auto-trigger is built separately (box-local).
+# Calendar auto-join for the OWNED recorder (Path 6, multi-tenant P2 — 2026-07-01).
+# Every minute this syncs Google Calendar into D1 and ENQUEUES a recorder job for
+# each opt-in meeting whose start has arrived. The box is the queue's HTTP pull
+# consumer: it records → transcribes → HMAC-POSTs the result to this fork's
+# /api/recordings/ingest. The cron never touches the box; it only reads this fork's
+# calendar_events and writes this fork's meetings (fork-local — replicates per fork).
+# Vexa retired 2026-06-29; the Vexa-era auto-dispatch is now an enqueue.
 [triggers]
-crons = []
+crons = ["* * * * *"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "mjd-yaron-db"
 database_id = "bede39da-5d58-4a2d-9198-89f9f6e2804c"
 
+# Producer binding onto the shared recorder control plane. Same queue the manual
+# button (POST /api/meetings) produces to; the box is the sole HTTP pull consumer.
+[[queues.producers]]
+queue = "recorder-jobs"
+binding = "RECORDER_QUEUE"
+
 [vars]
-VEXA_API_BASE = "https://api.cloud.vexa.ai"
+RECORDER_TENANT_ID = "yaron"
+RECORDER_INGEST_URL = "https://my-jarvis-dashboard-yaron.pages.dev/api/recordings/ingest"
+# RECORDER_R2_BUCKET intentionally unset in P0/P2 (box uses its single bucket);
+# forward-compat per-fork audio routing is P1 — matches the Pages project.
 
 # Secrets set out-of-band (wrangler secret / API), never committed:
-#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CAL_TOKEN_KEY, VEXA_API_KEY, TRIGGER_SECRET
-#   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID  (owner alerts on silent Vexa failures;
-#   notify no-ops if either is unset — the feature depends on both being present here)
+#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CAL_TOKEN_KEY, TRIGGER_SECRET,
+#   INGEST_SECRET  (per-fork HMAC callback key — MUST byte-equal the Pages project's
+#                   INGEST_SECRET, else the box's signed result callback 401s),
+#   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID  (owner alerts; notify no-ops if unset).
+# VEXA_API_KEY is retired — the leftover secret is harmless and can be deleted.

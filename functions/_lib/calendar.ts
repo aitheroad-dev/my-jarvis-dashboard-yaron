@@ -8,6 +8,8 @@ import {
 import { parseMeetingUrl } from "./meeting-url";
 import { createMeetingWithBot } from "./meetings";
 import { isTransientVexaStatus, type VexaEnv } from "./vexa";
+import { createRecordingJob } from "./recorder-producer";
+import { type RecorderProducerEnv } from "./recorder-job";
 
 // A bot is dispatched this long before start so it's in the room before humans.
 const DISPATCH_LEAD_MS = 3 * 60_000;
@@ -268,6 +270,119 @@ export async function dispatchDue(
             : ` (no bot before the meeting window closed)`;
         alertable.push(`${label}: ${r.detail}${why}`);
       }
+    }
+  }
+  return { dispatched, errors, alertable };
+}
+
+/**
+ * Calendar auto-join for the OWNED recorder (Path 6, multi-tenant P2).
+ *
+ * The recorder analog of dispatchDue: same dispatch window, same occurrence-scoped
+ * "handled" check, same ATOMIC attempt-claim (two overlapping ticks can't both
+ * fire) — the whole Vexa-era hardening is reused wholesale. Only the terminal
+ * action changes: instead of creating a Vexa bot it enqueues a recorder JobContract
+ * onto the shared `recorder-jobs` queue via createRecordingJob. The box pulls the
+ * job, records, transcribes, and HMAC-POSTs the result back to this fork's ingest
+ * endpoint; the fork never hands the box a D1 token. This is FORK-LOCAL code (reads
+ * this fork's calendar_events, writes this fork's meetings) → it replicates per fork.
+ *
+ * Lifecycle differs from Vexa: recorder rows go requested→starting→transcribing→
+ * ended/failed. "Handled" = an in-flight (requested/starting/transcribing) row
+ * CREATED within this occurrence window (a requested row has NULL started_at, so
+ * scope on created_at), OR an ended row with transcript in-window. A failed row or
+ * an ended-with-no-transcript row is NOT handled — a late human still gets a bot.
+ */
+export async function enqueueDue(
+  env: RecorderProducerEnv,
+  sql: ReturnType<typeof getDb>,
+  nowMs: number,
+): Promise<{ dispatched: number; errors: string[]; alertable: string[] }> {
+  const candidates = (await sql/* sql */ `
+    SELECT google_event_id, title, start_time, end_time, meeting_url, platform,
+           native_meeting_id, auto_join, dispatched_meeting_id,
+           attempt_count, last_attempt_at, present, language
+      FROM calendar_events
+     WHERE auto_join = 1 AND present = 1 AND start_time IS NOT NULL
+  `) as CalEventRow[];
+
+  const backoffCutoffIso = new Date(nowMs - RETRY_BACKOFF_MS).toISOString();
+  let dispatched = 0;
+  const errors: string[] = []; // every failure (logged/returned for debugging)
+  const alertable: string[] = []; // subset worth a Telegram (cap-exhausted / last-in-window)
+  for (const ev of candidates) {
+    const startMs = ev.start_time ? Date.parse(ev.start_time) : NaN;
+    if (!Number.isFinite(startMs)) continue;
+    let endMs = ev.end_time ? Date.parse(ev.end_time) : NaN;
+    if (!Number.isFinite(endMs) || endMs <= startMs) endMs = startMs + DEFAULT_DURATION_MS;
+
+    // Window: from LEAD before start until END_GRACE after the scheduled end.
+    if (nowMs < startMs - DISPATCH_LEAD_MS) continue; // too early
+    if (nowMs > endMs + END_GRACE_MS) continue; // meeting is over
+    if (!ev.platform || !ev.native_meeting_id) continue;
+
+    // Occurrence-scoped "handled" check adapted to the recorder lifecycle.
+    const winStartIso = new Date(startMs - DISPATCH_LEAD_MS).toISOString();
+    const winEndIso = new Date(endMs + END_GRACE_MS).toISOString();
+    const handled = (await sql/* sql */ `
+      SELECT 1 FROM meetings m
+       WHERE m.platform = ${ev.platform} AND m.native_meeting_id = ${ev.native_meeting_id}
+         AND ( ( m.status IN ('requested','starting','transcribing')
+                 AND m.created_at >= ${winStartIso} )
+            OR ( m.status = 'ended'
+                 AND m.started_at >= ${winStartIso} AND m.started_at <= ${winEndIso}
+                 AND EXISTS (SELECT 1 FROM meeting_transcript t WHERE t.meeting_id = m.id) ) )
+       LIMIT 1
+    `) as unknown[];
+    if (handled[0]) continue;
+
+    // Atomically claim the attempt (identical to dispatchDue): increments only if
+    // under the cap and past the backoff. Two overlapping ticks → only one wins.
+    const claim = (await sql/* sql */ `
+      UPDATE calendar_events
+         SET attempt_count = attempt_count + 1,
+             last_attempt_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+       WHERE google_event_id = ${ev.google_event_id}
+         AND attempt_count < ${MAX_ATTEMPTS}
+         AND (last_attempt_at IS NULL OR last_attempt_at <= ${backoffCutoffIso})
+      RETURNING google_event_id
+    `) as unknown[];
+    if (!claim[0]) continue; // cap hit, backoff active, or another tick won the claim
+
+    const r = await createRecordingJob(env, sql, {
+      title: ev.title,
+      meetingUrl: ev.meeting_url ?? "",
+      platform: ev.platform,
+      nativeId: ev.native_meeting_id,
+      language: ev.language ?? null, // NULL → box default (he)
+    });
+
+    const label = ev.title?.trim() || ev.google_event_id;
+    if (r.ok && r.enqueued) {
+      // Success. Do NOT reset attempt_count (the cap bounds total dispatches per
+      // occurrence — the empty-room storm guard; the handled-check stops dispatch
+      // once a bot captures transcript).
+      await sql/* sql */ `
+        UPDATE calendar_events SET dispatched_meeting_id = ${r.id}
+         WHERE google_event_id = ${ev.google_event_id}
+      `;
+      dispatched++;
+    } else {
+      // Failure — surfaced, never silent (feedback_failed_query_not_negative). If
+      // the row WAS written but the enqueue failed, mark it 'failed' + last_error so
+      // it shows on /meetings AND the occurrence handled-check (which excludes
+      // 'failed') lets a later in-window tick retry. In queue mode a row that never
+      // reached the queue will never record, so this is a real failure, not a blip.
+      const detail = r.ok ? "enqueue failed (queue unbound/down)" : r.detail;
+      if (r.ok) {
+        await sql/* sql */ `
+          UPDATE meetings SET status = 'failed', last_error = ${detail} WHERE id = ${r.id}
+        `;
+      }
+      errors.push(`${ev.google_event_id}: ${detail}`);
+      const exhausted = ev.attempt_count + 1 >= MAX_ATTEMPTS;
+      const lastInWindow = nowMs + RETRY_BACKOFF_MS > endMs + END_GRACE_MS;
+      if (exhausted || lastInWindow) alertable.push(`${label}: ${detail}`);
     }
   }
   return { dispatched, errors, alertable };
