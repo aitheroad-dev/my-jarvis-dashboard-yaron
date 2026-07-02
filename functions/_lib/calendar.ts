@@ -73,9 +73,10 @@ export interface CalEventRow {
 
 /**
  * Refresh the cache of upcoming Meet-bearing events from Google into D1.
- * - New events default auto_join ON (owner wants the notetaker everywhere); an
- *   explicit per-event opt-OUT is preserved across refreshes (ON CONFLICT never
- *   touches auto_join).
+ * - New events default auto_join OFF (opt-in — Yaron chose 2026-07-01 NOT to put a
+ *   visible "AI Notes" bot into external / 1:1 / client meetings uninvited). The
+ *   per-event toggle on /meetings opts a meeting IN; that explicit choice is
+ *   preserved across refreshes (ON CONFLICT never touches auto_join).
  * - All-day (date-only) events are skipped — they have no real start clock.
  * - A reschedule / link change resets the dispatch attempt state so a moved
  *   meeting isn't permanently blocked by a stale cap.
@@ -109,7 +110,7 @@ export async function syncEvents(
         (google_event_id, title, start_time, end_time, meeting_url, platform, native_meeting_id, auto_join, present, updated_at)
       VALUES
         (${ev.id}, ${ev.title}, ${ev.start}, ${ev.end}, ${ev.meetingUrl},
-         ${parsed.platform}, ${parsed.nativeMeetingId}, 1, 1, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+         ${parsed.platform}, ${parsed.nativeMeetingId}, 0, 1, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
       ON CONFLICT (google_event_id) DO UPDATE SET
         title = excluded.title,
         start_time = excluded.start_time,

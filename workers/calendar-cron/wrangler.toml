@@ -36,3 +36,19 @@ RECORDER_INGEST_URL = "https://my-jarvis-dashboard-yaron.pages.dev/api/recording
 #                   INGEST_SECRET, else the box's signed result callback 401s),
 #   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID  (owner alerts; notify no-ops if unset).
 # VEXA_API_KEY is retired — the leftover secret is harmless and can be deleted.
+#
+# ROTATING INGEST_SECRET (Forge W2 — "drain the queue" is NOT enough): the box
+# verifies each result callback with the PER-JOB ingest_secret carried in the
+# JobContract, and those callbacks arrive 30-60 min AFTER the job is pulled (once the
+# recording finishes). A job already pulled + recording carries the OLD secret and
+# will 401 on callback if Pages rotates underneath it. Correct procedure:
+#   1. PAUSE both producers — set this cron `crons = []` + redeploy, and stop manual
+#      creates (or accept the brief window).
+#   2. WAIT for the queue to drain AND every in-flight meetings row
+#      (status IN requested/starting/transcribing) to reach a terminal state.
+#   3. Rotate INGEST_SECRET on the Pages project AND this worker TOGETHER.
+#   4. Resume producers (restore this cron).
+# The initial provisioning (2026-07-01) was done while fully idle (queue empty, no
+# in-flight rows), so no callback carried a stale secret. A future robustness lever
+# is a previous-secret grace verifier on /api/recordings/ingest (accept current OR
+# previous during a window) — deferred, no JobContract change needed.
