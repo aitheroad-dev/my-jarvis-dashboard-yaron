@@ -10,6 +10,7 @@ import { GoalDetailPage } from "@/components/atomic-crm/goals/GoalDetailPage";
 import { ProjectsListPage } from "@/components/atomic-crm/projects-dashboard/ProjectsListPage";
 import { ProjectDetailPage } from "@/components/atomic-crm/projects-dashboard/ProjectDetailPage";
 import { PortfolioPage } from "@/components/atomic-crm/pages/PortfolioPage";
+import { InvestPage } from "@/components/atomic-crm/invest/InvestPage";
 import { SpendPage } from "@/components/atomic-crm/spend/SpendPage";
 import { DeployedSitesPage } from "@/components/atomic-crm/deployed-sites/DeployedSitesPage";
 import { MovePage } from "@/components/atomic-crm/move/MovePage";
@@ -19,6 +20,7 @@ import { KoopPlotsPage } from "@/components/atomic-crm/koop/KoopPlotsPage";
 import { FindingAFarmPage } from "@/components/atomic-crm/koop/FindingAFarmPage";
 import { ReportPage } from "@/components/atomic-crm/report/ReportPage";
 import { SituationPage } from "@/components/atomic-crm/situation/SituationPage";
+import { AiModelsPage } from "@/components/atomic-crm/ai-models/AiModelsPage";
 import { AgentsPage } from "@/components/atomic-crm/agents/AgentsPage";
 import { SkillsPage } from "@/components/atomic-crm/skills/SkillsPage";
 import { SkillDetailPage } from "@/components/atomic-crm/skills/SkillDetailPage";
@@ -61,6 +63,7 @@ export const PAGES: PageDef[] = [
     ],
   },
   { key: "portfolio", routes: [{ path: "/portfolio", element: <PortfolioPage /> }] },
+  { key: "invest", routes: [{ path: "/invest", element: <InvestPage /> }] },
   { key: "spend", routes: [{ path: "/spend", element: <SpendPage /> }] },
   { key: "deployed-sites", routes: [{ path: "/deployed-sites", element: <DeployedSitesPage /> }] },
   { key: "move", routes: [{ path: "/move", element: <MovePage /> }] },
@@ -70,6 +73,7 @@ export const PAGES: PageDef[] = [
   { key: "finding-a-farm", routes: [{ path: "/finding-a-farm", element: <FindingAFarmPage /> }] },
   { key: "report", routes: [{ path: "/report", element: <ReportPage /> }] },
   { key: "situation", routes: [{ path: "/situation", element: <SituationPage /> }] },
+  { key: "ai-models", routes: [{ path: "/ai-models", element: <AiModelsPage /> }] },
   { key: "agents", routes: [{ path: "/agents", element: <AgentsPage /> }] },
   {
     key: "skills",

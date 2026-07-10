@@ -11,6 +11,7 @@ export type PageKey =
   | "goals"
   | "projects"
   | "portfolio"
+  | "invest"
   | "spend"
   | "deployed-sites"
   | "move"
@@ -20,6 +21,7 @@ export type PageKey =
   | "finding-a-farm"
   | "report"
   | "situation"
+  | "ai-models"
   | "agents"
   | "skills"
   | "memory"
@@ -32,6 +34,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "goals",
   "projects",
   "portfolio",
+  "invest",
   "spend",
   "deployed-sites",
   "move",
@@ -41,6 +44,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "finding-a-farm",
   "report",
   "situation",
+  "ai-models",
   "agents",
   "skills",
   "memory",

@@ -1,5 +1,6 @@
 import { Link, matchPath, useLocation } from "react-router-dom";
 import {
+  Boxes,
   Brain,
   Briefcase,
   FileText,
@@ -14,6 +15,7 @@ import {
   Sprout,
   Tag,
   Target,
+  TrendingUp,
   Truck,
   Users,
   Video,
@@ -42,6 +44,7 @@ export const navItems: NavItem[] = [
   { key: "goals", label: "Goals", to: "/goals-list", icon: Target },
   { key: "projects", label: "Projects", to: "/projects-list", icon: Briefcase },
   { key: "portfolio", label: "Portfolio", to: "/portfolio", icon: PieChart },
+  { key: "invest", label: "Invest", to: "/invest", icon: TrendingUp },
   { key: "spend", label: "Spend", to: "/spend", icon: Wallet },
   { key: "deployed-sites", label: "Sites", to: "/deployed-sites", icon: Globe },
   { key: "move", label: "מעבר דירה", to: "/move", icon: Truck },
@@ -51,6 +54,7 @@ export const navItems: NavItem[] = [
   { key: "finding-a-farm", label: "Finding a Farm", to: "/finding-a-farm", icon: Sprout },
   { key: "report", label: "Report", to: "/report", icon: FileText },
   { key: "situation", label: "Situation", to: "/situation", icon: Radar },
+  { key: "ai-models", label: "AI Models", to: "/ai-models", icon: Boxes },
   { key: "agents", label: "Agents", to: "/agents", icon: Users },
   { key: "skills", label: "Skills", to: "/skills", icon: Sparkles },
   { key: "memory", label: "Memory", to: "/memory", icon: Brain },

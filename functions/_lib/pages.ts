@@ -19,6 +19,7 @@ export type PageKey =
   | "goals"
   | "projects"
   | "portfolio"
+  | "invest"
   | "spend"
   | "deployed-sites"
   | "move"
@@ -28,6 +29,7 @@ export type PageKey =
   | "finding-a-farm"
   | "report"
   | "situation"
+  | "ai-models"
   | "agents"
   | "skills"
   | "memory"
@@ -40,6 +42,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "goals",
   "projects",
   "portfolio",
+  "invest",
   "spend",
   "deployed-sites",
   "move",
@@ -49,6 +52,7 @@ export const ALL_PAGE_KEYS: PageKey[] = [
   "finding-a-farm",
   "report",
   "situation",
+  "ai-models",
   "agents",
   "skills",
   "memory",
@@ -68,6 +72,7 @@ export const PAGE_API_PREFIXES: Record<PageKey, string[]> = {
   goals: ["/api/goals"],
   projects: ["/api/projects"],
   portfolio: ["/api/portfolio"],
+  invest: ["/api/invest"],
   spend: ["/api/spend"],
   "deployed-sites": ["/api/deployed-sites"],
   move: ["/api/move"],
@@ -79,6 +84,8 @@ export const PAGE_API_PREFIXES: Record<PageKey, string[]> = {
   // Report page embeds a static HTML report from /public — no internal /api/* access.
   report: [],
   situation: ["/api/situation"],
+  // AI Model Atlas embeds a static explorer from /public — no internal /api/* access.
+  "ai-models": [],
   agents: ["/api/agents"],
   skills: ["/api/skills"],
   memory: ["/api/memories"],

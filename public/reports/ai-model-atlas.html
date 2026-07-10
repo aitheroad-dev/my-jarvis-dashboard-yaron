@@ -1,0 +1,1553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Model Atlas</title>
+<style>
+:root{color-scheme:light dark;--bg:#f7f8fb;--fg:#172033;--muted:#667085;--card:#fff;--line:#d9dee8;--soft:#eef2f7;--mark:#ffe58a;--open:#147d43;--closed:#2368b5;--device:#7a3eb1;--shadow:0 10px 28px rgba(23,32,51,.08)}
+[data-theme=dark]{color-scheme:dark;--bg:#10131a;--fg:#edf1f7;--muted:#a3adbd;--card:#171c26;--line:#303848;--soft:#202734;--mark:#765d12;--open:#44c77a;--closed:#64a8ff;--device:#c18bff;--shadow:0 10px 28px rgba(0,0,0,.25)}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){color-scheme:dark;--bg:#10131a;--fg:#edf1f7;--muted:#a3adbd;--card:#171c26;--line:#303848;--soft:#202734;--mark:#765d12;--open:#44c77a;--closed:#64a8ff;--device:#c18bff;--shadow:0 10px 28px rgba(0,0,0,.25)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input{font:inherit;color:inherit}button{min-height:44px;cursor:pointer}header{padding:28px clamp(16px,4vw,42px) 18px;background:linear-gradient(180deg,var(--card),var(--bg));border-bottom:1px solid var(--line)}h1{margin:0 0 6px;font-size:clamp(28px,4vw,48px);letter-spacing:0}.subtitle{max-width:900px;color:var(--muted);font-size:16px}.top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.theme{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:0 12px}.stats,.actions,.filters,.chips,.meta,.tags{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.stats{margin-top:18px}.pill,.tag,.badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;background:var(--card);white-space:nowrap}.pill b{font-weight:700}.app{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;padding:20px clamp(16px,4vw,42px)}aside{position:sticky;top:0;align-self:start;z-index:5}.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:14px}.search{width:100%;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:0 12px}.filter-toggle{display:none;width:100%;margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:8px}.filter-body{display:block}.label{margin:14px 0 7px;color:var(--muted);font-size:12px;text-transform:uppercase;font-weight:700;letter-spacing:.04em}.chip{border:1px solid var(--line);background:var(--soft);border-radius:999px;padding:6px 10px}.chip.active{background:var(--fg);color:var(--bg);border-color:var(--fg)}.clear{width:100%;margin-top:12px;border:1px solid var(--line);background:var(--card);border-radius:8px}.result{margin-top:10px;color:var(--muted)}.actions{margin-bottom:14px}.actions button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:0 12px}.section{margin-bottom:14px;border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden}.section-head{width:100%;display:flex;gap:12px;align-items:center;text-align:left;border:0;background:var(--card);padding:14px 16px}.chev{width:18px;transition:transform .15s}.section.open .chev{transform:rotate(90deg)}.section-title{font-size:20px;font-weight:800}.blurb{color:var(--muted);margin-top:3px}.section-body{display:none;padding:0 16px 16px}.section.open .section-body{display:block}.subhead{margin:16px 0 8px;font-size:13px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.family{border:1px solid var(--line);border-radius:8px;background:var(--bg);overflow:hidden}.family-head{width:100%;display:block;text-align:left;border:0;background:transparent;padding:14px}.family-head:hover,.model-row:hover{background:var(--soft)}.family-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.family-name{font-weight:800;font-size:17px}.country,.positioning{color:var(--muted)}.positioning{margin:8px 0}.count{border-radius:999px;background:var(--fg);color:var(--bg);padding:3px 8px;font-size:12px}.family-body{display:none;border-top:1px solid var(--line);padding:10px 12px}.family.open .family-body{display:block}.line-title{font-weight:800;margin:10px 0 6px}.model-row{width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:8px;margin:6px 0;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}.model-card{display:none;border:1px solid var(--line);border-radius:8px;background:var(--card);padding:12px;margin:8px 0 12px}.model-card.open{display:block}.model-card h4{margin:0 0 8px;font-size:18px}.model-card ul{margin:8px 0 8px 20px;padding:0}.model-card li{margin:4px 0}.notes{white-space:pre-wrap}.tag.open{color:var(--open);border-color:color-mix(in srgb,var(--open) 45%,var(--line));background:color-mix(in srgb,var(--open) 12%,transparent)}.tag.closed{color:var(--closed);border-color:color-mix(in srgb,var(--closed) 45%,var(--line));background:color-mix(in srgb,var(--closed) 12%,transparent)}.tag.on-device{color:var(--device);border-color:color-mix(in srgb,var(--device) 45%,var(--line));background:color-mix(in srgb,var(--device) 12%,transparent)}.tag.both{color:var(--fg)}.uncertain{border-color:#b7791f;color:#b7791f;font-weight:800}.empty,.error{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:18px;color:var(--muted)}mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}footer{padding:22px clamp(16px,4vw,42px);color:var(--muted);border-top:1px solid var(--line)}@media(max-width:780px){.app{display:block;padding:12px}.top{display:block}.theme{margin-top:12px}.panel{margin-bottom:12px}.filter-toggle{display:block}.filter-body{display:none}.filters-open .filter-body{display:block}.grid{grid-template-columns:1fr}.section-head,.family-head,.model-row{padding:14px}.stats{gap:6px}.pill,.tag,.badge{max-width:100%;white-space:normal}}
+</style>
+<script id="atlas-data">
+/* The AI Model Atlas — authoritative embedded dataset.
+ * Transcribed verbatim-in-substance from ATLAS.md (compiled 2026-07-02).
+ * FIDELITY CONTRACT: every family and every model from the atlas is present.
+ * Schema per model: name, provider, released, access (open|closed|on-device|both),
+ *   modalities[], context (nullable), expertise[] (best-at bullets), notes, uncertain(bool).
+ * Schema per family: id, name, country (nullable), subsection (nullable), positioning,
+ *   openness[] (subset of open|closed|on-device), modalities[], lines[] -> models[].
+ * Modality vocabulary: text, reasoning, image, video, audio, embedding, rerank,
+ *   code, 3D, vision, action, time-series, science, safety, diffusion-llm.
+ */
+const ATLAS = {
+  meta: {
+    title: "The AI Model Atlas — mid-2026",
+    subtitle: "A broad, web-sourced map of the AI models available today — labs, model lines, and individual models across the full capability landscape.",
+    snapshotDate: "2026-07-02",
+    footer: "mid-2026 snapshot (2026-07-02) — version numbers drift; benchmark/price/ranking claims are agent-reported, spot-verify before publishing."
+  },
+  sections: []
+};
+
+ATLAS.sections.push({
+  id: "language-reasoning",
+  name: "Language & Reasoning",
+  blurb: "The core LLM houses — frontier proprietary flagships and the open-weight / challenger field. Reasoning is folding from standalone product into an effort dial inside flagships.",
+  families: [
+    // ---- Frontier proprietary (the big four) ----
+    {
+      id: "openai-gpt", name: "OpenAI (GPT)", country: "US", subsection: "Frontier Proprietary",
+      positioning: "One effort-tunable model; agentic coding + product breadth.",
+      openness: ["closed", "open"], modalities: ["text", "reasoning", "image", "audio", "code"],
+      lines: [
+        { name: "GPT-5.x flagship line", models: [
+          { name: "GPT-5.5", provider: "OpenAI", released: "Apr 2026", access: "closed", modalities: ["text","image","reasoning","code"], context: "1.05M ctx (128K out)", expertise: ["Agentic coding, computer use, long multi-tool tasks","Research / data analysis","Effort-tunable reasoning (none→xhigh)"], notes: "$5/$30 per M; cutoff Dec 2025; powers Codex 2026.", uncertain: false },
+          { name: "GPT-5.5 Pro", provider: "OpenAI", released: "Apr 2026", access: "closed", modalities: ["text","reasoning","code"], context: null, expertise: ["Highest-compute variant for the hardest reasoning/coding/research"], notes: "", uncertain: false },
+          { name: "GPT-5.5 Instant", provider: "OpenAI", released: "May 2026", access: "closed", modalities: ["text"], context: null, expertise: ["Fast low-latency chat","Hallucination ~halved vs 5.3 Instant"], notes: "ChatGPT free default.", uncertain: false },
+          { name: "GPT-5.4 / mini / nano", provider: "OpenAI", released: "prior gen", access: "closed", modalities: ["text","reasoning","code"], context: "up to 1M (5.4)", expertise: ["5.4 = cheaper pro work (1M ctx)","mini = strong cheap coding / subagents","nano = low-latency"], notes: "Prior gen, still in API.", uncertain: false }
+        ]},
+        { name: "GPT-5.6 next-gen (preview, NOT GA)", models: [
+          { name: "GPT-5.6 Sol / Terra / Luna", provider: "OpenAI", released: "Jun 2026", access: "closed", modalities: ["text","reasoning"], context: "Sol = 1.5M ctx", expertise: ["Sol = flagship","Terra = balanced","Luna = fastest"], notes: "~20 approved orgs only, US-gov-gated. Specs preliminary.", uncertain: true }
+        ]},
+        { name: "Reasoning line (o-series, legacy)", models: [
+          { name: "o3 / o4-mini", provider: "OpenAI", released: "2025", access: "closed", modalities: ["text","reasoning","image"], context: null, expertise: ["'Thinks with images'","Cheap reasoning"], notes: "Superseded by GPT-5 effort dial; kept for cheap reasoning.", uncertain: false }
+        ]},
+        { name: "Codex coding line", models: [
+          { name: "GPT-5.2-Codex → 5.3-Codex + Codex 2026 agent", provider: "OpenAI", released: "Dec 2025→", access: "closed", modalities: ["text","code","reasoning","action"], context: null, expertise: ["Long-horizon agentic coding","Terminal / computer use","Subagent orchestration"], notes: "5.2-Codex Dec 2025; 5.3-Codex date uncertain; Codex 2026 runs on GPT-5.5/Pro.", uncertain: true }
+        ]},
+        { name: "Realtime / audio / image", models: [
+          { name: "GPT-Realtime-2 · Realtime-1.5/Translate/mini · GPT-4o Transcribe · GPT-Image-2", provider: "OpenAI", released: "2025-26", access: "closed", modalities: ["audio","text","image"], context: null, expertise: ["Voice reasoning (Realtime-2)","STT (GPT-4o Transcribe)","Image gen (GPT-Image-2)"], notes: "GPT-Image-2 detailed in the Image Generation section.", uncertain: false }
+        ]},
+        { name: "Open-weights (gpt-oss)", models: [
+          { name: "gpt-oss-120b / 20b", provider: "OpenAI", released: "Aug 2025", access: "open", modalities: ["text","reasoning","code"], context: "128K", expertise: ["Local/edge reasoning + tool use","120b ≈ o4-mini on one 80GB GPU","20b ≈ o3-mini in 16GB"], notes: "Apache 2.0; MoE 117B/5.1B active. Only OpenAI open release.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "anthropic-claude", name: "Anthropic (Claude)", country: "US", subsection: "Frontier Proprietary",
+      positioning: "Named size tiers; safest frontier + best agentic coding.",
+      openness: ["closed"], modalities: ["text", "reasoning", "image", "code", "action"],
+      lines: [
+        { name: "Mythos-class (top tier, new Jun 2026)", models: [
+          { name: "Claude Fable 5", provider: "Anthropic", released: "Jun 2026", access: "closed", modalities: ["text","image","reasoning","code"], context: "1M ctx (128K out)", expertise: ["Highest-capability tier for long-running autonomous agents","Always-on adaptive thinking"], notes: "$10/$50 per M; auto-falls-back to Opus 4.8 on flagged cyber/bio; suspended Jun 12, restored ~Jul 1–2 2026.", uncertain: false },
+          { name: "Claude Mythos 5", provider: "Anthropic", released: "Jun 2026", access: "closed", modalities: ["text","reasoning"], context: "1M ctx", expertise: ["Defensive cybersecurity workflows"], notes: "Invitation-only (Project Glasswing); shares Fable 5 specs.", uncertain: false }
+        ]},
+        { name: "Opus line (flagship)", models: [
+          { name: "Claude Opus 4.8", provider: "Anthropic", released: "2026", access: "closed", modalities: ["text","image","reasoning","code","action"], context: "1M ctx", expertise: ["Complex agentic coding + enterprise (default rec.)","Strongest computer-use/browser agent tested (84% Online-Mind2Web)","~4× fewer missed code flaws vs 4.7"], notes: "$5/$25 (Fast $10/$50); effort defaults high. Legacy 4.7/4.6/4.5; 4.1 retires Aug 5 2026.", uncertain: false }
+        ]},
+        { name: "Sonnet line (balanced)", models: [
+          { name: "Claude Sonnet 5", provider: "Anthropic", released: "Jun 30 2026", access: "closed", modalities: ["text","image","reasoning","code","action"], context: "1M ctx", expertise: ["Most agentic Sonnet yet (plans, uses browsers/terminals autonomously)","Near-Opus at Sonnet price"], notes: "Intro $2/$10 → $3/$15. Legacy 4.6/4.5.", uncertain: false }
+        ]},
+        { name: "Haiku line (fastest)", models: [
+          { name: "Claude Haiku 4.5", provider: "Anthropic", released: "Oct 2025", access: "closed", modalities: ["text","image","reasoning"], context: "200K ctx", expertise: ["Fastest; high-volume / latency-sensitive","Extended thinking"], notes: "$1/$5; cutoff Feb 2025.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-gemini", name: "Google DeepMind (Gemini)", country: "US/UK", subsection: "Frontier Proprietary",
+      positioning: "Natively multimodal, ~1M context, Deep Think reasoning.",
+      openness: ["closed"], modalities: ["text", "reasoning", "image", "audio", "video", "code"],
+      lines: [
+        { name: "Pro line (frontier)", models: [
+          { name: "Gemini 3.1 Pro", provider: "Google DeepMind", released: "Feb 2026", access: "closed", modalities: ["text","image","audio","video","reasoning","code"], context: "1M ctx (64K out)", expertise: ["Frontier reasoning (77.1% ARC-AGI-2, highest verified)","Native multimodal over huge contexts","Agentic + Deep Think"], notes: "Sparse MoE. Current flagship.", uncertain: false },
+          { name: "Gemini 3.5 Pro", provider: "Google DeepMind", released: "~Jul 2026", access: "closed", modalities: ["text","image","audio","video","reasoning"], context: null, expertise: ["GA targeted Jul 2026 (imminent, not confirmed GA)"], notes: "Specs uncertain.", uncertain: true }
+        ]},
+        { name: "Flash line (fast/cheap)", models: [
+          { name: "Gemini 3.5 Flash", provider: "Google DeepMind", released: "May 2026", access: "closed", modalities: ["text","image","audio","video"], context: "1M ctx", expertise: ["Fast, cheap multimodal","Strong price/perf for volume"], notes: "Prior: 3 Flash (Dec 2025), 3.1 Flash-Lite (Mar 2026).", uncertain: false }
+        ]},
+        { name: "Deep Think", models: [
+          { name: "Gemini 3 Deep Think", provider: "Google DeepMind", released: "Dec 2025", access: "closed", modalities: ["text","reasoning"], context: null, expertise: ["Hardest reasoning/math/code with minutes-long thinking"], notes: "Now also the high thinking_level tier of 3.1 Pro.", uncertain: false }
+        ]},
+        { name: "Legacy", models: [
+          { name: "Gemini 2.5 Pro / Flash / Flash-Lite", provider: "Google DeepMind", released: "2025", access: "closed", modalities: ["text","image","audio","video"], context: null, expertise: ["Prior gen, being deprecated"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "xai-grok", name: "xAI (Grok)", country: "US", subsection: "Frontier Proprietary",
+      positioning: "Real-time X/web data, always-on reasoning, cheapest frontier.",
+      openness: ["closed", "open"], modalities: ["text", "reasoning", "image", "video", "code"],
+      lines: [
+        { name: "Grok 4.x flagship", models: [
+          { name: "Grok 4.3", provider: "xAI", released: "Apr 2026", access: "closed", modalities: ["text","image","video","reasoning","code"], context: "1M ctx", expertise: ["Always-on reasoning on every query","Native web browsing + code interpreter","Aggressively cheap; voice cloning suite"], notes: "$1.25/$2.50 per M; cutoff Dec 2025. Current flagship.", uncertain: false },
+          { name: "Grok 4 / 4 Heavy / 4.1", provider: "xAI", released: "prior gen", access: "closed", modalities: ["text","reasoning"], context: "256K (Grok 4)", expertise: ["Grok 4 = RL-trained reasoning, native tools","Heavy = multi-agent max","4.1 = higher EQ, lower hallucination, creative writing"], notes: "", uncertain: false }
+        ]},
+        { name: "Next-gen (announced / not GA)", models: [
+          { name: "Grok 4.5 / Grok 5", provider: "xAI", released: "roadmap", access: "closed", modalities: ["text","reasoning"], context: null, expertise: ["Grok 4.5 (private beta, V9 foundation ~1.5T params)","Grok 5 (in training, Q3 2026, reported 10T-param variant)"], notes: "Roadmap-stage.", uncertain: true }
+        ]},
+        { name: "Open weights (legacy)", models: [
+          { name: "Grok 2 / 2.5 (open, restricted license)", provider: "xAI", released: "2024-25", access: "open", modalities: ["text"], context: null, expertise: ["Last-gen open weights (restricted license)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    // ---- Open-weight & challengers ----
+    {
+      id: "meta-llama", name: "Meta Llama", country: "US", subsection: "Open-Weight & Challengers",
+      positioning: "Made open-weight mainstream; MoE, huge context.",
+      openness: ["open"], modalities: ["text", "image", "code"],
+      lines: [
+        { name: "Llama 4 line", models: [
+          { name: "Llama 4 Scout", provider: "Meta", released: "Apr 2025", access: "open", modalities: ["text","image"], context: "up to 10M ctx", expertise: ["Extreme long-context retrieval/summarization","Single-H100 (Int4)"], notes: "MoE 17B active / ~109B total. Community license.", uncertain: false },
+          { name: "Llama 4 Maverick", provider: "Meta", released: "Apr 2025", access: "open", modalities: ["text","image","code"], context: "1M ctx", expertise: ["GPT-4o-class general + coding for less","Multimodal, multilingual"], notes: "MoE 17B active / ~400B total. The workhorse flagship.", uncertain: false },
+          { name: "Llama 4 Behemoth", provider: "Meta", released: "announced", access: "open", modalities: ["text"], context: null, expertise: ["Teacher model (announced, not released)"], notes: "MoE 288B active / ~2T total.", uncertain: true }
+        ]},
+        { name: "Llama 3.x (prior gen, dense)", models: [
+          { name: "Llama 3.1 / 3.2 / 3.3", provider: "Meta", released: "2024-25", access: "open", modalities: ["text","image"], context: "128K", expertise: ["3.1 (8/70/405B) — first open GPT-4-class 405B","3.2 (1B/3B text + 11B/90B Vision, EU-restricted)","3.3 70B (405B-level quality cheap)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "mistral", name: "Mistral AI", country: "France", subsection: "Open-Weight & Challengers",
+      positioning: "Europe's standard-bearer; unifying specialists into one model.",
+      openness: ["open", "closed"], modalities: ["text", "reasoning", "image", "audio", "code"],
+      lines: [
+        { name: "Flagship / general", models: [
+          { name: "Mistral Large 3", provider: "Mistral", released: "Dec 2025", access: "open", modalities: ["text","image","reasoning"], context: null, expertise: ["Largest open Western MoE","Frontier general reasoning","Fine-tunable"], notes: "Apache 2.0; MoE 41B active / 675B total. Context window uncertain.", uncertain: false },
+          { name: "Mistral Medium 3 / 3.5", provider: "Mistral", released: "May 2025/2026", access: "closed", modalities: ["text","code"], context: null, expertise: ["'Medium is the new large' — near-flagship at ~8× lower cost","3.5 powers coding agents"], notes: "", uncertain: false },
+          { name: "Mistral Small 4", provider: "Mistral", released: "Mar 2026", access: "open", modalities: ["text","image","reasoning","code"], context: "256K", expertise: ["Unifies reasoning + vision + agentic coding in one model"], notes: "Apache 2.0; MoE 119B/6B active.", uncertain: false },
+          { name: "Small 3.1/3.2 · Ministral 3 · Nemo 12B", provider: "Mistral", released: "2024-26", access: "open", modalities: ["text","image"], context: "256K (Ministral)", expertise: ["Small 3.1/3.2 = 24B multimodal workhorse","Ministral 3 (14/8/3B) edge, reasoning variant ~85% AIME","Nemo 12B popular base"], notes: "", uncertain: false }
+        ]},
+        { name: "Specialists", models: [
+          { name: "Magistral · Codestral 25.08 · Devstral 2 · Pixtral · Voxtral · Mistral OCR", provider: "Mistral", released: "2025-26", access: "both", modalities: ["text","code","image","audio"], context: "256K (Codestral)", expertise: ["Magistral = reasoning (Small open / Medium closed)","Codestral 25.08 = FIM, 80+ langs, 256K","Devstral 2 = agentic SWE","Pixtral = vision","Voxtral = audio + TTS (ElevenLabs rival)","Mistral OCR 3/4 = docs, 170 langs"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "deepseek", name: "DeepSeek", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Frontier capability at radically low cost.",
+      openness: ["open"], modalities: ["text", "reasoning", "code"],
+      lines: [
+        { name: "V-series flagship + reasoning", models: [
+          { name: "DeepSeek-V4 (Pro + Flash)", provider: "DeepSeek", released: "Apr 2026", access: "open", modalities: ["text","reasoning","code"], context: "1M ctx (384K out)", expertise: ["Usable million-token context for agents","Frontier reasoning + agentic at low cost"], notes: "MIT + API. V4-Pro MoE ~1.6T/49B active, V4-Flash ~284B/13B. Current flagship.", uncertain: false },
+          { name: "DeepSeek-V3.2", provider: "DeepSeek", released: "Dec 2025", access: "open", modalities: ["text","reasoning"], context: "128K", expertise: ["Introduced DeepSeek Sparse Attention","Hybrid thinking"], notes: "MIT.", uncertain: false },
+          { name: "V3.1/Terminus · V3 · R1/R1-0528", provider: "DeepSeek", released: "2025", access: "open", modalities: ["text","reasoning"], context: null, expertise: ["V3.1/Terminus = first hybrid reasoning","V3 = 671B/37B MoE, trained ~$5.6M (cost landmark)","R1/R1-0528 = o1-class open reasoning, spawned many distills"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "alibaba-qwen", name: "Alibaba Qwen", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Most prolific family; full size ladder + specialists.",
+      openness: ["open", "closed"], modalities: ["text", "reasoning", "image", "code"],
+      lines: [
+        { name: "Open flagship", models: [
+          { name: "Qwen3", provider: "Alibaba", released: "Apr 2025", access: "open", modalities: ["text","reasoning"], context: "128K (256K on 2507)", expertise: ["Hybrid thinking","235B-A22B ≈ R1/o1/Gemini 2.5 Pro","119 langs"], notes: "Apache; MoE 235B/22B active.", uncertain: false },
+          { name: "Qwen3.6", provider: "Alibaba", released: "Apr 2026", access: "open", modalities: ["text","image","reasoning","code"], context: "262K", expertise: ["Agentic coding","Thinking-preservation across turns"], notes: "35B-A3B MoE + 27B dense. Latest open Qwen.", uncertain: false },
+          { name: "Qwen3.5 · Qwen2.5", provider: "Alibaba", released: "2024-26", access: "open", modalities: ["text","image"], context: null, expertise: ["Qwen3.5 (397B-A17B, 201 langs, multimodal)","Qwen2.5 ladder (ubiquitous prior base)"], notes: "", uncertain: false }
+        ]},
+        { name: "Specialists", models: [
+          { name: "QwQ-32B · Qwen3-Coder-480B-A35B · Qwen3-VL-235B · Qwen2.5-VL", provider: "Alibaba", released: "2025", access: "open", modalities: ["text","reasoning","code","image"], context: "256K→1M (Coder)", expertise: ["QwQ-32B = open reasoning","Qwen3-Coder-480B-A35B = flagship agentic coding","Qwen3-VL-235B + Qwen2.5-VL = VLMs"], notes: "", uncertain: false }
+        ]},
+        { name: "Closed Max tier", models: [
+          { name: "Qwen 3.7 Max / Plus", provider: "Alibaba", released: "May 2026", access: "closed", modalities: ["text","code","reasoning"], context: "1M ctx", expertise: ["Top agentic/coding (claims beat Claude Opus 4.6 Max at launch)"], notes: "~$2.50/$7.50. Deliberate closed pivot.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "moonshot-kimi", name: "Moonshot AI (Kimi)", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Trillion-param agentic MoE; 300-agent swarms.",
+      openness: ["open"], modalities: ["text", "reasoning", "code", "image"],
+      lines: [
+        { name: "K2 line", models: [
+          { name: "Kimi K2.6", provider: "Moonshot", released: "Apr 2026", access: "open", modalities: ["text","code","reasoning"], context: "262K", expertise: ["12-hour autonomous coding","300-agent swarms, 4,000 steps","Elite agentic coding (SWE-Verified 80.2)"], notes: "Modified MIT; ~1T MoE / 32B active.", uncertain: false },
+          { name: "K2.5 · K2 / K2-Thinking · K2.7-Code", provider: "Moonshot", released: "2025-26", access: "open", modalities: ["text","image","code","reasoning"], context: null, expertise: ["K2.5 = multimodal + 100-agent swarm","K2 / K2-Thinking = original 1T MoE","K2.7-Code = coding-specialized (Jun 2026)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "zhipu-glm", name: "Zhipu AI (GLM / Z.ai)", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Most capable open model; coding + agents.",
+      openness: ["open"], modalities: ["text", "reasoning", "image", "code"],
+      lines: [
+        { name: "GLM flagship", models: [
+          { name: "GLM-5.2", provider: "Zhipu", released: "Jun 2026", access: "open", modalities: ["text","reasoning","code"], context: "1M ctx", expertise: ["Most capable openly-available model at launch","SWE-bench Pro ~62.1, ahead of GPT-5.5"], notes: "MIT + API; MoE 744B/40B active; ~$1.40/$4.40.", uncertain: false },
+          { name: "GLM-4.5 / Air · 4.6/4.7/5/5.1 · 4.6V + Flash", provider: "Zhipu", released: "2025-26", access: "open", modalities: ["text","reasoning","image","code"], context: null, expertise: ["GLM-4.5/Air (355B/32B + 106B/12B, reasoning toggle)","4.6/4.7/5/5.1 progressive","4.6V + Flash = vision w/ native tool calling"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-gemma", name: "Google Gemma", country: "US", subsection: "Open-Weight & Challengers",
+      positioning: "Best intelligence-per-parameter open line.",
+      openness: ["open"], modalities: ["text", "image", "video", "audio"],
+      lines: [
+        { name: "Gemma flagship", models: [
+          { name: "Gemma 4", provider: "Google", released: "Apr 2026", access: "open", modalities: ["text","image","video","audio"], context: "128K–256K", expertise: ["Best intelligence-per-parameter (31B ~#3 open on Arena; 26B beats 20× larger)","Agentic; 140+ langs","OCR / charts"], notes: "Apache 2.0. E2B/E4B, 26B MoE, 31B dense, +12B.", uncertain: false },
+          { name: "Gemma 3 · Gemma 2 · Gemma 3n · specialists", provider: "Google", released: "2024-26", access: "open", modalities: ["text","image"], context: null, expertise: ["Gemma 3 (1/4/12/27B, first multimodal Gemma)","Gemma 2 (dense, pre-multimodal)","Gemma 3n (E2B/E4B on-device)","Specialists: CodeGemma/PaliGemma/ShieldGemma/MedGemma"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "microsoft-phi", name: "Microsoft Phi", country: "US", subsection: "Open-Weight & Challengers",
+      positioning: "Small models, textbook-quality data, big reasoning.",
+      openness: ["open"], modalities: ["text", "reasoning", "image", "audio"],
+      lines: [
+        { name: "Phi-4 line", models: [
+          { name: "Phi-4", provider: "Microsoft", released: "Dec 2024", access: "open", modalities: ["text","reasoning"], context: "16K", expertise: ["Math/reasoning far above 14.7B size","Runs on ~12GB GPU"], notes: "MIT.", uncertain: false },
+          { name: "Phi-4-mini · -multimodal · -reasoning · -reasoning-vision", provider: "Microsoft", released: "2025-26", access: "open", modalities: ["text","image","audio","reasoning"], context: "128K (mini)", expertise: ["Phi-4-mini (3.8B, 128K)","Phi-4-multimodal (5.6B vision+speech+text, Mixture-of-LoRAs)","Phi-4-reasoning/-plus (14B)","Phi-4-mini-reasoning (3.8B edge)","Phi-4-reasoning-vision-15B ('knows when to think', Mar 2026)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "cohere-command", name: "Cohere (Command)", country: "Canada", subsection: "Open-Weight & Challengers",
+      positioning: "Enterprise RAG, citations, sovereign deploy.",
+      openness: ["open", "closed"], modalities: ["text", "reasoning", "image"],
+      lines: [
+        { name: "Command flagship", models: [
+          { name: "Command A+", provider: "Cohere", released: "May 2026", access: "open", modalities: ["text","image"], context: "128K", expertise: ["Enterprise RAG w/ best-in-class citation grounding","Air-gapped deploy (2 H100s @ W4A4)","48 langs; agentic tools"], notes: "Apache 2.0 + API; MoE 218B/25B active.", uncertain: false },
+          { name: "Command A · R+/R/R7B · A Reasoning/Vision/Translate · Aya Expanse", provider: "Cohere", released: "2024-26", access: "both", modalities: ["text","image","reasoning"], context: "256K (Command A)", expertise: ["Command A (111B, 256K)","Command R+/R/R7B (RAG workhorses)","Command A Reasoning/Vision/Translate","Aya Expanse (open multilingual research)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "amazon-nova", name: "Amazon Nova", country: "US", subsection: "Open-Weight & Challengers",
+      positioning: "Cloud price-performance ladder.",
+      openness: ["closed"], modalities: ["text", "reasoning", "image", "video", "audio"],
+      lines: [
+        { name: "Nova 2", models: [
+          { name: "Nova 2 Lite", provider: "Amazon", released: "Dec 2025", access: "closed", modalities: ["text","image","video","reasoning"], context: "1M ctx", expertise: ["Fast cost-effective reasoning; extended thinking","Built-in code interpreter + web + MCP tools"], notes: "Bedrock-only.", uncertain: false },
+          { name: "Nova 2 Pro · Sonic · Nova 1 · Canvas / Reel", provider: "Amazon", released: "2024-26", access: "closed", modalities: ["text","image","video","audio"], context: null, expertise: ["Nova 2 Pro (most intelligent, preview)","Nova 2 Sonic (speech↔speech, 7 langs)","Nova 1 Micro/Lite/Pro/Premier (Dec 2024 ladder)","Nova Canvas/Reel (image/video)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "nvidia-nemotron", name: "NVIDIA Nemotron", country: "US", subsection: "Open-Weight & Challengers",
+      positioning: "Most inference-efficient; hybrid Mamba-MoE.",
+      openness: ["open"], modalities: ["text", "reasoning"],
+      lines: [
+        { name: "Nemotron 3", models: [
+          { name: "Nemotron 3 Nano", provider: "NVIDIA", released: "Dec 2025", access: "open", modalities: ["text","reasoning"], context: "1M ctx", expertise: ["Highest tokens/sec for multi-agent","Edge / single-GPU reasoning","~60% fewer reasoning tokens"], notes: "~31.6B/3.2B active ('runs like ~3.6B').", uncertain: false },
+          { name: "Nemotron 3 Super · Ultra · Llama-Nemotron", provider: "NVIDIA", released: "2025", access: "open", modalities: ["text","reasoning"], context: null, expertise: ["Super (120B/12B active, LatentMoE, ~2.2× gpt-oss-120B throughput)","Ultra (550B/55B active, SOTA-class, multi-GPU)","Prior Llama-Nemotron Nano/Super/Ultra reasoning line"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "ai21-jamba", name: "AI21 Jamba", country: "Israel", subsection: "Open-Weight & Challengers",
+      positioning: "Hybrid SSM-Transformer; efficient 256K enterprise RAG.",
+      openness: ["open", "closed"], modalities: ["text"],
+      lines: [
+        { name: "Jamba", models: [
+          { name: "Jamba Large 1.7", provider: "AI21", released: "Jul 2025", access: "open", modalities: ["text"], context: "256K", expertise: ["Long-context enterprise RAG w/ strong grounding","Secure / on-prem"], notes: "Hybrid MoE 398B/94B active; ~$2/$8. 9 langs incl. Hebrew/Arabic.", uncertain: false },
+          { name: "Jamba Mini 2 · Jamba 3B", provider: "AI21", released: "2026", access: "open", modalities: ["text"], context: "256K", expertise: ["Jamba Mini 2 (52B/12B, Jan 2026)","Jamba 3B (edge, 256K)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "ibm-granite", name: "IBM Granite", country: "US", subsection: "Open-Weight & Challengers",
+      positioning: "Enterprise-governed small hybrids (ISO 42001).",
+      openness: ["open"], modalities: ["text", "code", "image", "audio"],
+      lines: [
+        { name: "Granite 4", models: [
+          { name: "Granite 4.1 (3/8/30B)", provider: "IBM", released: "Apr 2026", access: "open", modalities: ["text","code"], context: "up to 512K", expertise: ["Instruction + tool-calling for agents","Efficiency-per-dollar","Predictable-latency RAG (no built-in reasoning mode)"], notes: "Apache 2.0 + watsonx.", uncertain: false },
+          { name: "Granite 4.0 · Nano · specialist stack", provider: "IBM", released: "2025-26", access: "open", modalities: ["text","image","audio"], context: null, expertise: ["Granite 4.0 (H-Small/Tiny/Micro hybrids, ~70% less memory)","Granite 4.0 Nano (~350M/1.5B, in-browser)","Specialists: Guardian, Vision, Docling, Speech, Embedding R2, Code, TimeSeries"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "tii-falcon", name: "TII Falcon", country: "UAE", subsection: "Open-Weight & Challengers",
+      positioning: "Sovereign; hybrid + BitNet edge experiments.",
+      openness: ["open"], modalities: ["text", "reasoning", "image"],
+      lines: [
+        { name: "Falcon-H1", models: [
+          { name: "Falcon-H1 (0.5B–34B)", provider: "TII", released: "May 2025", access: "open", modalities: ["text"], context: "~256K", expertise: ["Long-context efficiency (parallel attention + Mamba-2 heads)","34B rivals 70B"], notes: "Falcon License.", uncertain: false },
+          { name: "Falcon-H1R 7B · Arabic · Falcon 3 · Edge · Mamba · Falcon 2", provider: "TII", released: "2024-26", access: "open", modalities: ["text","reasoning","image"], context: null, expertise: ["Falcon-H1R 7B (reasoning, AIME 2025 83.1%, Jan 2026)","Falcon-H1 Arabic (#1 Arabic leaderboard)","Falcon 3 (small)","Falcon-Edge (1.58-bit BitNet)","Falcon Mamba 7B (first open pure-SSM)","Falcon 2 (VLM)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "reka", name: "Reka", country: "US/UK", subsection: "Open-Weight & Challengers",
+      positioning: "Multimodal-native from scratch.",
+      openness: ["open", "closed"], modalities: ["text", "image", "code"],
+      lines: [
+        { name: "Reka", models: [
+          { name: "Reka Flash 3.1", provider: "Reka", released: "Jul 2025", access: "open", modalities: ["text","code"], context: "~128K", expertise: ["Coding (+10 LiveCodeBench vs 3; ≈ Qwen3-32B/o3-mini)","Efficient self-host"], notes: "Apache 2.0; 21B; ships Reka Quant 3.5-bit.", uncertain: false },
+          { name: "Reka Core · Flash · Edge · Research / Vision", provider: "Reka", released: "2024-25", access: "closed", modalities: ["text","image"], context: null, expertise: ["Reka Core (flagship multimodal, GPT-4V-class at launch)","Flash/Edge (proprietary)","Reka Research/Vision (agentic platforms)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "baidu-ernie", name: "Baidu Ernie", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Native omni-modal frontier; 4.5 open.",
+      openness: ["closed", "open"], modalities: ["text", "reasoning", "image", "audio", "video"],
+      lines: [
+        { name: "Ernie 5.x (closed)", models: [
+          { name: "Ernie 5.1", provider: "Baidu", released: "May 2026", access: "closed", modalities: ["text","image","audio","video","reasoning"], context: null, expertise: ["Strong reasoning + tools (AIME26 99.6 w/ tools)","'Second only to Gemini 3.1 Pro'","Elastic sub-network from 5.0"], notes: "Latest.", uncertain: false },
+          { name: "Ernie 5.0 · 4.5 family (open) · X1 · 4.5 Turbo", provider: "Baidu", released: "2025-26", access: "both", modalities: ["text","image","reasoning"], context: null, expertise: ["Ernie 5.0 (~2.4T MoE, <3% active, native omni-modal in+out, LMArena ~1,460)","Ernie 4.5 (open Apache: VL-424B-A47B, 300B-A47B text, 21B-A3B, 0.3B)","Ernie X1/X1.1 (reasoning)","4.5 Turbo (cheap)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "tencent-hunyuan", name: "Tencent Hunyuan", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Hybrid Mamba-MoE; assistant + cloud.",
+      openness: ["open", "closed"], modalities: ["text", "reasoning"],
+      lines: [
+        { name: "Hy3", models: [
+          { name: "Hy3-preview", provider: "Tencent", released: "Apr 2026", access: "open", modalities: ["text","reasoning"], context: "256K", expertise: ["Leading reasoning + agent for its size","Cost-efficient"], notes: "Open + Cloud + OpenRouter. MoE 295B/21B active. First model on rebuilt infra.", uncertain: false },
+          { name: "Hunyuan-Large · A13B · TurboS · T1", provider: "Tencent", released: "2024-26", access: "both", modalities: ["text","reasoning"], context: null, expertise: ["Hunyuan-Large (389B/52B, beat Llama-3.1-405B on MMLU)","Hunyuan-A13B (80B/13B, hybrid reasoning toggle)","TurboS (560B/56B hybrid Mamba flagship)","T1 (first Mamba ultra-large reasoning, ≈R1)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "01ai-yi", name: "01.AI (Yi)", country: "China", subsection: "Open-Weight & Challengers",
+      positioning: "Pivoted out of foundation training (2025) — effectively dormant.",
+      openness: ["open", "closed"], modalities: ["text", "image", "code"],
+      lines: [
+        { name: "Yi", models: [
+          { name: "Yi-34B/6B · 1.5 · VL · Coder · Large / Lightning", provider: "01.AI", released: "2023-24", access: "both", modalities: ["text","image","code"], context: "200K (34B variant)", expertise: ["Yi-34B/6B (bilingual, 200K variant)","Yi-1.5 (Apache)","Yi-VL / Yi-Coder (Apache, 128K)","Yi-Large / Yi-Lightning (proprietary flagships, last Oct 2024)"], notes: "Kai-Fu Lee lab. No new foundation model since Yi-Lightning (Oct 2024).", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "other-open-weight", name: "Other notable open-weight releases", country: "Various", subsection: "Open-Weight & Challengers",
+      positioning: "Second-tier competitive open releases.",
+      openness: ["open"], modalities: ["text", "reasoning", "code", "image"],
+      lines: [
+        { name: "Fully-open & neutral", models: [
+          { name: "Ai2 OLMo 3 (7B/32B)", provider: "Ai2", released: "Nov 2025", access: "open", modalities: ["text","reasoning"], context: null, expertise: ["Fully open (weights + data + code + logs), Apache 2.0","Best fully-open 32B reasoning (OLMo 3-Think)"], notes: "", uncertain: false },
+          { name: "Nous Hermes 4 (14/70/405B)", provider: "Nous Research", released: "Aug 2025", access: "open", modalities: ["text","reasoning"], context: null, expertise: ["Neutrally-aligned, low-refusal","Hybrid reasoning"], notes: "Restricted Llama license.", uncertain: false }
+        ]},
+        { name: "Agentic & specialist", models: [
+          { name: "MiniMax M2 → M2.7", provider: "MiniMax", released: "Oct 2025", access: "open", modalities: ["text","code"], context: null, expertise: ["Elite agentic tool-calling at low cost","M2.7 adds Agent Teams"], notes: "MIT; MoE 230B/10B active.", uncertain: false },
+          { name: "ServiceNow Apriel · LG EXAONE · Snowflake Arctic · xAI open Grok 2", provider: "Various", released: "2024-26", access: "open", modalities: ["text","reasoning","image"], context: null, expertise: ["Apriel-1.6-15B-Thinker (MIT, single-GPU multimodal reasoning)","LG EXAONE 4.0/4.5 (Korea, hybrid reasoning, non-commercial)","Snowflake Arctic (legacy 480B enterprise, no successor)","xAI open Grok 2/2.5 (restricted, last-gen weights)"], notes: "", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "image-generation",
+  name: "Image Generation",
+  blurb: "Split between native-multimodal models (reason over text+refs, then render) and diffusion models. Trend: unified generate+edit, multi-reference conditioning, near-perfect in-image text.",
+  families: [
+    {
+      id: "openai-gpt-image", name: "OpenAI GPT-Image", country: "US",
+      positioning: "Native multimodal image gen; #1 on Image Arena mid-2026.",
+      openness: ["closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "GPT-Image (native)", models: [
+          { name: "GPT-Image-2", provider: "OpenAI", released: "Apr 2026", access: "closed", modalities: ["image","text"], context: null, expertise: ["Near-perfect in-image text","Realistic UI / screenshots","Top photorealism; reasoning-guided instructions"], notes: "#1 on Artificial Analysis Image Arena mid-2026.", uncertain: false },
+          { name: "GPT-Image-1.5 · GPT-Image-1 · GPT-Image-1-mini · DALL·E 3", provider: "OpenAI", released: "2025-26", access: "closed", modalities: ["image","text"], context: null, expertise: ["GPT-Image-1.5 (transitional)","GPT-Image-1 (first native, Apr 2025)","GPT-Image-1-mini (cheap/fast)","DALL·E 3 (legacy diffusion)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-image", name: "Google Nano Banana + Imagen", country: "US",
+      positioning: "Native image line + Imagen diffusion; industry-leading text rendering.",
+      openness: ["closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Nano Banana (native, Gemini image)", models: [
+          { name: "Gemini 3 Pro Image ('Nano Banana Pro')", provider: "Google", released: "Nov 2025 (GA Jun 2026)", access: "closed", modalities: ["image","text"], context: null, expertise: ["Industry-leading text rendering (long/multilingual)","Multi-subject identity","Diagrams/layout; up to 4K"], notes: "~$0.134/img, SynthID watermark, 'thinking' generation.", uncertain: false },
+          { name: "Gemini 3.1 Flash Image ('Nano Banana 2') + Lite", provider: "Google", released: "2026", access: "closed", modalities: ["image","text"], context: null, expertise: ["Pro-quality at Flash speed; migration default","Nano Banana 2 Lite (~4s, cheapest)","Gemini 2.5 Flash Image (original, legacy)"], notes: "", uncertain: false }
+        ]},
+        { name: "Imagen (diffusion)", models: [
+          { name: "Imagen 4 (Ultra/Standard/Fast)", provider: "Google", released: "2025", access: "closed", modalities: ["image","text"], context: null, expertise: ["Photoreal + surreal/stylized art (Ultra beats Nano Banana Pro here)","High fidelity"], notes: "~$0.02–0.06/img. Endpoints retire Aug 17 2026 → migrate to Gemini image. Imagen 3 legacy.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "bfl-flux", name: "Black Forest Labs (Flux)", country: "Germany",
+      positioning: "Leading open-weights image lab (original SD authors); unified gen+edit.",
+      openness: ["open", "closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Flux.2", models: [
+          { name: "FLUX.2 [dev]", provider: "Black Forest Labs", released: "Nov 2025", access: "open", modalities: ["image","text"], context: null, expertise: ["Photorealism at scale","Better text","Multi-reference variation"], notes: "BFL community license; 32B; on Cloudflare Workers AI.", uncertain: false },
+          { name: "FLUX.2 [klein] / [pro] / [flex]", provider: "Black Forest Labs", released: "2025-26", access: "both", modalities: ["image","text"], context: null, expertise: ["[klein] sub-second on consumer GPUs","[pro]/[flex] hosted API, best $/quality bulk"], notes: "", uncertain: false },
+          { name: "FLUX.1 Kontext · 1.1 Pro · [dev]/[schnell]/[pro]", provider: "Black Forest Labs", released: "2024-25", access: "both", modalities: ["image","text"], context: null, expertise: ["Kontext ([pro]/[max]/[dev]) mask-free instruction editing","1.1 Pro fast, 4MP Ultra","[schnell] fully-permissive Apache go-to"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "stability-ai", name: "Stability AI", country: "UK",
+      positioning: "Top choice for fully-open, self-hostable, commercial-licensable image models.",
+      openness: ["open"], modalities: ["image", "text"],
+      lines: [
+        { name: "Stable Diffusion", models: [
+          { name: "Stable Diffusion 3.5 Large (+ Turbo)", provider: "Stability AI", released: "Oct 2024 (2026 opt.)", access: "open", modalities: ["image","text"], context: null, expertise: ["Quality, typography, complex prompt adherence","Turbo few-step"], notes: "Community License; 8.1B.", uncertain: false },
+          { name: "SD 3.5 Medium · SDXL 1.0", provider: "Stability AI", released: "2023-24", access: "open", modalities: ["image","text"], context: null, expertise: ["SD 3.5 Medium (low-VRAM)","SDXL 1.0 (legacy but dominant LoRA/ControlNet backbone)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "midjourney", name: "Midjourney", country: "US",
+      positioning: "Premium aesthetics-first; best default 'beauty'.",
+      openness: ["closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Midjourney", models: [
+          { name: "Midjourney V8.1", provider: "Midjourney", released: "Apr 2026 (default Jun 2026)", access: "closed", modalities: ["image","text"], context: null, expertise: ["Fastest MJ yet","Best-in-class aesthetics; improved adherence","2K HD without upscale"], notes: "Discord + web; --oref/--sref refs.", uncertain: false },
+          { name: "V7", provider: "Midjourney", released: "2025", access: "closed", modalities: ["image","text"], context: null, expertise: ["Legacy"], notes: "Historically no public API until recently.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "ideogram", name: "Ideogram", country: "US",
+      positioning: "Specialist in accurate in-image text + graphic-design layouts.",
+      openness: ["closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Ideogram", models: [
+          { name: "Ideogram 4.0", provider: "Ideogram", released: "Jun 2026", access: "closed", modalities: ["image","text"], context: null, expertise: ["Leading text rendering","Design/layout; style consistency"], notes: "Editing; style refs.", uncertain: false },
+          { name: "Ideogram 3.0", provider: "Ideogram", released: "2025", access: "closed", modalities: ["image","text"], context: null, expertise: ["~90% text accuracy; topped ELO at launch"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "recraft", name: "Recraft", country: "US",
+      positioning: "The only major family generating true vector (SVG) + long-text raster.",
+      openness: ["closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Recraft", models: [
+          { name: "Recraft V4 / V4.1", provider: "Recraft", released: "Feb/May 2026", access: "closed", modalities: ["image","text"], context: null, expertise: ["Sharper/consistent design","Brand style sets","Vector + long text"], notes: "Raster + vector.", uncertain: false },
+          { name: "Recraft V3 ('red_panda')", provider: "Recraft", released: "2024", access: "closed", modalities: ["image","text"], context: null, expertise: ["Was #1 on Artificial Analysis","Unique vector gen"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "adobe-firefly", name: "Adobe Firefly", country: "US",
+      positioning: "Commercially-safe / IP-indemnified; embedded in Creative Cloud.",
+      openness: ["closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Firefly", models: [
+          { name: "Firefly Image Model 5", provider: "Adobe", released: "~Oct 2025", access: "closed", modalities: ["image","text"], context: null, expertise: ["Native 4MP, photoreal lighting","Accurate portraits","Multi-layer comps; indemnified"], notes: "Custom training; editing.", uncertain: false },
+          { name: "Firefly Image 4 / 4 Ultra", provider: "Adobe", released: "2025", access: "closed", modalities: ["image","text"], context: null, expertise: ["Big jump over 3"], notes: "Firefly now also serves Nano Banana 2, Veo, Runway, Kling (30+ third-party models).", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "image-others", name: "Other image generators", country: "Various",
+      positioning: "Specialist and open image models (typography, 4K, character consistency, vector).",
+      openness: ["open", "closed"], modalities: ["image", "text"],
+      lines: [
+        { name: "Closed specialists", models: [
+          { name: "Reve 2.0", provider: "Reve", released: "Jun 2026", access: "closed", modalities: ["image","text"], context: null, expertise: ["~98% typography accuracy","Native 4K (16MP)","Agentic layout reasoning"], notes: "#2 on Image Arena at launch (behind GPT-Image-2). Layout editing.", uncertain: false },
+          { name: "Luma Photon / Flash", provider: "Luma AI", released: "Dec 2024", access: "closed", modalities: ["image","text"], context: null, expertise: ["Cost-efficient (~$0.015/img)","~10× faster","Single-image character consistency"], notes: "", uncertain: false },
+          { name: "ByteDance Seedream 4.5/4.0", provider: "ByteDance", released: "2025-26", access: "closed", modalities: ["image","text"], context: null, expertise: ["Dense-text/typography","Reference-detail preservation","Up to 4K"], notes: "Seedream 5.0 emerging, physics-aware (uncertain).", uncertain: false }
+        ]},
+        { name: "Open / mixed", models: [
+          { name: "Alibaba Qwen-Image-2.0", provider: "Alibaba", released: "Feb 2026", access: "open", modalities: ["image","text"], context: null, expertise: ["Pro typography (1k-token instructions → infographics)","Native 2K","Unified edit"], notes: "Apache 2.0; leaner 7B.", uncertain: false },
+          { name: "Tencent HunyuanImage-3.0", provider: "Tencent", released: "Sep 2025 (Instruct Jan 2026)", access: "open", modalities: ["image","text"], context: null, expertise: ["Largest open MoE image model (80B/13B active)","Unified understanding + generation"], notes: "Editing (Instruct).", uncertain: false },
+          { name: "Leonardo Phoenix 2.0 · Playground v3", provider: "Various", released: "2024-25", access: "closed", modalities: ["image","text"], context: null, expertise: ["Leonardo Phoenix 2.0 (Canva-owned, concept art/game assets, custom models)","Playground v3 (design/typography, less active)"], notes: "", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "video-generation",
+  name: "Video Generation",
+  blurb: "The fastest-moving frontier. The cycle's defining trend: native synchronized audio (dialogue + SFX generated jointly with picture). Chinese labs now trade top spots with Western labs.",
+  families: [
+    {
+      id: "openai-sora", name: "OpenAI Sora", country: "US",
+      positioning: "Text/image/video → video with synced audio; being wound down.",
+      openness: ["closed"], modalities: ["video", "audio", "text"],
+      lines: [
+        { name: "Sora", models: [
+          { name: "Sora 2 / Sora 2 Pro", provider: "OpenAI", released: "Sep 2025", access: "closed", modalities: ["video","audio","text"], context: null, expertise: ["Physical accuracy","Synced dialogue + SFX","'Cameos' (inject a real person + voice)"], notes: "⚠️ Being wound down: consumer app discontinued Apr 26 2026; API closes Sep 24 2026.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-veo", name: "Google Veo", country: "US/UK",
+      positioning: "Text/image → video + native audio with best lip-sync.",
+      openness: ["closed"], modalities: ["video", "audio", "text"],
+      lines: [
+        { name: "Veo", models: [
+          { name: "Veo 3.1", provider: "Google", released: "Oct 2025", access: "closed", modalities: ["video","audio","text"], context: null, expertise: ["Reference joint audio-visual with best lip-sync","Strong adherence","1080p, ~60s"], notes: "Gemini/Vertex/Flow. Veo 3 (May 2025), Veo 3 Lite (budget). Veo 4 not announced.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "runway", name: "Runway", country: "US",
+      positioning: "Text/image → video; tops text-to-video Arena.",
+      openness: ["closed"], modalities: ["video", "text"],
+      lines: [
+        { name: "Gen-4", models: [
+          { name: "Runway Gen-4.5", provider: "Runway", released: "Dec 2025", access: "closed", modalities: ["video","text"], context: null, expertise: ["Physical accuracy, human motion, camera control","Tops text-to-video Arena","Node-based Workflows"], notes: "Aleph (video → edited video).", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "kling", name: "Kuaishou Kling", country: "China",
+      positioning: "Text/image → video + synced audio; native 4K/60fps.",
+      openness: ["closed"], modalities: ["video", "audio", "text"],
+      lines: [
+        { name: "Kling", models: [
+          { name: "Kling 3.0", provider: "Kuaishou", released: "Feb 2026", access: "closed", modalities: ["video","audio","text"], context: null, expertise: ["Native 4K (not upscaled), 60fps, up to 15s","Single-pass audio + video","Strong motion/physics"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "pika", name: "Pika", country: "US",
+      positioning: "Text/image → video; keyframe transitions + effects.",
+      openness: ["closed"], modalities: ["video", "text"],
+      lines: [
+        { name: "Pika", models: [
+          { name: "Pika 2.2", provider: "Pika", released: "Feb 2025", access: "closed", modalities: ["video","text"], context: null, expertise: ["Pikaframes keyframe transitions","Pikaswaps/additions/effects","Camera direction"], notes: "720/1080p, 5–10s.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "luma-ray", name: "Luma Ray", country: "US",
+      positioning: "Text/image → video; scene-level lighting/GI consistency, HDR.",
+      openness: ["closed"], modalities: ["video", "text"],
+      lines: [
+        { name: "Ray", models: [
+          { name: "Luma Ray 3.14", provider: "Luma AI", released: "Jan 2026", access: "closed", modalities: ["video","text"], context: null, expertise: ["Scene-level lighting/global-illumination consistency, HDR","Native 1080p","~4× faster / 3× cheaper than Ray 3"], notes: "Dream Machine; Ray3 Modify.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "minimax-hailuo", name: "MiniMax Hailuo", country: "China",
+      positioning: "Text/image → video; 'extreme physics mastery', low cost.",
+      openness: ["closed"], modalities: ["video", "text"],
+      lines: [
+        { name: "Hailuo", models: [
+          { name: "MiniMax Hailuo 2.3 / Fast", provider: "MiniMax", released: "2025-26", access: "closed", modalities: ["video","text"], context: null, expertise: ["'Extreme physics mastery' (complex motion)","Native 1080p","SOTA instruction following"], notes: "#2 on Video Arena at low cost.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "bytedance-seedance", name: "ByteDance Seedance", country: "China",
+      positioning: "Multi-shot narrative in one gen + native audio; tops Artificial Analysis.",
+      openness: ["closed"], modalities: ["video", "audio", "text"],
+      lines: [
+        { name: "Seedance", models: [
+          { name: "Seedance 2.0 (+ 2.5)", provider: "ByteDance", released: "Feb 2026", access: "closed", modalities: ["video","audio","text"], context: null, expertise: ["Multi-shot narrative + shot transitions in one gen","Beat-aware sync","Character consistency"], notes: "Text/image/audio/video → video + native audio. Tops Artificial Analysis.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "alibaba-wan", name: "Alibaba Wan (open)", country: "China",
+      positioning: "First open-source MoE video; runs on RTX 4090, huge LoRA ecosystem.",
+      openness: ["open"], modalities: ["video", "text", "audio"],
+      lines: [
+        { name: "Wan", models: [
+          { name: "Wan 2.2", provider: "Alibaba", released: "Jul 2025", access: "open", modalities: ["video","text","audio"], context: null, expertise: ["First open-source MoE video (27B/14B active)","Runs on RTX 4090; huge LoRA ecosystem","No API fees"], notes: "Apache 2.0. Text/image → video (S2V: speech → video).", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "tencent-hunyuan-video", name: "Tencent Hunyuan-Video (open)", country: "China",
+      positioning: "Open foundation video model competitive w/ closed; modular open stack.",
+      openness: ["open"], modalities: ["video", "audio", "text", "image"],
+      lines: [
+        { name: "Hunyuan-Video", models: [
+          { name: "Hunyuan-Video + Foley + Avatar", provider: "Tencent", released: "Dec 2024→", access: "open", modalities: ["video","audio","text","image"], context: null, expertise: ["Open foundation model competitive w/ closed","Foley (video → SFX, SOTA open)","Avatar (audio+image → talking head)"], notes: "Modular open stack.", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "audio",
+  name: "Audio — Music, Voice/TTS, Speech-to-Text",
+  blurb: "Three audio classes: full-song music generation, voice/TTS (latency vs expressiveness), and speech-to-text transcription. Speech-to-speech realtime is converging with TTS.",
+  families: [
+    // ---- Music ----
+    {
+      id: "suno", name: "Suno", country: "US", subsection: "Music",
+      positioning: "Consumer full-song leader; radio-ready songs with vocals.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Suno", models: [
+          { name: "Suno v5.5", provider: "Suno", released: "Mar 2026", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Radio-ready songs","'Voices' clones your own singing","Custom Models; My Taste"], notes: "Text (+lyrics/style/ref) → full song w/ vocals.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "udio", name: "Udio", country: "US", subsection: "Music",
+      positioning: "Vocal expressiveness; mid-transition to label-licensed platform.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Udio", models: [
+          { name: "Udio (Allegro v1.5 → licensed platform)", provider: "Udio", released: "2024-26", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Vocal expressiveness (vibrato, pitch glide)","Stems"], notes: "Mid-transition to fully label-licensed (UMG/WMG); downloads temporarily restricted. New platform announced.", uncertain: true }
+        ]}
+      ]
+    },
+    {
+      id: "elevenlabs-music", name: "ElevenLabs Music", country: "US", subsection: "Music",
+      positioning: "Licensed-data music = commercially cleared; mid-track genre switching.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "ElevenLabs Music", models: [
+          { name: "ElevenLabs Music v2", provider: "ElevenLabs", released: "May 2026", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Mid-track genre switching","Section-by-section building","Licensed-data = commercially cleared"], notes: "Text (+structure) → song.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-lyria", name: "Google Lyria", country: "US/UK", subsection: "Music",
+      positioning: "High-fidelity instrumental; interactive realtime 'jamming'.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Lyria", models: [
+          { name: "Lyria 2 / RealTime / (Lyria 3)", provider: "Google", released: "2025-26", access: "closed", modalities: ["audio","text"], context: null, expertise: ["High-fidelity 48kHz instrumental","Lyria RealTime = interactive 'jamming'/continuous gen (powers MusicFX DJ)"], notes: "Vertex/Gemini. Instrumental-focused.", uncertain: false }
+        ]}
+      ]
+    },
+    // ---- Voice / TTS ----
+    {
+      id: "elevenlabs-voice", name: "ElevenLabs (Voice/TTS)", country: "US", subsection: "Voice / TTS",
+      positioning: "Market-leading expressive TTS; cloning + Voice Design.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Eleven", models: [
+          { name: "Eleven v3 (+ Flash v2.5)", provider: "ElevenLabs", released: "Mar 2026 (v3 GA)", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Most expressive (inline audio tags [whispers]/[laughs])","70+ langs","Flash v2.5 ~75ms for realtime"], notes: "Text → speech, cloning, Voice Design.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "openai-realtime", name: "OpenAI Realtime / TTS", country: "US", subsection: "Voice / TTS",
+      positioning: "Best-integrated realtime speech-to-speech agents; steerable TTS.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Realtime", models: [
+          { name: "gpt-realtime (+ 1.5, mini) / gpt-4o-mini-tts", provider: "OpenAI", released: "Aug 2025", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Best-integrated realtime speech-to-speech agents","Steerable TTS (how, not just what)"], notes: "Speech↔speech (realtime); text → speech.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "cartesia", name: "Cartesia", country: "US", subsection: "Voice / TTS",
+      positioning: "Latency king (~40ms time-to-first-audio).",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Sonic", models: [
+          { name: "Cartesia Sonic 3.5", provider: "Cartesia", released: "May 2026", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Latency king (~40ms TTFA, sub-100ms)","42 langs, 500+ voices","Native turn detection"], notes: "Text → speech, cloning.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "playai", name: "PlayAI", country: "US", subsection: "Voice / TTS",
+      positioning: "Multi-turn two-speaker dialogue TTS.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "PlayDialog", models: [
+          { name: "PlayDialog / Play 3.0", provider: "PlayAI", released: "2025", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Multi-turn two-speaker dialogue","<300ms streaming; 30+ langs","Play Agents framework"], notes: "Text → speech, 2-speaker dialogue, cloning.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "hume", name: "Hume", country: "US", subsection: "Voice / TTS",
+      positioning: "Emotional-intelligence voice specialist; voice from a prompt.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Octave / EVI", models: [
+          { name: "Octave 2 / EVI 3–4", provider: "Hume", released: "Oct 2025", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Emotional-intelligence specialist","Generate any voice/personality from a prompt","Octave 2 <200ms, 11 langs"], notes: "Octave = text → speech; EVI = speech↔speech.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-chirp", name: "Google Chirp / Gemini-TTS", country: "US", subsection: "Voice / TTS",
+      positioning: "Natural-language style control; enterprise scale.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Chirp", models: [
+          { name: "Chirp 3 HD / Gemini-TTS", provider: "Google", released: "May 2026", access: "closed", modalities: ["audio","text"], context: null, expertise: ["Natural-language control of style/accent/pace/emotion","80+ locales, enterprise scale"], notes: "Google Cloud. Cloning gated. Gemini 3.1 Flash TTS May 2026.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "kokoro", name: "Kokoro (open)", country: "US", subsection: "Voice / TTS",
+      positioning: "Tiny CPU-friendly open TTS; best local/offline narration.",
+      openness: ["open"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Kokoro", models: [
+          { name: "Kokoro-82M", provider: "Kokoro", released: "Jan 2025", access: "open", modalities: ["audio","text"], context: null, expertise: ["Tiny (82M, CPU-friendly)","#1 on TTS Arena at launch; 54 voices/8 langs","~$0.06/hr; best local/offline narration"], notes: "Apache 2.0. No cloning/emotion tags. (This is what pai-voice runs on.)", uncertain: false }
+        ]}
+      ]
+    },
+    // ---- Speech-to-text ----
+    {
+      id: "openai-whisper", name: "OpenAI Whisper (STT)", country: "US", subsection: "Speech-to-Text",
+      positioning: "Universal open transcription baseline; 99+ langs.",
+      openness: ["open", "closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Whisper", models: [
+          { name: "Whisper large-v3 / turbo (open) + gpt-4o-transcribe", provider: "OpenAI", released: "2023-25", access: "both", modalities: ["audio","text"], context: null, expertise: ["Universal open baseline, 99+ langs","turbo ~216× realtime","gpt-4o-transcribe = lower WER proprietary successor"], notes: "Whisper open (MIT); audio → text.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "deepgram", name: "Deepgram Nova", country: "US", subsection: "Speech-to-Text",
+      positioning: "Cheap, fast streaming + batch STT; realtime code-switching.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Nova", models: [
+          { name: "Deepgram Nova-3 (+ Medical)", provider: "Deepgram", released: "Jan 2025", access: "closed", modalities: ["audio","text"], context: null, expertise: ["~53% WER reduction, ~2× cheaper (~$0.0077/min)","50+ langs, realtime code-switching","Keyterm prompting"], notes: "Self-host option. Streaming + batch.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "assemblyai", name: "AssemblyAI", country: "US", subsection: "Speech-to-Text",
+      positioning: "Voice-agent STT; native end-of-turn detection.",
+      openness: ["closed"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Universal", models: [
+          { name: "Universal-Streaming / Universal-2", provider: "AssemblyAI", released: "Jun 2025", access: "closed", modalities: ["audio","text"], context: null, expertise: ["~300ms immutable transcripts","Native end-of-turn detection for voice agents","Unlimited concurrency, $0.15/hr"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "nvidia-canary", name: "NVIDIA Canary / Parakeet (open)", country: "US", subsection: "Speech-to-Text",
+      positioning: "Open accuracy + throughput leaders; best self-hosted STT.",
+      openness: ["open"], modalities: ["audio", "text"],
+      lines: [
+        { name: "Canary / Parakeet", models: [
+          { name: "Canary / Parakeet", provider: "NVIDIA", released: "2025", access: "open", modalities: ["audio","text"], context: null, expertise: ["Top HF Open ASR leaderboard","Canary-Qwen-2.5B 5.63% WER #1","Parakeet-v3 ~3,333× realtime"], notes: "Audio → text (+translation).", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "embeddings-rerankers",
+  name: "Embeddings & Rerankers",
+  blurb: "The retrieval layer. Closed API leaders (Google, Cohere, Voyage) hold leaderboard tops; open weights (Qwen3-Embedding, BGE, Jina, Nomic) at effective parity for self-hosted RAG. Plus rerankers and multimodal embeddings.",
+  families: [
+    // ---- Embeddings (retrieval) ----
+    {
+      id: "google-gemini-embedding", name: "Google Gemini Embedding", country: "US", subsection: "Embeddings (Retrieval)",
+      positioning: "Held #1 MTEB Multilingual through 2025.",
+      openness: ["closed"], modalities: ["embedding", "text"],
+      lines: [
+        { name: "Gemini Embedding", models: [
+          { name: "gemini-embedding-001", provider: "Google", released: "2025", access: "closed", modalities: ["embedding","text"], context: null, expertise: ["Held #1 MTEB Multilingual through 2025","Unified across domains","3072-d Matryoshka-truncatable; 100+ langs"], notes: "Text → vector.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "cohere-embed", name: "Cohere Embed", country: "Canada", subsection: "Embeddings (Retrieval)",
+      positioning: "SOTA multimodal retrieval; whole-document context for regulated domains.",
+      openness: ["closed"], modalities: ["embedding", "text", "image"],
+      lines: [
+        { name: "Embed", models: [
+          { name: "Cohere Embed v4 (multimodal)", provider: "Cohere", released: "2025", access: "closed", modalities: ["embedding","text","image"], context: "128K", expertise: ["SOTA text-to-image / mixed retrieval","128K context (whole docs incl. scanned)","Regulated domains"], notes: "Text+images+mixed → unified vector. Matryoshka dims.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "voyage", name: "Voyage", country: "US", subsection: "Embeddings (Retrieval)",
+      positioning: "Top general retrieval; first production MoE embedding.",
+      openness: ["closed"], modalities: ["embedding", "text"],
+      lines: [
+        { name: "Voyage 4", models: [
+          { name: "Voyage 4 family (large/lite/nano)", provider: "Voyage (MongoDB)", released: "Jan 2026", access: "closed", modalities: ["embedding","text"], context: null, expertise: ["Top general retrieval","large = first production MoE embedding","One shared vector space across sizes"], notes: "Text (code/law/finance). int8 cuts vector-DB cost ~83%.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "openai-embedding", name: "OpenAI text-embedding", country: "US", subsection: "Embeddings (Retrieval)",
+      positioning: "Ubiquitous cheap default; now trails on MTEB.",
+      openness: ["closed"], modalities: ["embedding", "text"],
+      lines: [
+        { name: "text-embedding-3", models: [
+          { name: "text-embedding-3 (small/large)", provider: "OpenAI", released: "Jan 2024", access: "closed", modalities: ["embedding","text"], context: null, expertise: ["Ubiquitous default, cheap, Matryoshka","Now trails on MTEB"], notes: "No v4. Value/legacy.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "qwen3-embedding", name: "Qwen3-Embedding", country: "China", subsection: "Embeddings (Retrieval)",
+      positioning: "#1 open on MTEB Multilingual; beat several closed APIs.",
+      openness: ["open"], modalities: ["embedding", "text"],
+      lines: [
+        { name: "Qwen3-Embedding", models: [
+          { name: "Qwen3-Embedding (0.6/4/8B)", provider: "Alibaba", released: "Jun 2025", access: "open", modalities: ["embedding","text"], context: null, expertise: ["#1 open on MTEB Multilingual (8B 70.58)","Beat several closed APIs","Flexible 32–4096 dims"], notes: "Apache.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "jina-embeddings", name: "Jina Embeddings", country: "Germany", subsection: "Embeddings (Retrieval)",
+      positioning: "Visually-rich docs; late-interaction + task LoRA adapters.",
+      openness: ["open", "closed"], modalities: ["embedding", "text", "image"],
+      lines: [
+        { name: "Jina v4", models: [
+          { name: "jina-embeddings-v4", provider: "Jina AI", released: "Jun 2025", access: "both", modalities: ["embedding","text","image"], context: null, expertise: ["Visually-rich docs (tables/charts/screenshots)","Task LoRA adapters","Late-interaction"], notes: "Open + API; 3.8B. Text+image.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "bge", name: "BAAI BGE", country: "China", subsection: "Embeddings (Retrieval)",
+      positioning: "The open RAG workhorse; hybrid dense+sparse+multi-vector.",
+      openness: ["open"], modalities: ["embedding", "text"],
+      lines: [
+        { name: "BGE", models: [
+          { name: "BGE-M3", provider: "BAAI", released: "2024-25", access: "open", modalities: ["embedding","text"], context: "8192", expertise: ["Dense + sparse + multi-vector (ColBERT) in one → hybrid search","Strong Hebrew / low-resource","The open RAG workhorse"], notes: "MIT.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "nomic-embed", name: "Nomic Embed", country: "US", subsection: "Embeddings (Retrieval)",
+      positioning: "First general-purpose MoE text embedding; fully open + data.",
+      openness: ["open"], modalities: ["embedding", "text"],
+      lines: [
+        { name: "Nomic Embed", models: [
+          { name: "Nomic Embed v2 MoE", provider: "Nomic AI", released: "Feb 2025", access: "open", modalities: ["embedding","text"], context: null, expertise: ["First general-purpose MoE text embedding (475M/305M active)","Most transparent"], notes: "Fully open + data.", uncertain: false }
+        ]}
+      ]
+    },
+    // ---- Rerankers ----
+    {
+      id: "cohere-rerank", name: "Cohere Rerank", country: "Canada", subsection: "Rerankers",
+      positioning: "SOTA BEIR + multilingual reranking; reasoning-aware.",
+      openness: ["closed"], modalities: ["rerank", "text"],
+      lines: [
+        { name: "Rerank", models: [
+          { name: "Cohere Rerank 3.5", provider: "Cohere", released: "Dec 2024", access: "closed", modalities: ["rerank","text"], context: "4096", expertise: ["SOTA BEIR + multilingual","Long docs/tables/JSON/code","Reasoning-aware; 100+ langs"], notes: "(query, docs) → scores.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "other-rerankers", name: "Voyage / Jina / Qwen3 / BGE rerankers", country: "Various", subsection: "Rerankers",
+      positioning: "Fast and open reranking options that pair with matching embeddings.",
+      openness: ["open", "closed"], modalities: ["rerank", "text"],
+      lines: [
+        { name: "Rerankers", models: [
+          { name: "Voyage rerank-2.5 / lite", provider: "Voyage", released: "2025-26", access: "closed", modalities: ["rerank","text"], context: null, expertise: ["Fast (~595ms)","Pairs w/ Voyage embeddings"], notes: "", uncertain: false },
+          { name: "Jina reranker v2", provider: "Jina AI", released: "2024-25", access: "open", modalities: ["rerank","text"], context: null, expertise: ["Open, 278M, 100+ langs","6× throughput"], notes: "", uncertain: false },
+          { name: "Qwen3-Reranker (0.6/4/8B)", provider: "Alibaba", released: "Jun 2025", access: "open", modalities: ["rerank","text"], context: null, expertise: ["Open reranker ladder"], notes: "", uncertain: false },
+          { name: "BGE reranker", provider: "BAAI", released: "2024-25", access: "open", modalities: ["rerank","text"], context: null, expertise: ["Open; pairs w/ BGE-M3"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    // ---- Multimodal embeddings (12A) ----
+    {
+      id: "multimodal-embeddings", name: "Multimodal embeddings", country: "Various", subsection: "Multimodal Embeddings",
+      positioning: "Image-text and document/screenshot embedding models (distinct from text embeddings).",
+      openness: ["open", "closed"], modalities: ["embedding", "image", "text", "vision"],
+      lines: [
+        { name: "Image-text embedders", models: [
+          { name: "CLIP · SigLIP 2 · jina-clip v2 · Nomic Embed v2", provider: "Various", released: "2021-26", access: "both", modalities: ["embedding","image","text","vision"], context: null, expertise: ["CLIP (OpenAI, original baseline)","SigLIP 2 (Google, current best open image-text)","jina-clip v2 / jina-embeddings-v4 (Matryoshka)","Nomic Embed v2 (low-cost)"], notes: "", uncertain: false },
+          { name: "Cohere Embed v4 · Voyage Multimodal-3.5", provider: "Cohere / Voyage", released: "2025-26", access: "closed", modalities: ["embedding","image","text"], context: null, expertise: ["Cohere Embed v4 (production text+image+interleaved docs, removes OCR)","Voyage Multimodal-3.5 (doc/screenshot retrieval)"], notes: "", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "coding-specialized",
+  name: "Coding-Specialized",
+  blurb: "The fastest-moving class, measured on SWE-bench Verified/Pro and Terminal-Bench. Closed frontier leads raw capability; open near-parity dominates self-hosting. (Labs here also appear in Language & Reasoning.)",
+  families: [
+    {
+      id: "claude-coding", name: "Anthropic Claude (coding)", country: "US",
+      positioning: "Best buyable coder mid-2026 (Opus 4.8); Fable 5 reportedly ~95% SWE-Verified.",
+      openness: ["closed"], modalities: ["code", "text", "reasoning"],
+      lines: [
+        { name: "Claude coding", models: [
+          { name: "Claude Opus 4.5→4.8 / Fable 5", provider: "Anthropic", released: "2026", access: "closed", modalities: ["code","text","reasoning"], context: null, expertise: ["Opus 4.8 cited best buyable coder Jun 2026 (88.6% SWE-Verified, 69.2% SWE-Pro)","Fable 5 reportedly ~95% SWE-Verified"], notes: "+ Claude Code CLI.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "openai-coding", name: "OpenAI GPT / Codex (coding)", country: "US",
+      positioning: "Repo-scale agentic coding; native context compaction.",
+      openness: ["closed"], modalities: ["code", "text", "reasoning", "action"],
+      lines: [
+        { name: "GPT / Codex coding", models: [
+          { name: "GPT-5.5 / Codex (5.2→5.3-Codex)", provider: "OpenAI", released: "2025-26", access: "closed", modalities: ["code","text","reasoning","action"], context: null, expertise: ["GPT-5.5 ~82.7% Terminal-Bench 2.0, ~58.6% SWE-Pro (agent-reported)","GPT-5.2-Codex (Dec 2025) adds native context compaction for repo-scale refactors"], notes: "+ Codex CLI/cloud.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "qwen3-coder", name: "Alibaba Qwen3-Coder", country: "China",
+      positioning: "SOTA open agentic coding; comparable to Claude Sonnet 4.",
+      openness: ["open"], modalities: ["code", "text"],
+      lines: [
+        { name: "Qwen3-Coder", models: [
+          { name: "Qwen3-Coder-480B-A35B", provider: "Alibaba", released: "Jul 2025", access: "open", modalities: ["code","text"], context: "256K→1M", expertise: ["SOTA open agentic coding","'Comparable to Claude Sonnet 4'"], notes: "Apache.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "mistral-coding", name: "Mistral Codestral / Devstral", country: "France",
+      positioning: "FIM/completion 80+ langs; in-IDE agentic SWE.",
+      openness: ["open", "closed"], modalities: ["code", "text"],
+      lines: [
+        { name: "Codestral / Devstral", models: [
+          { name: "Codestral 25.08 + Devstral 2", provider: "Mistral", released: "2025-26", access: "both", modalities: ["code","text"], context: "256K", expertise: ["FIM/completion 80+ langs, HumanEval 90.5%","Devstral = in-IDE agent (cross-file, draft PRs)"], notes: "", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "deepseek-kimi-coding", name: "DeepSeek / Kimi (coding)", country: "China",
+      positioning: "Hybrid-think coding gains; elite agentic coding.",
+      openness: ["open"], modalities: ["code", "text", "reasoning"],
+      lines: [
+        { name: "DeepSeek / Kimi coding", models: [
+          { name: "DeepSeek V3.1/V4 + Kimi K2.6", provider: "DeepSeek / Moonshot", released: "2025-26", access: "open", modalities: ["code","text","reasoning"], context: null, expertise: ["DeepSeek V3.1/V4 hybrid think, +40% on SWE-bench agent tasks (superseded old Coder-V2)","Kimi K2.6 elite agentic coding"], notes: "See Language & Reasoning for full family cards.", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "on-device",
+  name: "On-Device / Small Models",
+  blurb: "The 2025–26 theme: 2–4B 'effective' models with 128K context, multimodality, OS-level integration, useful offline.",
+  families: [
+    {
+      id: "apple-foundation", name: "Apple Foundation Models", country: "US",
+      positioning: "On-device Swift framework model; summarize/extract/classify/tool-call.",
+      openness: ["on-device"], modalities: ["text"],
+      lines: [
+        { name: "Apple Foundation", models: [
+          { name: "Apple Foundation Models (3rd gen)", provider: "Apple", released: "Sep 2025", access: "on-device", modalities: ["text"], context: null, expertise: ["Summarize/extract/classify/tool-call","Guided generation + LoRA"], notes: "Free (Swift framework); ~3B, 2-bit quantized; paired MoE server model. iOS/macOS 26.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "google-edge", name: "Google Gemma 3n / Gemini Nano", country: "US",
+      positioning: "Multimodal on-device; runs in 2GB RAM offline.",
+      openness: ["on-device", "open"], modalities: ["text", "image", "audio", "video"],
+      lines: [
+        { name: "Gemma 3n / Gemini Nano", models: [
+          { name: "Gemma 3n (E2B/E4B) + Gemini Nano", provider: "Google", released: "2025", access: "on-device", modalities: ["text","image","audio","video"], context: null, expertise: ["Audio+text+image+video in","Runs in 2GB RAM offline (Per-Layer Embedding)","140 langs"], notes: "Gemma 3n open; Nano on Android/Chrome.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "phi-edge", name: "Microsoft Phi-4-mini / -multimodal", country: "US",
+      positioning: "3.8B text + 5.6B multimodal; ONNX on Snapdragon Copilot+ PCs.",
+      openness: ["on-device", "open"], modalities: ["text", "image", "audio"],
+      lines: [
+        { name: "Phi edge", models: [
+          { name: "Phi-4-mini / -multimodal", provider: "Microsoft", released: "2025", access: "on-device", modalities: ["text","image","audio"], context: "128K", expertise: ["3.8B text (128K)","5.6B speech+vision+text","ONNX on Snapdragon Copilot+ PCs"], notes: "MIT.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "smollm", name: "HuggingFace SmolLM", country: "France/US",
+      positioning: "Most transparent small model; dual-mode reasoning.",
+      openness: ["open", "on-device"], modalities: ["text", "reasoning"],
+      lines: [
+        { name: "SmolLM", models: [
+          { name: "SmolLM3-3B", provider: "Hugging Face", released: "Jul 2025", access: "on-device", modalities: ["text","reasoning"], context: "128K", expertise: ["Dual-mode reasoning, 6 langs","Beats Llama-3.2-3B/Qwen2.5-3B","Most transparent small (weights + data)"], notes: "Fully open.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "ministral", name: "Mistral Ministral 3", country: "France",
+      positioning: "On-device translation, voice assistants, robotics.",
+      openness: ["open", "on-device"], modalities: ["text", "image", "reasoning"],
+      lines: [
+        { name: "Ministral", models: [
+          { name: "Ministral 3 (3/8/14B)", provider: "Mistral", released: "Dec 2025", access: "on-device", modalities: ["text","image","reasoning"], context: "256K", expertise: ["Base/instruct/reasoning + image","On-device translation, voice assistants, robotics"], notes: "Apache.", uncertain: false }
+        ]}
+      ]
+    },
+    {
+      id: "edge-others", name: "Other edge defaults", country: "Various",
+      positioning: "Common small edge defaults across families.",
+      openness: ["open", "on-device"], modalities: ["text"],
+      lines: [
+        { name: "Edge defaults", models: [
+          { name: "Qwen small · Llama small · IBM Granite Nano", provider: "Various", released: "2024-26", access: "on-device", modalities: ["text"], context: null, expertise: ["Qwen small (0.5–4B, common edge default)","Llama small (1/3B)","IBM Granite Nano (~350M/1.5B, in-browser)"], notes: "", uncertain: false }
+        ]}
+      ]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "3d-generation",
+  name: "3D / Asset Generation",
+  blurb: "Text/image → 3D mesh; a commercially active 2026 modality feeding games/AR/VR/3D-print pipelines (GLB/FBX/USDZ, PBR, riggable topology).",
+  families: [
+    {
+      id: "meshy", name: "Meshy", country: "US",
+      positioning: "Sculpting-level fidelity, clean topology, ~1-min game-ready assets.",
+      openness: ["closed"], modalities: ["3D", "image", "text"],
+      lines: [ { name: "Meshy", models: [
+        { name: "Meshy 6", provider: "Meshy", released: "Jan 2026", access: "closed", modalities: ["3D","image","text"], context: null, expertise: ["Sculpting-level fidelity, clean topology","~1-min game-ready assets","Low-Poly + 3D-print export"], notes: "Text/image → textured mesh (PBR, ~600K faces).", uncertain: false }
+      ]}]
+    },
+    {
+      id: "rodin", name: "Rodin Gen (Hyper3D/Deemos)", country: "China",
+      positioning: "First public gen to 10M+ polys; AI mesh editing.",
+      openness: ["closed"], modalities: ["3D", "image", "text"],
+      lines: [ { name: "Rodin", models: [
+        { name: "Rodin Gen-2.5", provider: "Deemos (Hyper3D)", released: "May 2026", access: "closed", modalities: ["3D","image","text"], context: null, expertise: ["First public gen to 10M+ polys (~1M in ~4s)","AI mesh editing","STL/FBX/OBJ/GLB/USDZ"], notes: "Image/text → 3D.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "tripo", name: "Tripo", country: "China",
+      positioning: "Game-ready topology; open lightweight baseline (TripoSR).",
+      openness: ["closed", "open"], modalities: ["3D", "image", "text"],
+      lines: [ { name: "Tripo", models: [
+        { name: "Tripo v3.0", provider: "Tripo AI", released: "2025-26", access: "both", modalities: ["3D","image","text"], context: null, expertise: ["Game-ready topology, up to 2M polys","TripoSR = open lightweight baseline (MIT)"], notes: "v3.0 date uncertain.", uncertain: true }
+      ]}]
+    },
+    {
+      id: "luma-genie", name: "Luma Genie", country: "US",
+      positioning: "Any object <10s; real-time iterative editing.",
+      openness: ["closed"], modalities: ["3D", "image", "text"],
+      lines: [ { name: "Genie", models: [
+        { name: "Luma Genie", provider: "Luma AI", released: "2024-25", access: "closed", modalities: ["3D","image","text"], context: null, expertise: ["Any object <10s","Quad meshes + materials","Real-time iterative editing"], notes: "Text/image → 3D.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "stability-spar3d", name: "Stability SPAR3D", country: "UK",
+      positioning: "Single image → 3D in ~1s; edits occluded backside; runs on RTX.",
+      openness: ["open"], modalities: ["3D", "image"],
+      lines: [ { name: "SPAR3D", models: [
+        { name: "Stability SPAR3D", provider: "Stability AI", released: "Jan 2025", access: "open", modalities: ["3D","image"], context: null, expertise: ["Point cloud ~0.3s → mesh ~0.7s","Edits occluded backside","Runs on RTX"], notes: "Community License. Single image → 3D.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "hunyuan3d", name: "Tencent Hunyuan3D", country: "China",
+      positioning: "High geo-res open 3D + playable 3D worlds.",
+      openness: ["open"], modalities: ["3D", "image", "text", "video"],
+      lines: [ { name: "Hunyuan3D", models: [
+        { name: "Hunyuan3D 2.5 + HY-World 2.0", provider: "Tencent", released: "2025-26", access: "open", modalities: ["3D","image","text","video"], context: null, expertise: ["1024 geo-res, 10B params, 4K PBR, skeletal skinning","HY-World 2.0 (Apr 2026) text/image/video → playable 3D worlds"], notes: "2.1 fully open; 2.5 uncertain.", uncertain: true }
+      ]}]
+    },
+    {
+      id: "microsoft-trellis", name: "Microsoft TRELLIS", country: "US",
+      positioning: "Structured-latent 'omni-voxel' image-to-3D; production-grade, self-hostable.",
+      openness: ["open"], modalities: ["3D", "image"],
+      lines: [ { name: "TRELLIS", models: [
+        { name: "TRELLIS.2 (4B)", provider: "Microsoft", released: "Dec 2025", access: "open", modalities: ["3D","image"], context: null, expertise: ["Structured-latent 'omni-voxel' image-to-3D","Production-grade, self-hostable","Image → mesh ~3s"], notes: "MIT.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "nvidia-edify-3d", name: "NVIDIA Edify 3D", country: "US",
+      positioning: "~2 min production assets, organized UVs, 4K PBR; simulation/enterprise.",
+      openness: ["closed"], modalities: ["3D", "image", "text"],
+      lines: [ { name: "Edify 3D", models: [
+        { name: "NVIDIA Edify 3D", provider: "NVIDIA", released: "2025", access: "closed", modalities: ["3D","image","text"], context: null, expertise: ["~2 min production assets","Organized UVs, 4K PBR","Simulation / enterprise"], notes: "NIM/Omniverse.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "kaedim-sam3d", name: "Kaedim + Meta SAM 3D", country: "Various",
+      positioning: "Human-in-the-loop studio pipelines + single-image reconstruction.",
+      openness: ["closed", "open"], modalities: ["3D", "image"],
+      lines: [ { name: "3D reconstruction", models: [
+        { name: "Kaedim", provider: "Kaedim", released: "2024-25", access: "closed", modalities: ["3D","image"], context: null, expertise: ["Human-in-the-loop QA for studio game/AR pipelines"], notes: "Sketch/image → 3D.", uncertain: false },
+        { name: "Meta SAM 3D", provider: "Meta", released: "Nov 2025", access: "open", modalities: ["3D","image"], context: null, expertise: ["Single-image → 3D reconstruction"], notes: "Also: Adobe Substance 3D (materials/textures, not full mesh).", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "vision-foundation",
+  name: "Vision Foundation / Perception",
+  blurb: "The 'see and understand' layer beneath multimodal models — segmentation, features, depth, detection (non-generative).",
+  families: [
+    {
+      id: "meta-sam", name: "Meta SAM 3", country: "US",
+      positioning: "Open-vocabulary 'segment anything by concept' + real-time video tracking.",
+      openness: ["open"], modalities: ["vision", "image", "video"],
+      lines: [ { name: "SAM", models: [
+        { name: "SAM 3 / SAM 3.1", provider: "Meta", released: "Nov 2025 / Mar 2026", access: "open", modalities: ["vision","image","video"], context: null, expertise: ["Open-vocabulary 'segment anything by concept'","Real-time video tracking","3.1 adds joint multi-object tracking"], notes: "Segmentation via text/exemplar/point prompts.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "meta-dinov3", name: "Meta DINOv3", country: "US",
+      positioning: "One frozen self-supervised backbone beats specialists across tasks.",
+      openness: ["open"], modalities: ["vision", "image"],
+      lines: [ { name: "DINO", models: [
+        { name: "DINOv3", provider: "Meta", released: "Aug 2025", access: "open", modalities: ["vision","image"], context: null, expertise: ["One frozen backbone beats specialists on detection/segmentation/depth/tracking","Up to ViT-7B, ~1.7B images"], notes: "Self-supervised (no labels). DINOv2 = lighter practical default.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "depth-anything", name: "Depth Anything V2", country: "China",
+      positioning: "De-facto open monocular depth model; robust and fast.",
+      openness: ["open"], modalities: ["vision", "image"],
+      lines: [ { name: "Depth Anything", models: [
+        { name: "Depth Anything V2", provider: "HKU + ByteDance", released: "2024-25", access: "open", modalities: ["vision","image"], context: null, expertise: ["Fine-grained robust monocular depth","10× faster than SD-depth"], notes: "25M–1.3B. Image → depth.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "siglip", name: "Google SigLIP 2", country: "US",
+      positioning: "Preferred vision encoder for VLMs; multilingual zero-shot.",
+      openness: ["open"], modalities: ["vision", "image", "text"],
+      lines: [ { name: "SigLIP", models: [
+        { name: "SigLIP 2", provider: "Google", released: "Feb 2025", access: "open", modalities: ["vision","image","text"], context: null, expertise: ["Multilingual zero-shot + retrieval","Preferred vision encoder for VLMs","Beats SigLIP at all scales"], notes: "Sigmoid contrastive. CLIP (OpenAI, 2021) = original baseline.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "grounding-dino", name: "Grounding DINO 1.5", country: "China",
+      positioning: "Zero-shot open-vocab detection by arbitrary text; core of Grounded-SAM.",
+      openness: ["open"], modalities: ["vision", "image", "text"],
+      lines: [ { name: "Grounding DINO", models: [
+        { name: "Grounding DINO 1.5", provider: "IDEA", released: "2024-25", access: "open", modalities: ["vision","image","text"], context: null, expertise: ["Zero-shot detection by arbitrary text (54.3 COCO AP)","Edge ~75 FPS","Core of Grounded-SAM"], notes: "Apache-2.0. Text → boxes.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "yolo26", name: "YOLO26 (Ultralytics)", country: "US",
+      positioning: "NMS-free end-to-end real-time detect/segment/pose.",
+      openness: ["open"], modalities: ["vision", "image"],
+      lines: [ { name: "YOLO", models: [
+        { name: "YOLO26", provider: "Ultralytics", released: "Jan 2026", access: "open", modalities: ["vision","image"], context: null, expertise: ["NMS-free end-to-end","Faster CPU/edge, better small objects"], notes: "AGPL/commercial. Real-time detect/segment/pose.", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "safety-guardrail",
+  name: "Safety / Guardrail / Moderation",
+  blurb: "The classifier layer that sits around generative models — the easiest class to forget in a landscape map.",
+  families: [
+    {
+      id: "llama-guard", name: "Meta Llama Guard 4", country: "US",
+      positioning: "Input/output safety classification + injection/jailbreak flagging.",
+      openness: ["open"], modalities: ["safety", "text", "image"],
+      lines: [ { name: "Llama Guard", models: [
+        { name: "Llama Guard 4 (12B) + Prompt Guard 2", provider: "Meta", released: "Apr 2025", access: "open", modalities: ["safety","text","image"], context: null, expertise: ["14 MLCommons hazard categories + code-interpreter abuse","Prompt Guard flags injection/jailbreak"], notes: "Text+image I/O classification.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "shieldgemma", name: "Google ShieldGemma 2", country: "US",
+      positioning: "Text + image safety; pairs with Gemma.",
+      openness: ["open"], modalities: ["safety", "text", "image"],
+      lines: [ { name: "ShieldGemma", models: [
+        { name: "ShieldGemma 2", provider: "Google", released: "Mar 2025", access: "open", modalities: ["safety","text","image"], context: null, expertise: ["Image moderation (explicit/dangerous/violence)","Pairs with Gemma"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "granite-guardian", name: "IBM Granite Guardian 4.1", country: "US",
+      positioning: "Enterprise taxonomy incl. RAG groundedness + agentic function-calling risks.",
+      openness: ["open"], modalities: ["safety", "text"],
+      lines: [ { name: "Granite Guardian", models: [
+        { name: "Granite Guardian 4.1", provider: "IBM", released: "2025-26", access: "open", modalities: ["safety","text"], context: null, expertise: ["Enterprise taxonomy incl. RAG groundedness/hallucination","Agentic function-calling risks"], notes: "Strongest RAG+tool-use coverage among open guards.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "openai-moderation", name: "OpenAI omni-moderation", country: "US",
+      positioning: "Default free multi-category moderation (GPT-4o-based).",
+      openness: ["closed"], modalities: ["safety", "text", "image"],
+      lines: [ { name: "Moderation", models: [
+        { name: "omni-moderation", provider: "OpenAI", released: "2024-25", access: "closed", modalities: ["safety","text","image"], context: null, expertise: ["Default multi-category moderation (GPT-4o-based)"], notes: "Closed API (free). Text+image.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "nemo-guardrails", name: "NVIDIA NeMo Guardrails", country: "US",
+      positioning: "Programmable input/output/topic/jailbreak rails around any LLM.",
+      openness: ["open"], modalities: ["safety", "text"],
+      lines: [ { name: "NeMo Guardrails", models: [
+        { name: "NeMo Guardrails + Nemotron Content Safety", provider: "NVIDIA", released: "2024-26", access: "open", modalities: ["safety","text"], context: null, expertise: ["Programmable input/output/topic/jailbreak rails","Nemotron 3 adds multimodal/multilingual moderation"], notes: "Open toolkit + guard models.", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "agentic-computer-use",
+  name: "Agentic / Computer-Use",
+  blurb: "Arguably the defining 2026 class — models that drive a screen (mouse/keyboard/browser), distinct from coding.",
+  families: [
+    {
+      id: "claude-computer-use", name: "Anthropic Claude Computer Use", country: "US",
+      positioning: "Screenshot → full-desktop OS actions; tops computer-use benchmarks.",
+      openness: ["closed"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "Computer Use", models: [
+        { name: "Claude Computer Use", provider: "Anthropic", released: "Oct 2024 → prod", access: "closed", modalities: ["action","vision","text"], context: null, expertise: ["Screenshot → OS actions (full desktop, not just browser)","Tops computer-use/tool-use benchmarks on Opus 4.6+","Sonnet 4.6 adds 1M ctx"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "openai-operator", name: "OpenAI Operator / CUA", country: "US",
+      positioning: "Screenshot → browser/app actions; web task automation.",
+      openness: ["closed"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "Operator / CUA", models: [
+        { name: "Operator / CUA + Codex Background Computer Use", provider: "OpenAI", released: "2025-26", access: "closed", modalities: ["action","vision","text"], context: null, expertise: ["Web task automation, form-filling","Codex Background Computer Use (Apr 2026) runs agents in their own macOS desktop sessions"], notes: "Folding toward the Codex platform.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "google-gemini-agent", name: "Google Gemini Agent (ex-Mariner)", country: "US",
+      positioning: "Screenshot → browser actions; multi-step browser tasks.",
+      openness: ["closed"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "Gemini Agent", models: [
+        { name: "Gemini Agent (computer use API + Chrome Auto-Browse)", provider: "Google", released: "2025-26", access: "closed", modalities: ["action","vision","text"], context: null, expertise: ["Multi-step browser tasks"], notes: "Mariner shut down May 2026, capability absorbed into Gemini; leans toward structured-API agents for reliability.", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "time-series",
+  name: "Time-Series Forecasting",
+  blurb: "A distinct foundation-model category (not embeddings or LLMs) — pretrained zero-shot forecasters.",
+  families: [
+    {
+      id: "timesfm", name: "Google TimesFM", country: "US",
+      positioning: "Strong univariate zero-shot at 200M params.",
+      openness: ["open"], modalities: ["time-series"],
+      lines: [ { name: "TimesFM", models: [
+        { name: "TimesFM 2.5", provider: "Google", released: "Sep 2025", access: "open", modalities: ["time-series"], context: "16k", expertise: ["Strong at 200M params","Quantile heads, LoRA"], notes: "Univariate zero-shot.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "chronos", name: "Amazon Chronos-2", country: "US",
+      positioning: "Native multivariate 'group attention'; #1 pretrained on GIFT-Eval.",
+      openness: ["open"], modalities: ["time-series"],
+      lines: [ { name: "Chronos", models: [
+        { name: "Chronos-2 (+ Chronos-Bolt)", provider: "Amazon", released: "2025-26", access: "open", modalities: ["time-series"], context: null, expertise: ["'Group attention' native multivariate + covariate","~120M","#1 pretrained on GIFT-Eval"], notes: "Univariate + multivariate.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "moirai", name: "Salesforce Moirai 2.0", country: "US",
+      positioning: "Any-variate universal forecaster; top-of-GIFT-Eval.",
+      openness: ["open"], modalities: ["time-series"],
+      lines: [ { name: "Moirai", models: [
+        { name: "Moirai 2.0 (+ MoE)", provider: "Salesforce", released: "2025-26", access: "open", modalities: ["time-series"], context: null, expertise: ["Multi-frequency masked encoder","Top-of-GIFT-Eval","Strong open alt to Chronos-2"], notes: "14M–311M.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "timegpt", name: "Nixtla TimeGPT-1", country: "US",
+      positioning: "Production-ease zero-shot forecast + anomaly detection.",
+      openness: ["closed"], modalities: ["time-series"],
+      lines: [ { name: "TimeGPT", models: [
+        { name: "TimeGPT-1", provider: "Nixtla", released: "2024-25", access: "closed", modalities: ["time-series"], context: null, expertise: ["Production ease","Trained on 100B+ points","Zero-shot forecast + anomaly detection"], notes: "Only commercial-API model here.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "granite-ttm", name: "IBM Granite TinyTimeMixer", country: "US",
+      positioning: "Compact multivariate; extreme efficiency (CPU/single-GPU).",
+      openness: ["open"], modalities: ["time-series"],
+      lines: [ { name: "TTM", models: [
+        { name: "TinyTimeMixer (TTM r2)", provider: "IBM", released: "2025", access: "open", modalities: ["time-series"], context: null, expertise: ["Extreme efficiency (CPU/single-GPU)","Beats larger models at tiny size (<1M–few-M params)"], notes: "Apache. Compact multivariate.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "datadog-toto", name: "Datadog Toto", country: "US",
+      positioning: "Observability/metrics forecasting; anomaly/monitoring.",
+      openness: ["open"], modalities: ["time-series"],
+      lines: [ { name: "Toto", models: [
+        { name: "Datadog Toto", provider: "Datadog", released: "2025", access: "open", modalities: ["time-series"], context: null, expertise: ["Domain-tuned on ~1T ops points","Anomaly / monitoring"], notes: "Observability/metrics forecasting.", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "diffusion-llms",
+  name: "Diffusion LLMs (emerging)",
+  blurb: "A genuinely novel architecture: parallel/iterative denoising instead of left-to-right autoregression → order-of-magnitude throughput, strongest so far on code + low-latency.",
+  families: [
+    {
+      id: "inception-mercury", name: "Inception Mercury", country: "US",
+      positioning: "First commercial-scale diffusion LLM; ~1,000 tok/s.",
+      openness: ["closed"], modalities: ["diffusion-llm", "text", "code"],
+      lines: [ { name: "Mercury", models: [
+        { name: "Mercury / Mercury 2", provider: "Inception", released: "Feb 2026", access: "closed", modalities: ["diffusion-llm","text","code"], context: null, expertise: ["First commercial-scale diffusion LLM","Mercury 2 ~1,000 tok/s","~5–10× faster than speed-optimized autoregressive at lower cost"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "llada", name: "LLaDA (ML-GSAI)", country: "China",
+      positioning: "First open 8B discrete-diffusion LLM; main open research baseline.",
+      openness: ["open"], modalities: ["diffusion-llm", "text", "image"],
+      lines: [ { name: "LLaDA", models: [
+        { name: "LLaDA", provider: "ML-GSAI", released: "Feb 2025", access: "open", modalities: ["diffusion-llm","text","image"], context: null, expertise: ["First open 8B discrete-diffusion LLM","LLaDA-V vision variant","Main open research baseline"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "gemini-diffusion", name: "Google Gemini Diffusion", country: "US",
+      positioning: "Frontier-scale text diffusion; experimental / not GA.",
+      openness: ["closed"], modalities: ["diffusion-llm", "text"],
+      lines: [ { name: "Gemini Diffusion", models: [
+        { name: "Gemini Diffusion", provider: "Google", released: "announced I/O 2025", access: "closed", modalities: ["diffusion-llm","text"], context: null, expertise: ["Frontier-scale text diffusion, experimental / not GA"], notes: "GA uncertain.", uncertain: true }
+      ]}]
+    },
+    {
+      id: "seed-diffusion", name: "ByteDance Seed Diffusion", country: "China",
+      positioning: "Code-focused discrete diffusion; research preview.",
+      openness: ["closed"], modalities: ["diffusion-llm", "text", "code"],
+      lines: [ { name: "Seed Diffusion", models: [
+        { name: "Seed Diffusion", provider: "ByteDance", released: "Aug 2025", access: "closed", modalities: ["diffusion-llm","text","code"], context: null, expertise: ["Code-focused discrete diffusion","~2,146 tok/s on H20"], notes: "Research preview.", uncertain: true }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "world-robotics",
+  name: "World / Robotics / Action (VLA)",
+  blurb: "The newest frontier. Two threads: interactive world models (navigable environments) + Vision-Language-Action models (emit motor commands). Google DeepMind + NVIDIA lead; robotics startups lead humanoid VLAs.",
+  families: [
+    {
+      id: "google-genie", name: "Google Genie", country: "US/UK",
+      positioning: "Text → real-time navigable 3D world; trains agents.",
+      openness: ["closed"], modalities: ["world", "action", "video", "text"],
+      lines: [ { name: "Genie", models: [
+        { name: "Genie 3", provider: "Google DeepMind", released: "Aug 2025", access: "closed", modalities: ["world","action","video","text"], context: null, expertise: ["Text → real-time navigable 3D world (720p@24fps, minutes consistency)","Promptable mid-sim","Trains agents"], notes: "Limited/proprietary. Project Genie public (AI Ultra) Jan 2026.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "gemini-robotics", name: "Google Gemini Robotics", country: "US/UK",
+      positioning: "VLA that reasons before acting; generalizes across embodiments.",
+      openness: ["closed"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "Gemini Robotics", models: [
+        { name: "Gemini Robotics 1.5 + ER 1.5", provider: "Google DeepMind", released: "Sep 2025", access: "closed", modalities: ["action","vision","text"], context: null, expertise: ["VLA that reasons before acting","ER = high-level planner calling tools","Generalizes across robot embodiments"], notes: "API (ER).", uncertain: false }
+      ]}]
+    },
+    {
+      id: "google-sima", name: "Google SIMA 2", country: "US/UK",
+      positioning: "Gemini-powered embodied agent; self-improves, generalizes to unseen games.",
+      openness: ["closed"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "SIMA", models: [
+        { name: "SIMA 2", provider: "Google DeepMind", released: "Nov 2025", access: "closed", modalities: ["action","vision","text"], context: null, expertise: ["~62% task completion (vs 31%)","Self-improves","Generalizes to unseen games + Genie 3 worlds"], notes: "Gemini-powered embodied agent.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "nvidia-groot", name: "NVIDIA Isaac GR00T + Cosmos", country: "US",
+      positioning: "Humanoid foundation model + world models for synthetic robot data.",
+      openness: ["open"], modalities: ["action", "vision", "world", "text"],
+      lines: [ { name: "GR00T / Cosmos", models: [
+        { name: "Isaac GR00T N1→N1.7 + Cosmos", provider: "NVIDIA", released: "Mar 2025→", access: "open", modalities: ["action","vision","world","text"], context: null, expertise: ["Humanoid foundation model (language+image → manipulation)","Cosmos = world foundation models generating massive synthetic robot trajectory data (+40% GR00T perf)"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "physical-intelligence", name: "Physical Intelligence π0", country: "US",
+      positioning: "General robot VLA; open-world generalization.",
+      openness: ["open"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "π-series", models: [
+        { name: "π0 → π0.5", provider: "Physical Intelligence", released: "2025", access: "open", modalities: ["action","vision","text"], context: null, expertise: ["General robot VLA (images+text → motor commands via flow matching)","Open-world generalization","Laundry-folding, table-cleaning"], notes: "π0 open.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "figure-helix", name: "Figure Helix", country: "US",
+      positioning: "Dual-system humanoid VLA; onboard, no cloud.",
+      openness: ["closed"], modalities: ["action", "vision", "text"],
+      lines: [ { name: "Helix", models: [
+        { name: "Helix → Helix-02", provider: "Figure", released: "2025-26", access: "closed", modalities: ["action","vision","text"], context: null, expertise: ["Dual-system humanoid VLA (S2 VLM reasoning 7–9Hz + S1 visuomotor 200Hz, 35 DoF)","Onboard, no cloud","Helix-02 reported 8-hr autonomous shifts"], notes: "Proprietary (onboard).", uncertain: false }
+      ]}]
+    },
+    {
+      id: "autonomous-driving", name: "Autonomous driving (Wayve / Tesla)", country: "Various",
+      positioning: "Generative driving world models + end-to-end camera-to-actuation nets.",
+      openness: ["closed"], modalities: ["action", "vision", "world"],
+      lines: [ { name: "Driving", models: [
+        { name: "Wayve GAIA-2→GAIA-3 · Tesla FSD v12+", provider: "Wayve / Tesla", released: "2025-26", access: "closed", modalities: ["action","vision","world"], context: null, expertise: ["Wayve GAIA (generative driving world models, sold to OEMs)","Tesla FSD v12+ (single end-to-end neural net, camera → actuation)"], notes: "", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "scientific",
+  name: "Scientific / Domain",
+  blurb: "Clearest cases of AI beating classical methods; mostly DeepMind, released open/semi-open (moat = data + eval, not weights).",
+  families: [
+    {
+      id: "alphafold", name: "AlphaFold 3", country: "US/UK",
+      positioning: "Joint structure of complexes (protein + DNA/RNA/ligands/ions).",
+      openness: ["open"], modalities: ["science"],
+      lines: [ { name: "AlphaFold", models: [
+        { name: "AlphaFold 3", provider: "DeepMind + Isomorphic", released: "2024 (code Nov 2024)", access: "open", modalities: ["science"], context: null, expertise: ["Joint structure of complexes (protein + DNA/RNA/ligands/ions)"], notes: "Non-commercial. Note: 2024 Nobel in Chemistry went to Hassabis & Jumper for the AlphaFold2-era protein-structure breakthrough + protein design, not AF3 specifically.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "alphaproof", name: "AlphaProof + AlphaGeometry 2", country: "US/UK",
+      positioning: "Formal math reasoning in Lean; IMO 2024 silver.",
+      openness: ["closed"], modalities: ["science", "reasoning"],
+      lines: [ { name: "AlphaProof", models: [
+        { name: "AlphaProof + AlphaGeometry 2", provider: "DeepMind", released: "2024", access: "closed", modalities: ["science","reasoning"], context: null, expertise: ["Formal math reasoning in Lean","IMO 2024 silver (28/42)"], notes: "Research. Note: Gemini Deep Think later hit IMO gold 2025.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "weather-models", name: "GenCast / GraphCast / Aurora", country: "Various",
+      positioning: "Foundation weather/atmosphere models beating classical NWP.",
+      openness: ["open"], modalities: ["science", "time-series"],
+      lines: [ { name: "Weather", models: [
+        { name: "GenCast / GraphCast", provider: "DeepMind", released: "2024-25", access: "open", modalities: ["science","time-series"], context: null, expertise: ["Probabilistic diffusion ensemble 15-day forecasts in ~8 min","Beats ECMWF ENS on 97–99% of variables"], notes: "", uncertain: false },
+        { name: "Aurora", provider: "Microsoft", released: "2024-25", access: "open", modalities: ["science","time-series"], context: null, expertise: ["1.3B foundation model of the atmosphere","Beats GraphCast on 94%","Generalizes to air quality/waves"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "gnome", name: "GNoME", country: "US/UK",
+      positioning: "GNN predicting stable crystals; 2.2M new structures.",
+      openness: ["open"], modalities: ["science"],
+      lines: [ { name: "GNoME", models: [
+        { name: "GNoME", provider: "DeepMind", released: "Nov 2023", access: "open", modalities: ["science"], context: null, expertise: ["GNN predicting stable crystals — 2.2M new structures","380k stable candidates","Robotic-synthesis-validated"], notes: "", uncertain: false }
+      ]}]
+    }
+  ]
+});
+ATLAS.sections.push({
+  id: "regional-sovereign",
+  name: "Regional / Sovereign",
+  blurb: "National-language and data-sovereignty-focused LLMs, plus other major commercial families and answer-engine models flagged by cross-vendor audit.",
+  families: [
+    {
+      id: "jais", name: "Jais (Arabic)", country: "UAE",
+      positioning: "Landmark open Arabic-English model.",
+      openness: ["open"], modalities: ["text"],
+      lines: [ { name: "Jais", models: [
+        { name: "Jais", provider: "Inception/G42 + MBZUAI + Cerebras", released: "2023-25", access: "open", modalities: ["text"], context: null, expertise: ["Landmark open Arabic-English"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "hyperclova", name: "HyperCLOVA X (Korea)", country: "South Korea",
+      positioning: "Korean-centric; Think/Dash/Seed variants.",
+      openness: ["closed"], modalities: ["text", "reasoning"],
+      lines: [ { name: "HyperCLOVA X", models: [
+        { name: "HyperCLOVA X", provider: "Naver", released: "2024-26", access: "closed", modalities: ["text","reasoning"], context: null, expertise: ["Korean-centric","Think/Dash/Seed variants"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "sea-lion", name: "SEA-LION (Southeast Asia)", country: "Singapore",
+      positioning: "11+ Southeast Asian languages; tops SEA-HELM.",
+      openness: ["open"], modalities: ["text"],
+      lines: [ { name: "SEA-LION", models: [
+        { name: "SEA-LION v4", provider: "AI Singapore", released: "2025-26", access: "open", modalities: ["text"], context: null, expertise: ["11+ Southeast Asian languages","~32B, open, tops SEA-HELM"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "sarvam", name: "Sarvam (India)", country: "India",
+      positioning: "~105B open Indic flagship (IndiaAI Mission).",
+      openness: ["open"], modalities: ["text"],
+      lines: [ { name: "Sarvam", models: [
+        { name: "Sarvam", provider: "Sarvam AI", released: "Feb 2026", access: "open", modalities: ["text"], context: null, expertise: ["~105B open Indic flagship"], notes: "IndiaAI Mission.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "pharia", name: "Pharia / Aleph Alpha (EU)", country: "Germany",
+      positioning: "GDPR-native sovereign; merged into Cohere Apr 2026.",
+      openness: ["open", "closed"], modalities: ["text"],
+      lines: [ { name: "Pharia", models: [
+        { name: "Pharia / Aleph Alpha", provider: "Aleph Alpha", released: "2024-26", access: "both", modalities: ["text"], context: null, expertise: ["GDPR-native sovereign"], notes: "Merged into Cohere Apr 2026; Command-Pharia planned Q4 2026.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "yandexgpt", name: "YandexGPT (Russia)", country: "Russia",
+      positioning: "Russian flagship.",
+      openness: ["closed"], modalities: ["text"],
+      lines: [ { name: "YandexGPT", models: [
+        { name: "YandexGPT 5", provider: "Yandex", released: "2025-26", access: "closed", modalities: ["text"], context: null, expertise: ["Russian flagship"], notes: "Latest version uncertain.", uncertain: true }
+      ]}]
+    },
+    {
+      id: "internlm", name: "InternLM (China)", country: "China",
+      positioning: "Open; sibling InternVL VLMs.",
+      openness: ["open"], modalities: ["text", "image"],
+      lines: [ { name: "InternLM", models: [
+        { name: "InternLM + InternVL", provider: "Shanghai AI Lab", released: "2024-26", access: "open", modalities: ["text","image"], context: null, expertise: ["Open general LLM","Sibling InternVL VLMs"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "doubao-stepfun", name: "ByteDance Doubao / StepFun", country: "China",
+      positioning: "China's most-used consumer AI (~155M WAU) + StepFun Step3.",
+      openness: ["closed", "open"], modalities: ["text", "image"],
+      lines: [ { name: "Doubao / Step", models: [
+        { name: "Doubao / Seed 2.0 · StepFun Step3", provider: "ByteDance / StepFun", released: "2025-26", access: "both", modalities: ["text","image"], context: null, expertise: ["ByteDance Doubao/Seed 2.0 = China's most-used consumer AI (~155M WAU)","StepFun Step3"], notes: "Plus Indonesia Sahabat-AI, Japan's domestic-vendor program, broader Chinese sovereign field.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "china-commercial", name: "Baichuan / SenseTime / iFlytek", country: "China",
+      positioning: "Major Chinese commercial LLM lines not in the headline set.",
+      openness: ["open", "closed"], modalities: ["text"],
+      lines: [ { name: "Chinese commercial", models: [
+        { name: "Baichuan · SenseTime SenseNova · iFlytek Spark/星火", provider: "Various", released: "2024-26", access: "both", modalities: ["text"], context: null, expertise: ["Baichuan (open + proprietary)","SenseTime SenseNova","iFlytek Spark/星火"], notes: "Flagged by cross-vendor audit.", uncertain: false }
+      ]}]
+    },
+    {
+      id: "answer-engines", name: "Answer-engine / search-augmented", country: "US",
+      positioning: "Retrieval-native answer models distinct from base chat LLMs.",
+      openness: ["closed"], modalities: ["text"],
+      lines: [ { name: "Answer engines", models: [
+        { name: "Perplexity Sonar", provider: "Perplexity", released: "2024-26", access: "closed", modalities: ["text"], context: null, expertise: ["Online search models","Retrieval-native answer models distinct from base chat LLMs"], notes: "", uncertain: false }
+      ]}]
+    },
+    {
+      id: "upstage-solar", name: "Upstage Solar (Korea)", country: "South Korea",
+      positioning: "Compact enterprise LLM alongside Naver HyperCLOVA X.",
+      openness: ["open", "closed"], modalities: ["text"],
+      lines: [ { name: "Solar", models: [
+        { name: "Upstage Solar", provider: "Upstage", released: "2024-26", access: "both", modalities: ["text"], context: null, expertise: ["Compact enterprise LLM"], notes: "", uncertain: false }
+      ]}]
+    }
+  ]
+});
+// __APPEND__
+</script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+var app=document.getElementById("app");
+var MODS=["text","reasoning","image","video","audio","code","embedding","rerank","vision","3D","action","world","time-series","science","safety","diffusion-llm"];
+var ML={action:"Action/Robotics",world:"World","time-series":"Time-series","diffusion-llm":"Diffusion LLM",rerank:"Rerank","3D":"3D"};
+var OL={open:"Open",closed:"Closed","on-device":"On-device",both:"Open + Closed"};
+var state={q:"",mods:new Set(),open:"all",sections:new Set(),families:new Set(),model:null,filtersOpen:false};
+var index=[];
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function slug(s){return encodeURIComponent(String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""))}
+function modLabel(m){return ML[m]||String(m).replace(/(^|-)([a-z])/g,function(_,a,b){return (a?"-":"")+b.toUpperCase()})}
+function accessList(a){return a==="both"?["open","closed"]:[a].filter(Boolean)}
+function accessMatch(a,o){return o==="all"||a===o||(a==="both"&&(o==="open"||o==="closed"))}
+function tag(t,cls){return '<span class="tag '+esc(cls||t)+'">'+esc(t==="both"?OL.both:(OL[t]||t))+"</span>"}
+function modTags(a){return (a||[]).map(function(m){return '<span class="tag">'+esc(modLabel(m))+"</span>"}).join("")}
+function accessTags(a){return accessList(a).map(function(x){return tag(x,x)}).join("")}
+function htxt(s){var q=state.q.trim();var out=esc(s);if(!q)return out;try{var re=new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig");return out.replace(re,"<mark>$1</mark>")}catch(e){return out}}
+function textOf(v){return Array.isArray(v)?v.join(" "):String(v||"")}
+function buildIndex(atlas){index=[];(atlas.sections||[]).forEach(function(sec){(sec.families||[]).forEach(function(fam){var fid=sec.id+"__"+fam.id;var models=0;(fam.lines||[]).forEach(function(line){(line.models||[]).forEach(function(m){models++;var mid=fid+"__"+slug(line.name)+"__"+slug(m.name);index.push({sec:sec,fam:fam,line:line,model:m,fid:fid,mid:mid,hay:[fam.name,m.name,m.provider,textOf(m.expertise)].join(" ").toLowerCase()})})});fam._count=models})})}
+function stats(atlas){var s=(atlas.sections||[]).length,f=0,m=0,b={open:0,closed:0,"on-device":0,both:0};(atlas.sections||[]).forEach(function(sec){f+=(sec.families||[]).length;(sec.families||[]).forEach(function(fam){(fam.lines||[]).forEach(function(line){(line.models||[]).forEach(function(x){m++;if(b[x.access]!=null)b[x.access]++})})})});return {s:s,f:f,m:m,b:b}}
+function presentMods(atlas){var set=new Set();(atlas.sections||[]).forEach(function(sec){(sec.families||[]).forEach(function(f){(f.modalities||[]).forEach(set.add,set);(f.lines||[]).forEach(function(l){(l.models||[]).forEach(function(m){(m.modalities||[]).forEach(set.add,set)})})})});return MODS.filter(function(m){return set.has(m)})}
+function filtered(){var q=state.q.trim().toLowerCase();return index.filter(function(it){var mm=!state.mods.size||[...state.mods].every(function(m){return (it.model.modalities||[]).includes(m)||(it.fam.modalities||[]).includes(m)});return (!q||it.hay.includes(q))&&mm&&accessMatch(it.model.access,state.open)})}
+function familyMatches(fid,items){return items.some(function(x){return x.fid===fid})}
+function modelMatches(mid,items){return items.some(function(x){return x.mid===mid})}
+function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("atlas-theme",t)}catch(e){}}
+function loadTheme(){try{var t=localStorage.getItem("atlas-theme");if(t)setTheme(t)}catch(e){}}
+function openHash(){var h=decodeURIComponent(location.hash.replace(/^#/,""));if(!h)return;var it=index.find(function(x){return x.mid===h});if(it){state.sections.add(it.sec.id);state.families.add(it.fid);state.model=it.mid}}
+function updateHash(){if(state.model){history.replaceState(null,"","#"+encodeURIComponent(state.model))}else if(location.hash){history.replaceState(null," ",location.pathname+location.search)}}
+function render(){
+if(typeof ATLAS==="undefined"){app.innerHTML='<main class="app"><div class="error">ATLAS data is missing.</div></main>';return}
+buildIndex(ATLAS);if(!state._ready){loadTheme();openHash();state._ready=true}
+var fs=filtered(),q=state.q.trim(),active=state.mods.size+(state.open==="all"?0:1),st=stats(ATLAS),mods=presentMods(ATLAS);
+if(q||active)fs.forEach(function(it){state.sections.add(it.sec.id);state.families.add(it.fid)});
+var html='<header><div class="top"><div><h1>'+htxt(ATLAS.meta&&ATLAS.meta.title||"AI Model Atlas")+'</h1><div class="subtitle">'+htxt(ATLAS.meta&&ATLAS.meta.subtitle||"")+'</div></div><button class="theme" data-act="theme" title="Toggle theme">Theme</button></div><div class="stats"><span class="pill"><b>'+st.s+'</b> sections</span><span class="pill"><b>'+st.f+'</b> families</span><span class="pill"><b>'+st.m+'</b> models</span><span class="pill">'+accessTags("open")+' '+st.b.open+'</span><span class="pill">'+accessTags("closed")+' '+st.b.closed+'</span><span class="pill">'+accessTags("on-device")+' '+st.b["on-device"]+'</span><span class="pill">'+tag("both","both")+' '+st.b.both+'</span></div></header>';
+html+='<main class="app"><aside><div class="panel '+(state.filtersOpen?"filters-open":"")+'"><input class="search" data-role="search" placeholder="Search families, models, providers, expertise" value="'+esc(state.q)+'" aria-label="Search"><button class="filter-toggle" data-act="toggle-filters">Filters ('+active+')</button><div class="filter-body"><div class="label">Openness</div><div class="chips filters" data-kind="open"><button class="chip '+(state.open==="all"?"active":"")+'" data-open="all">All</button><button class="chip '+(state.open==="open"?"active":"")+'" data-open="open">Open</button><button class="chip '+(state.open==="closed"?"active":"")+'" data-open="closed">Closed</button><button class="chip '+(state.open==="on-device"?"active":"")+'" data-open="on-device">On-device</button></div><div class="label">Modalities</div><div class="chips filters">';
+mods.forEach(function(m){html+='<button class="chip '+(state.mods.has(m)?"active":"")+'" data-mod="'+esc(m)+'">'+esc(modLabel(m))+'</button>'});
+html+='</div><button class="clear" data-act="clear-filters">Clear filters</button></div><div class="result">'+fs.length+' model result'+(fs.length===1?"":"s")+(active?' · '+active+' active filter'+(active===1?"":"s"):"")+'</div></div></aside><section><div class="actions"><button data-act="expand-all">Expand all</button><button data-act="collapse-all">Collapse all</button></div>';
+if(!fs.length){html+='<div class="empty">No matching models.</div>'}
+(ATLAS.sections||[]).forEach(function(sec){var secHas=(q||active)?fs.some(function(x){return x.sec.id===sec.id}):true;if(!secHas)return;var open=state.sections.has(sec.id);html+='<article class="section '+(open?"open":"")+'" data-section="'+esc(sec.id)+'"><button class="section-head" data-act="section" data-id="'+esc(sec.id)+'"><span class="chev">▶</span><span><span class="section-title">'+htxt(sec.name)+'</span><div class="blurb">'+htxt(sec.blurb||"")+'</div></span></button><div class="section-body">';
+var groups={_none:[]};(sec.families||[]).forEach(function(f){var k=f.subsection||"_none";(groups[k]=groups[k]||[]).push(f)});
+Object.keys(groups).forEach(function(g){if(!groups[g].length)return;if(g!=="_none")html+='<div class="subhead">'+htxt(g)+'</div>';html+='<div class="grid">';groups[g].forEach(function(fam){var fid=sec.id+"__"+fam.id;if(!familyMatches(fid,fs)&&(q||active))return;var fOpen=state.families.has(fid);html+='<article class="family '+(fOpen?"open":"")+'" data-family="'+esc(fid)+'"><button class="family-head" data-act="family" data-id="'+esc(fid)+'"><div class="family-top"><div><div class="family-name">'+htxt(fam.name)+'</div><div class="country">'+esc(fam.country||"Global")+'</div></div><span class="count">'+fam._count+' models</span></div><div class="positioning">'+htxt(fam.positioning||"")+'</div><div class="tags">'+(fam.openness||[]).map(function(o){return tag(o,o)}).join("")+modTags(fam.modalities)+'</div></button><div class="family-body">';
+(fam.lines||[]).forEach(function(line){var lineModels=(line.models||[]).map(function(m){var mid=fid+"__"+slug(line.name)+"__"+slug(m.name);return {m:m,mid:mid}}).filter(function(x){return modelMatches(x.mid,fs)||(!q&&!active)});if(!lineModels.length)return;html+='<div class="line-title">'+htxt(line.name)+'</div>';lineModels.forEach(function(x){var m=x.m,mid=x.mid,mo=state.model===mid;html+='<button class="model-row" data-act="model" data-id="'+esc(mid)+'"><span>'+htxt(m.name)+'</span><span class="tags">'+accessTags(m.access)+'</span></button><div class="model-card '+(mo?"open":"")+'" id="'+esc(mid)+'"><h4>'+htxt(m.name)+' '+(m.uncertain?'<span class="badge uncertain">UNCERTAIN</span>':"")+'</h4><div class="meta"><span class="pill">Provider: '+htxt(m.provider||"")+'</span><span class="pill">Released: '+htxt(m.released||"")+'</span>'+accessTags(m.access)+modTags(m.modalities)+'</div>'+(m.context?'<p><b>Context:</b> '+htxt(m.context)+'</p>':"")+'<ul>'+(m.expertise||[]).map(function(e){return '<li>'+htxt(e)+'</li>'}).join("")+'</ul><div class="notes">'+htxt(m.notes||"")+'</div></div>'})});
+html+='</div></article>'});html+='</div>'});
+html+='</div></article>'});
+html+='</section></main><footer>'+(ATLAS.meta&&ATLAS.meta.footer||"")+'</footer>';
+app.innerHTML=html;updateHash();if(state.model){setTimeout(function(){var el=document.getElementById(state.model);if(el)el.scrollIntoView({block:"center"})},0)}
+}
+app.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var a=b.dataset.act;if(a==="theme"){setTheme(document.documentElement.dataset.theme==="dark"?"light":"dark")}else if(a==="toggle-filters"){state.filtersOpen=!state.filtersOpen}else if(a==="clear-filters"){state.mods.clear();state.open="all"}else if(a==="expand-all"){if(typeof ATLAS!=="undefined")(ATLAS.sections||[]).forEach(function(s){state.sections.add(s.id)})}else if(a==="collapse-all"){state.sections.clear();state.families.clear();state.model=null}else if(a==="section"){state.sections.has(b.dataset.id)?state.sections.delete(b.dataset.id):state.sections.add(b.dataset.id)}else if(a==="family"){state.families.has(b.dataset.id)?state.families.delete(b.dataset.id):state.families.add(b.dataset.id)}else if(a==="model"){state.model=state.model===b.dataset.id?null:b.dataset.id;var it=index.find(function(x){return x.mid===state.model});if(it){state.sections.add(it.sec.id);state.families.add(it.fid)}}else if(b.dataset.mod){state.mods.has(b.dataset.mod)?state.mods.delete(b.dataset.mod):state.mods.add(b.dataset.mod)}else if(b.dataset.open){state.open=b.dataset.open}render()});
+app.addEventListener("input",function(e){if(e.target.dataset.role==="search"){state.q=e.target.value;render()}});
+document.addEventListener("keydown",function(e){if(e.key==="/"&&document.activeElement.tagName!=="INPUT"){e.preventDefault();var s=document.querySelector("[data-role=search]");if(s)s.focus()}if(e.key==="Escape"){state.q="";render()}});
+window.addEventListener("hashchange",function(){state.model=null;openHash();render()});
+render();
+});
+</script>
+</body>
+</html>

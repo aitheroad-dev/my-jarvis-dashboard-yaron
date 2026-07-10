@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Open-Source Models — Field Guide (2026)</title>
+<style>
+  :root{
+    --ink:#0f172a; --ink2:#334155; --ink3:#64748b; --line:#e2e8f0; --line2:#eef2f6;
+    --bg:#ffffff; --bg2:#f8fafc; --bg3:#f1f5f9;
+    --sky:#0284c7; --skyDark:#0369a1; --skySoft:#e0f2fe;
+    --green:#16a34a; --greenSoft:#dcfce7; --amber:#d97706; --amberSoft:#fef3c7;
+    --red:#dc2626; --redSoft:#fee2e2; --violet:#7c3aed; --violetSoft:#ede9fe;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.6; font-size:15px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--skyDark); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono); font-size:.86em; background:var(--bg3); padding:1px 5px; border-radius:5px; color:var(--ink)}
+  .wrap{display:grid; grid-template-columns:248px minmax(0,1fr); gap:0; max-width:1280px; margin:0 auto}
+  /* TOC */
+  nav.toc{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    border-right:1px solid var(--line); padding:28px 18px 60px; background:var(--bg2);
+  }
+  nav.toc .brand{font-size:11px; font-weight:800; letter-spacing:.12em; color:var(--skyDark); margin-bottom:14px}
+  nav.toc a{display:block; color:var(--ink2); font-size:13px; padding:5px 10px; border-radius:7px; margin:1px 0; font-weight:500}
+  nav.toc a:hover{background:var(--bg3); text-decoration:none}
+  nav.toc a.sub{padding-left:22px; font-size:12.5px; color:var(--ink3)}
+  nav.toc a.active{background:var(--skySoft); color:var(--skyDark); font-weight:700}
+  main{padding:42px 52px 120px; min-width:0}
+  /* hero */
+  .eyebrow{font-size:11px; font-weight:800; letter-spacing:.14em; color:var(--skyDark)}
+  h1{font-size:34px; line-height:1.15; letter-spacing:-.02em; margin:10px 0 6px; font-weight:800}
+  .sub{font-size:16px; color:var(--ink2); max-width:760px}
+  .meta{font-size:12.5px; color:var(--ink3); margin-top:14px}
+  h2{font-size:23px; font-weight:800; letter-spacing:-.01em; margin:52px 0 6px; padding-top:14px; scroll-margin-top:14px}
+  h2 .n{color:var(--ink3); font-weight:700; font-size:16px; margin-right:8px}
+  h3{font-size:17px; font-weight:750; margin:30px 0 6px; scroll-margin-top:14px}
+  h2+.lede,h3+.lede{margin-top:6px}
+  p{margin:10px 0}
+  .lede{color:var(--ink2); max-width:820px}
+  ul,ol{margin:10px 0; padding-left:22px} li{margin:5px 0}
+  hr{border:0; border-top:1px solid var(--line); margin:18px 0}
+  .small{font-size:13px; color:var(--ink3)}
+  strong{font-weight:700}
+  /* callouts */
+  .call{border:1px solid var(--line); border-left-width:4px; border-radius:10px; padding:14px 18px; margin:18px 0; background:var(--bg2); font-size:14.5px}
+  .call .t{font-weight:800; font-size:12px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:5px}
+  .call.key{border-left-color:var(--sky)} .call.key .t{color:var(--skyDark)}
+  .call.warn{border-left-color:var(--amber); background:var(--amberSoft)} .call.warn .t{color:var(--amber)}
+  .call.win{border-left-color:var(--green); background:var(--greenSoft)} .call.win .t{color:var(--green)}
+  .call.you{border-left-color:var(--violet); background:var(--violetSoft)} .call.you .t{color:var(--violet)}
+  /* tables */
+  .tw{overflow-x:auto; margin:16px 0; border:1px solid var(--line); border-radius:10px}
+  table{border-collapse:collapse; width:100%; font-size:13.5px}
+  th,td{text-align:left; padding:9px 13px; border-bottom:1px solid var(--line2); vertical-align:top}
+  thead th{background:var(--bg3); font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink3); font-weight:800; white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:var(--bg2)}
+  td .mono,th .mono{font-family:var(--mono); font-size:12.5px}
+  /* pills */
+  .pill{display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; white-space:nowrap; border:1px solid}
+  .p-ok{color:var(--green); background:var(--greenSoft); border-color:#bbf7d0}
+  .p-warn{color:var(--amber); background:var(--amberSoft); border-color:#fde68a}
+  .p-no{color:var(--red); background:var(--redSoft); border-color:#fecaca}
+  .p-sky{color:var(--skyDark); background:var(--skySoft); border-color:#bae6fd}
+  .p-v{color:var(--violet); background:var(--violetSoft); border-color:#ddd6fe}
+  .p-gray{color:var(--ink3); background:var(--bg3); border-color:var(--line)}
+  /* cards */
+  .grid{display:grid; gap:14px; margin:16px 0}
+  .g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)}
+  .card{border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:var(--bg)}
+  .card h4{margin:0 0 4px; font-size:15px; font-weight:750}
+  .card .tag{font-size:11px; font-weight:700; color:var(--ink3); letter-spacing:.04em; text-transform:uppercase}
+  .src{font-size:12px; color:var(--ink3); margin-top:6px}
+  .footnote{font-size:12.5px; color:var(--ink3); border-top:1px solid var(--line); margin-top:50px; padding-top:18px}
+  .conf{font-family:var(--mono); font-size:11px; font-weight:700; padding:0 5px; border-radius:4px}
+  .c-h{color:var(--green); background:var(--greenSoft)} .c-m{color:var(--amber); background:var(--amberSoft)} .c-l{color:var(--red); background:var(--redSoft)}
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr}
+    nav.toc{position:static; height:auto; border-right:0; border-bottom:1px solid var(--line)}
+    main{padding:28px 20px 90px}
+    .g2,.g3{grid-template-columns:1fr}
+    h1{font-size:27px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" id="toc">
+  <div class="brand">FIELD GUIDE</div>
+  <a href="#top">Overview &amp; TL;DR</a>
+  <a href="#open">1 · Open source vs open weight</a>
+  <a href="#families">2 · The major families</a>
+  <a href="#trulyopen" class="sub">2b · The truly-open ones</a>
+  <a href="#license">3 · License matrix</a>
+  <a href="#bench">4 · How good are they?</a>
+  <a href="#run">5 · How to run locally</a>
+  <a href="#hardware">6 · Quantization &amp; sizing</a>
+  <a href="#why">7 · Ecosystem &amp; strategy</a>
+  <a href="#decide">8 · Local vs cloud</a>
+  <a href="#you">9 · For your 48 GB Mac</a>
+  <a href="#sources">Sources &amp; caveats</a>
+</nav>
+
+<main>
+<div id="top"></div>
+<div class="eyebrow">OPEN-SOURCE MODELS · FIELD GUIDE</div>
+<h1>Running open models locally — the full landscape</h1>
+<p class="sub">What "open" actually means, who makes these models and why, how good they are versus Claude/GPT, how you run them on a Mac, and exactly what to run on your hardware.</p>
+<p class="meta">Compiled 25 June 2026 · researched live across 5 parallel streams (families, licenses, runtimes, benchmarks, ecosystem) · every non-obvious claim links a source · fast-moving facts flagged <span class="conf c-m">MED</span>/<span class="conf c-l">LOW</span> confidence.</p>
+
+<div class="call key">
+  <div class="t">TL;DR — the five things that matter</div>
+  <ol style="margin:4px 0 0">
+    <li><strong>"Open weight" ≠ "open source."</strong> Almost every famous "open" model (Llama, Qwen, Gemma) ships <em>weights only</em> — the training data and recipe stay closed. Truly-open (data + code + checkpoints) is rare: <strong>OLMo, SmolLM, Pythia</strong>.</li>
+    <li><strong>The gap to the closed frontier is ~3 months.</strong> The best open models now trail Claude/GPT/Gemini by roughly a quarter and a few index points — the narrowest ever. On math and tool-use the gap has effectively closed.</li>
+    <li><strong>China leads open releases now.</strong> Qwen, DeepSeek, Kimi, GLM drove Chinese open-model usage from ~1% to ~30% in about a year. Meta carries the US open flag (with caveats); OpenAI/Anthropic stay closed.</li>
+    <li><strong>On a Mac, MLX won.</strong> Apple's MLX engine is now the fastest path on Apple Silicon — <strong>Ollama itself switched its Mac engine to MLX in March 2026</strong>. "GGUF is what you run on a Mac" is outdated.</li>
+    <li><strong>Your 48 GB M4 Pro is a strong local box.</strong> It runs anything ≤32B comfortably and 70B-class in a tight quant. The right move is <em>hybrid</em>: local for privacy/volume/routine, cloud for frontier reasoning. <a href="#you">Jump to recommendations →</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="open"><span class="n">1</span>Open source vs open weight — the distinction everything hinges on</h2>
+<p class="lede">This is the single most misunderstood thing in the field, and it has real legal and scientific consequences. Most "open source AI" talk is, strictly, wrong.</p>
+
+<h3>The OSI definition (OSAID 1.0)</h3>
+<p>The Open Source Initiative — keepers of the term for ~25 years — released the <strong>Open Source AI Definition</strong> on 28 Oct 2024. To be "open source," an AI system must grant four freedoms (Use, Study, Modify, Share), which requires three things in their preferred form:</p>
+<ul>
+  <li><strong>Data information</strong> — enough detail about the training data that a skilled person could build a substantially equivalent system. (Notably, OSAID does <em>not</em> require shipping the full dataset — the most-contested compromise.)</li>
+  <li><strong>Code</strong> — the full training + inference pipeline.</li>
+  <li><strong>Parameters</strong> — the weights (and ideally intermediate checkpoints).</li>
+</ul>
+<p>By this bar, <strong>almost no famous "open" model qualifies</strong> — they fail on missing data/recipe, restricted licenses, or both.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Term</th><th>What's released</th><th>What's withheld</th><th>Examples</th></tr></thead>
+<tbody>
+<tr><td><span class="pill p-ok">Open source</span><br>(OSAID)</td><td>Weights + training data info + full code + checkpoints, under OSI-approved terms</td><td>Nothing material</td><td>OLMo, Pythia, SmolLM, Amber/CrystalCoder, T5</td></tr>
+<tr><td><span class="pill p-sky">Open weight</span><br>(permissive)</td><td>Weights under Apache-2.0 / MIT — do almost anything</td><td>Training data + recipe</td><td>Qwen, DeepSeek, Phi, gpt-oss, Mistral (small)</td></tr>
+<tr><td><span class="pill p-warn">Open weight</span><br>(restricted)</td><td>Weights, but under a custom license with carve-outs</td><td>Data + recipe + some <em>uses</em></td><td>Llama, Gemma 1–3, Mistral (large), Cohere Command</td></tr>
+<tr><td><span class="pill p-no">Closed</span></td><td>API access only</td><td>Everything</td><td>Claude, GPT, Gemini, Grok</td></tr>
+</tbody></table></div>
+
+<div class="call warn">
+  <div class="t">Why it matters to you</div>
+  For <strong>using / fine-tuning / deploying</strong>, an open-weight model with an Apache/MIT license is all you need — and there are plenty. For <strong>reproducibility, auditability, or true data provenance</strong>, only the fully-open families deliver. And <strong>always read the license</strong>: "open weight" is not "do anything" — Llama's terms in particular bind you (see §3).
+</div>
+
+<!-- ============================================================ -->
+<h2 id="families"><span class="n">2</span>The major model families</h2>
+<p class="lede">These are the families people actually run in mid-2026. Sizes, what each is best at, the one to run locally, and the license. (⚠️ = a mid-2026 release confirmed to exist but with specs from secondary sources — verify the exact model card before betting production on it.)</p>
+
+<div class="grid g2">
+  <div class="card">
+    <div class="tag">META</div><h4>Llama 4 — Scout &amp; Maverick</h4>
+    <p class="small">First natively-multimodal MoE Llama (Apr 2025). Scout 109B/17B-active (10M context, single-GPU); Maverick 400B/17B-active. Behemoth (~2T) still unreleased. Many still run dense <strong>Llama 3.3 70B / 3.1 8B</strong> locally.</p>
+    <p class="small"><strong>Best at:</strong> general + long-context multimodal. <strong>License:</strong> <span class="pill p-warn">Llama Community</span> — &gt;700M MAU needs Meta's permission; EU barred from the <em>multimodal</em> models; "Built with Llama" attribution.</p>
+  </div>
+  <div class="card">
+    <div class="tag">ALIBABA</div><h4>Qwen3 / Qwen3.5 ⚠️</h4>
+    <p class="small">The most <em>versatile</em> open family. Dense 0.6–32B + MoE 30B-A3B / 235B-A22B. <strong>Qwen3-Coder</strong> is a top open coder; Qwen-VL for vision; 119 languages.</p>
+    <p class="small"><strong>Best at:</strong> the Apache-licensed default for general/coding/multilingual. <strong>Run:</strong> Qwen3-32B or 30B-A3B. <strong>License:</strong> <span class="pill p-ok">Apache-2.0</span> (a few VL variants excepted).</p>
+  </div>
+  <div class="card">
+    <div class="tag">GOOGLE</div><h4>Gemma 3 / Gemma 4 ⚠️</h4>
+    <p class="small">Best quality-per-parameter in small/mid sizes. Gemma 3: 270M–27B, text+image, 128K ctx; Gemma 3n targets phones. Gemma 4 (2026) reportedly moved to Apache-2.0.</p>
+    <p class="small"><strong>Best at:</strong> small multimodal, on-device. <strong>Run:</strong> Gemma 3 27B. <strong>License:</strong> <span class="pill p-warn">Gemma Terms</span> (custom, 1–3) → <span class="pill p-ok">Apache-2.0</span> (4 ⚠️).</p>
+  </div>
+  <div class="card">
+    <div class="tag">DEEPSEEK</div><h4>DeepSeek V3 / R1 / V4 ⚠️</h4>
+    <p class="small">671B MoE / 37B-active. <strong>R1</strong> (Jan 2025) redefined open reasoning via RL; distilled into 1.5–70B dense models anyone can run. V3.2 adds sparse-attention efficiency.</p>
+    <p class="small"><strong>Best at:</strong> reasoning, also strong general/coding. <strong>Run:</strong> R1-Distill-Qwen-32B (full V3/R1 needs ~8×H100). <strong>License:</strong> <span class="pill p-ok">MIT</span>.</p>
+  </div>
+  <div class="card">
+    <div class="tag">MISTRAL (FR)</div><h4>Mistral — fragmented licensing</h4>
+    <p class="small">Apache for small/edge (Mistral 7B, Mixtral, Small 3.1/4, Ministral 3, <strong>Magistral</strong>=reasoning, <strong>Devstral</strong>=agentic coding, Pixtral=vision). The <em>large</em> ones (Large 2, Codestral) are research/commercial-only.</p>
+    <p class="small"><strong>Run:</strong> Mistral Small 3.1/4 (24B) or Devstral. <strong>License:</strong> <span class="pill p-ok">Apache-2.0</span> (small) / <span class="pill p-warn">MRL non-commercial</span> (large).</p>
+  </div>
+  <div class="card">
+    <div class="tag">MICROSOFT</div><h4>Phi-4</h4>
+    <p class="small">Small models that punch up via curated "textbook-quality" synthetic data. Phi-4 14B (reasoning/math), Phi-4-mini 3.8B, Phi-4-multimodal. Weaker on world-knowledge/multilingual.</p>
+    <p class="small"><strong>Best at:</strong> reasoning-per-parameter, runs on 12 GB. <strong>License:</strong> <span class="pill p-ok">MIT</span> — the cleanest of all.</p>
+  </div>
+  <div class="card">
+    <div class="tag">OPENAI</div><h4>gpt-oss-20b / 120b</h4>
+    <p class="small">OpenAI's first open weights since GPT-2 (Aug 2025). MoE reasoning models: 20b (3.6B active, runs on 16 GB) ≈ o3-mini; 120b (5.1B active, single 80 GB GPU) ≈ o4-mini. Native tool-use, adjustable reasoning effort. Text-only.</p>
+    <p class="small"><strong>Best at:</strong> reasoning + agentic tool-use. <strong>License:</strong> <span class="pill p-ok">Apache-2.0</span>.</p>
+  </div>
+  <div class="card">
+    <div class="tag">NOTABLE OTHERS</div><h4>GLM · Kimi · Nemotron · Cohere · Yi</h4>
+    <p class="small"><strong>GLM</strong> (Zhipu, MIT) &amp; <strong>Kimi K2</strong> (Moonshot, 1T-MoE, modified-MIT) — top open coders/agents. <strong>Nemotron</strong> (NVIDIA, custom license). <strong>Command-A</strong> (Cohere, historically non-commercial). <strong>Yi</strong> (01.AI, Apache).</p>
+  </div>
+</div>
+
+<h3 id="trulyopen">2b · The truly-open families (data + code + checkpoints)</h3>
+<p class="lede">If reproducibility or provenance matters, these are the real thing — they ship everything, not just weights.</p>
+<div class="tw"><table>
+<thead><tr><th>Family</th><th>Maker</th><th>Sizes</th><th>What's released</th><th>License</th></tr></thead>
+<tbody>
+<tr><td><strong>OLMo 3</strong> (the gold standard)</td><td>Allen AI (Ai2)</td><td>7B, 32B (Base/Think/Instruct)</td><td>Weights + <strong>full Dolma 3 data (~9.3T tok)</strong> + training code + every checkpoint + logs + eval harness</td><td><span class="pill p-ok">Apache-2.0</span></td></tr>
+<tr><td><strong>SmolLM3</strong></td><td>Hugging Face</td><td>3B (+ 135M–1.7B v2)</td><td>Weights + full per-stage data mix + nanotron configs + checkpoints + ablations ("engineering blueprint")</td><td><span class="pill p-ok">Apache-2.0</span></td></tr>
+<tr><td><strong>Pythia</strong></td><td>EleutherAI</td><td>70M–12B</td><td>The original fully-transparent suite — data, code, all training checkpoints</td><td><span class="pill p-ok">Apache-2.0</span></td></tr>
+<tr><td><strong>Granite 4</strong> (enterprise)</td><td>IBM</td><td>3B–32B (hybrid Mamba/Transformer)</td><td>Weights + signed + ISO-42001 cert + watsonx IP indemnity; data <em>documented but not shipped</em></td><td><span class="pill p-ok">Apache-2.0</span></td></tr>
+<tr><td><strong>Falcon-H1 / H1R</strong></td><td>TII (UAE)</td><td>0.5B–34B (hybrid)</td><td>Weights + tech report; ~600B of ~5T data; <span class="pill p-warn">Falcon License + AUP</span> (not pure Apache)</td><td><span class="pill p-warn">Custom+AUP</span></td></tr>
+</tbody></table></div>
+<p class="small">Granite &amp; Falcon are <em>Apache/permissive-licensed open weights</em> with excellent transparency, but withhold the full corpus — so they're not "OSAID-open" the way OLMo/SmolLM/Pythia are. OLMo 3 (Nov 2025) is the fullest reproducible release to date.</p>
+
+<!-- ============================================================ -->
+<h2 id="license"><span class="n">3</span>License matrix — read this before you ship</h2>
+<p class="lede">Two tiers. Tier A you can treat like normal OSS. Tier B has carve-outs that can bite a commercial product.</p>
+
+<h3>Tier A — truly permissive (Apache-2.0 / MIT)</h3>
+<p class="small">No MAU caps, no competitor carve-outs, no acceptable-use overlay you must accept.</p>
+<div class="tw"><table>
+<thead><tr><th>Family</th><th>License</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>Qwen (open weights)</td><td class="mono">Apache-2.0</td><td>a few VL/72B variants &amp; API tiers excepted</td></tr>
+<tr><td>DeepSeek</td><td class="mono">MIT</td><td>code MIT; weights commercially usable</td></tr>
+<tr><td>Phi (Microsoft)</td><td class="mono">MIT</td><td>cleanest of all — no clauses</td></tr>
+<tr><td>gpt-oss (OpenAI)</td><td class="mono">Apache-2.0</td><td>—</td></tr>
+<tr><td>Mistral (small/edge)</td><td class="mono">Apache-2.0</td><td>7B, Mixtral, Small 3.1/4, Ministral 3, Magistral/Devstral Small, Pixtral</td></tr>
+<tr><td>GLM (Zhipu)</td><td class="mono">MIT</td><td>—</td></tr>
+<tr><td>OLMo · SmolLM · Pythia</td><td class="mono">Apache-2.0</td><td>also fully open-source (data+code)</td></tr>
+<tr><td>Yi (01.AI)</td><td class="mono">Apache-2.0</td><td>early Yi-34B was custom</td></tr>
+</tbody></table></div>
+
+<h3>Tier B — custom open-weight license (open weights, NOT OSI-open)</h3>
+<div class="tw"><table>
+<thead><tr><th>Family</th><th>License</th><th>Key restriction</th></tr></thead>
+<tbody>
+<tr><td>Llama (Meta)</td><td>Llama Community</td><td><strong>&gt;700M MAU → need Meta's permission</strong>; EU barred from multimodal; "Built with Llama" attribution</td></tr>
+<tr><td>Gemma 1–3 (Google)</td><td>Gemma Terms</td><td>Google-updatable Prohibited Use Policy; commercial OK but not OSI-open</td></tr>
+<tr><td>Mistral — large</td><td>Mistral Research License</td><td><strong>non-commercial</strong> without a paid license (Large 2, Pixtral Large)</td></tr>
+<tr><td>Mistral — Codestral</td><td>Non-Production</td><td>commercial needs a license</td></tr>
+<tr><td>Kimi K2 (Moonshot)</td><td>Modified MIT</td><td>display "Kimi K2" if &gt;100M MAU or &gt;$20M/mo revenue; else permissive</td></tr>
+<tr><td>Cohere Command</td><td>CC-BY-NC 4.0</td><td><strong>non-commercial</strong> (older); Command A+ → Apache ⚠️</td></tr>
+<tr><td>Nemotron (NVIDIA)</td><td>NVIDIA Open Model</td><td>commercial-OK but a custom license — review terms</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<h2 id="bench"><span class="n">4</span>How good are they — open vs the closed frontier</h2>
+<p class="lede">Short answer: closer than ever, but the very top is still closed.</p>
+
+<div class="call key">
+  <div class="t">The best-sourced number</div>
+  Epoch AI puts the open-vs-closed lag at <strong>~3–3.5 months</strong> and ~7 capability-index points — "the smallest gap ever measured," and the true gap may be <em>smaller</em> still (newest open models lack enough independent evals to score fully). The catch-up window has compressed from ~14 months (2024) to ~3. <span class="conf c-h">HIGH</span>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Category</th><th>Best open (mid-2026)</th><th>vs closed frontier</th><th>Conf.</th></tr></thead>
+<tbody>
+<tr><td>Overall (Arena Elo / Intelligence Index)</td><td>DeepSeek / GLM / Qwen / Kimi class</td><td>Top-3 still all closed (Claude, GPT, Gemini); best open within ~30 Elo / a few index points, not #1</td><td><span class="conf c-m">MED</span></td></tr>
+<tr><td>Math (AIME 2025)</td><td>Kimi / DeepSeek reasoning</td><td><strong>Gap closed</strong> — open hits ~100%, same as best closed (benchmark now saturated)</td><td><span class="conf c-m">MED</span></td></tr>
+<tr><td>Agentic / tool-use (BFCL)</td><td><strong>Qwen leads outright</strong></td><td>Open is #1 here — DeepSeek/Kimi/GLM sit alongside the closed frontier</td><td><span class="conf c-m">MED</span></td></tr>
+<tr><td>Coding (SWE-bench Verified)</td><td>DeepSeek / GLM (~74–80%)</td><td>Near parity with strong closed; the very top (Claude) still pulls ahead on the hardest sets</td><td><span class="conf c-l">LOW</span></td></tr>
+<tr><td>Reasoning (GPQA-Diamond)</td><td>MiniMax / GLM (~91–93%)</td><td>~2–3 point closed edge remains</td><td><span class="conf c-m">MED</span></td></tr>
+<tr><td>Small on-device (&lt;10B)</td><td>Qwen3 9B · Gemma 3 4B</td><td>Open owns this tier entirely — closed models aren't downloadable</td><td><span class="conf c-m">MED</span></td></tr>
+</tbody></table></div>
+
+<div class="call warn">
+  <div class="t">Why benchmark numbers mislead (read before trusting any score)</div>
+  <ul style="margin:4px 0 0">
+    <li><strong>Contamination</strong> — public benchmark questions leak into training data; some 2026 models drew scrutiny for "statistically unusual" scores.</li>
+    <li><strong>Saturation</strong> — MMLU, HumanEval, AIME now cluster near 100% and no longer separate models. Only GPQA-Diamond, SWE-bench Verified, LiveCodeBench, "Humanity's Last Exam" still discriminate.</li>
+    <li><strong>Arena gaming</strong> — the "Leaderboard Illusion" paper showed labs test dozens of private variants and publish only the best; Arena rewards longer, confident answers regardless of substance.</li>
+    <li><strong>Noise</strong> — top models sit within overlapping ±15–20 Elo confidence intervals; exact ordering at the top is often meaningless.</li>
+  </ul>
+  Many flashy 2026 model names in the sources ("DeepSeek V4 Pro," "GLM-5.2," etc.) are real-ish but hard to pin to one primary card — treat exact scores as ±a few points.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="run"><span class="n">5</span>How to run them locally</h2>
+<p class="lede">Eight tools matter. On a Mac the practical choice is <strong>Ollama</strong> (developers, one command) or <strong>LM Studio</strong> (GUI). Both now run Apple's MLX engine and expose the same OpenAI-compatible API.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Tool</th><th>Type</th><th>GGUF</th><th>MLX</th><th>OpenAI API</th><th>Best for</th><th>2026 status</th></tr></thead>
+<tbody>
+<tr><td><strong>Ollama</strong></td><td>CLI + app</td><td><span class="pill p-ok">✓</span></td><td><span class="pill p-ok">✓</span> <span class="small">(&gt;32 GB)</span></td><td class="mono">:11434/v1</td><td>beginners, app serving, fast setup</td><td><span class="pill p-ok">active</span></td></tr>
+<tr><td><strong>LM Studio</strong></td><td>GUI + CLI</td><td><span class="pill p-ok">✓</span></td><td><span class="pill p-ok">✓ mature</span></td><td class="mono">:1234/v1</td><td>best GUI on Apple Silicon</td><td><span class="pill p-ok">active</span></td></tr>
+<tr><td><strong>llama.cpp</strong></td><td>CLI</td><td><span class="pill p-ok">✓ only</span></td><td><span class="pill p-no">✗</span></td><td class="mono">:8080/v1</td><td>max control, long context, the upstream engine</td><td><span class="pill p-ok">active</span></td></tr>
+<tr><td><strong>MLX / mlx-lm</strong></td><td>lib + CLI</td><td><span class="pill p-no">✗</span></td><td><span class="pill p-ok">✓ native</span></td><td class="mono">:8080/v1</td><td>max perf + fine-tuning on Mac</td><td><span class="pill p-ok">active</span></td></tr>
+<tr><td><strong>Jan</strong></td><td>GUI</td><td><span class="pill p-ok">✓</span></td><td><span class="pill p-warn">exp.</span></td><td class="mono">:1337/v1</td><td>open-source LM Studio alternative (Apache-2.0)</td><td><span class="pill p-ok">active</span></td></tr>
+<tr><td><strong>GPT4All</strong></td><td>GUI</td><td><span class="pill p-ok">✓ only</span></td><td><span class="pill p-no">✗</span></td><td class="mono">:4891/v1</td><td>LocalDocs RAG — but <strong>stalled</strong> (no release since Feb 2025)</td><td><span class="pill p-warn">dormant</span></td></tr>
+<tr><td><strong>vLLM</strong></td><td>server</td><td><span class="pill p-ok">✓</span></td><td><span class="pill p-warn">plugin</span></td><td class="mono">:8000/v1</td><td>production serving on <strong>NVIDIA</strong> — wrong tool for a Mac</td><td><span class="pill p-ok">active</span></td></tr>
+<tr><td><strong>text-gen-webui</strong></td><td>web UI</td><td><span class="pill p-ok">✓+</span></td><td><span class="pill p-no">✗</span></td><td class="mono">:5000</td><td>power-user experimentation hub</td><td><span class="pill p-ok">active</span></td></tr>
+</tbody></table></div>
+
+<div class="call win">
+  <div class="t">The big 2026 shift — MLX won on Apple Silicon</div>
+  Apple's <strong>MLX</strong> framework (built natively on Metal + unified memory) is now faster for token generation — so much so that <strong>Ollama switched its Mac inference path from llama.cpp to MLX in March 2026</strong>. GGUF/llama.cpp still wins on portability, very long context, and prefill on pre-M5 chips, but the lead has flipped. Bottom line: on a modern Mac, prefer the MLX path (Ollama &gt;32 GB, or LM Studio's MLX engine).
+</div>
+
+<h3>The universal trick — every tool speaks OpenAI</h3>
+<p>Point any OpenAI SDK at the local server. Two overrides and your existing code works unchanged — so you can prototype in a GUI and graduate to code without rewriting:</p>
+<pre style="background:var(--bg3); border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.55"><span style="color:var(--ink3)"># OpenAI-compatible, fully local</span>
+client = OpenAI(
+  base_url=<span style="color:var(--skyDark)">"http://localhost:11434/v1"</span>,  <span style="color:var(--ink3)"># Ollama (LM Studio :1234, llama.cpp/MLX :8080)</span>
+  api_key=<span style="color:var(--skyDark)">"local"</span>,                          <span style="color:var(--ink3)"># any non-empty string; ignored</span>
+)</pre>
+
+<!-- ============================================================ -->
+<h2 id="hardware"><span class="n">6</span>Quantization &amp; hardware sizing</h2>
+<p class="lede">Quantization is what lets big models fit on normal hardware — it shrinks each weight from 16 bits to ~4, trading a little quality for ~4× less memory.</p>
+<ul>
+  <li><strong>GGUF quants</strong> (llama.cpp/Ollama): <code>Q4_K_M</code> is the standard sweet spot; <code>Q5_K_M</code>/<code>Q6_K</code> for more quality, <code>Q8_0</code> near-lossless. Below Q4 quality drops fast.</li>
+  <li><strong>MLX quants</strong> (Apple): 4-bit/8-bit, ~8–10% smaller files than GGUF; new <strong>DWQ</strong> learned-quantization lets a 4-bit model approach 6/8-bit quality.</li>
+  <li><strong>The RAM rule:</strong> at 4-bit, a model needs ≈ <strong>0.6 GB per billion params + ~25–30% overhead</strong> for context. And macOS only hands ~75% of unified RAM to the GPU by default (raise via <code>sysctl iogpu.wired_limit_mb</code>; resets on reboot). Leave ~4–8 GB for the OS.</li>
+</ul>
+
+<div class="tw"><table>
+<thead><tr><th>Unified RAM</th><th>Comfortable (Q4)</th><th>Possible (tight)</th></tr></thead>
+<tbody>
+<tr><td>8 GB</td><td>3B</td><td>7B</td></tr>
+<tr><td>16 GB</td><td>7–8B</td><td>13–14B / gpt-oss-20b</td></tr>
+<tr><td>24 GB</td><td>7–14B</td><td>~20–30B</td></tr>
+<tr><td>32 GB</td><td>30B</td><td>34B</td></tr>
+<tr><td style="background:var(--violetSoft)"><strong>48 GB ← you</strong></td><td style="background:var(--violetSoft)"><strong>≤32B (easy)</strong></td><td style="background:var(--violetSoft)"><strong>70B Q4 (~40 GB)</strong></td></tr>
+<tr><td>64 GB+</td><td>70B Q4/Q5</td><td>70B at long context</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<h2 id="why"><span class="n">7</span>Ecosystem &amp; strategy — who makes these, and why</h2>
+<p class="lede">Open releases aren't charity. Each lab has a strategic logic, and the patterns repeat.</p>
+<div class="tw"><table>
+<thead><tr><th>Releaser</th><th>Flagship</th><th>Why they give it away</th></tr></thead>
+<tbody>
+<tr><td>Meta</td><td>Llama</td><td><strong>Commoditize the complement</strong> — make AI a cheap input, deny OpenAI/Anthropic a walled garden (the Linux/Android play)</td></tr>
+<tr><td>Alibaba / Microsoft / Google</td><td>Qwen / Phi / Gemma</td><td><strong>Cloud funnel</strong> — free weights pull developers onto Alibaba Cloud / Azure / Vertex, where the money is</td></tr>
+<tr><td>DeepSeek / Mistral</td><td>V3·R1 / Mistral</td><td>Efficiency flex + research credibility + national/European champion positioning; open as top-of-funnel for paid tiers</td></tr>
+<tr><td>Allen AI (Ai2)</td><td>OLMo</td><td><strong>Mission</strong> — reproducible open science is the actual product</td></tr>
+<tr><td>IBM</td><td>Granite</td><td>Enterprise trust + governance; complements Red Hat / watsonx</td></tr>
+</tbody></table></div>
+
+<div class="call key">
+  <div class="t">The biggest shift of 2025–26: China leads open</div>
+  Chinese open-model global usage went from <strong>~1.2% (late 2024) to ~30% (2025)</strong>, led by Qwen and DeepSeek; total open-model downloads flipped China-majority in mid-2025. DeepSeek-R1 (Jan 2025) matched top US systems reportedly at a fraction of the cost, and Beijing now actively promotes "China as the provider of open AI." US frontier labs (OpenAI, Anthropic) stay closed; Meta carries the US open-weight flag with caveats. For a builder this is <em>good</em> — fierce competition pushing capable, permissive weights out fast — with data-governance considerations some weigh. <span class="conf c-m">MED</span>
+</div>
+
+<h3>Live trends shaping what you'll run</h3>
+<ul>
+  <li><strong>MoE is the default</strong> — huge total params, tiny active fraction (~3–6%) per token. Decouples knowledge breadth from inference cost (Qwen3 235B-A22B, DeepSeek 671B/37B, Kimi K2 1T/32B).</li>
+  <li><strong>Reasoning / test-time compute</strong> — "thinking" models that spend inference compute to reason (post-DeepSeek-R1).</li>
+  <li><strong>Small-but-capable + on-device</strong> — a parallel track to the giant MoEs; Gemma/Phi/SmolLM run on phones &amp; laptops.</li>
+  <li><strong>Agentic / tool-use native</strong> — multi-step planning &amp; tool calling trained in, not bolted on.</li>
+  <li><strong>Long context</strong> — 1M-token windows reaching open weights; <strong>multimodal by default</strong>.</li>
+  <li><strong>New architectures</strong> — Mamba/SSM and Transformer-hybrids (Granite 4, Falcon-H1) for cheaper long-context — emerging, not yet dominant.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="decide"><span class="n">8</span>Local vs cloud — the decision framework</h2>
+<p class="lede">The honest gap: open weights rival closed on many tasks, but for multi-step reasoning, large multi-file code, and dense synthesis, frontier models (Claude/GPT) remain consistently more reliable. So route by task.</p>
+<div class="grid g2">
+  <div class="card" style="border-left:4px solid var(--green)">
+    <h4>Choose LOCAL when…</h4>
+    <ul class="small" style="margin:6px 0 0">
+      <li><strong>Data can't leave your machine</strong> — privacy/compliance/secrets. This alone decides it.</li>
+      <li><strong>High, predictable volume</strong> — break-even ≈ 500K tok/day (7B) or ~2M tok/day (70B). Over ~5M/day local wins outright.</li>
+      <li><strong>Fine-tuning a small model</strong> on your data for a narrow, repeated task (can beat a generic API).</li>
+      <li><strong>Offline / zero-dependency</strong> operation, or routine work (classification, extraction, summarization, RAG).</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid var(--sky)">
+    <h4>Choose CLOUD (Claude/GPT) when…</h4>
+    <ul class="small" style="margin:6px 0 0">
+      <li><strong>Frontier reasoning</strong> — complex multi-file code, dense legal/technical synthesis, subtle multi-step planning.</li>
+      <li><strong>Low / spiky volume</strong> — a few hundred-K tokens/day; cloud is cheaper <em>and</em> zero-ops.</li>
+      <li><strong>You want always-latest capability</strong> and no infra burden.</li>
+      <li>You lack the RAM for the model tier the task needs.</li>
+    </ul>
+  </div>
+</div>
+<div class="call win">
+  <div class="t">The default-correct answer for a solo builder: hybrid</div>
+  Privacy-sensitive &amp; high-volume baseline → local; frontier-reasoning &amp; spiky overflow → cloud. Because both expose the OpenAI API, the routing layer is a thin shim, not a rewrite.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="you"><span class="n">9</span>For your machine — 48 GB M4 Pro</h2>
+<div class="call you">
+  <div class="t">Your hardware tier</div>
+  Apple <strong>M4 Pro · 48 GB unified · 14 cores</strong>. That 48 GB is the ceiling: <strong>anything ≤32B Q4 runs comfortably and fast</strong> (~18–22 GB), and <strong>70B-class runs in a tight Q4</strong> (~40 GB — close other apps and raise the GPU memory limit). 100B+ MoE giants (DeepSeek 671B, Qwen 235B, gpt-oss-120b) are out of reach locally.
+</div>
+
+<h3>What to actually pull (when you install)</h3>
+<div class="tw"><table>
+<thead><tr><th>Job</th><th>Model</th><th>~Size</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><strong>Coding</strong></td><td class="mono">qwen3-coder (30B-A3B) / qwen2.5-coder:32b</td><td>~20 GB</td><td>strongest local coder, fits easily, Apache</td></tr>
+<tr><td><strong>General + reasoning</strong></td><td class="mono">qwen3:32b / gemma3:27b</td><td>~18–20 GB</td><td>versatile daily driver</td></tr>
+<tr><td><strong>Visible reasoning</strong></td><td class="mono">deepseek-r1 (32B distill) / gpt-oss:20b</td><td>~13–20 GB</td><td>chain-of-thought + tool-use, MIT/Apache</td></tr>
+<tr><td><strong>Fast / everyday</strong></td><td class="mono">llama3.2:3b / gemma3:4b</td><td>~2–4 GB</td><td>instant, cheap, always-loaded</td></tr>
+<tr><td><strong>Push the machine</strong></td><td class="mono">llama3.3:70b (Q4)</td><td>~40 GB</td><td>tight but runs; slower (~8–12 tok/s)</td></tr>
+<tr><td><strong>Vision</strong></td><td class="mono">llama3.2-vision:11b / qwen-vl</td><td>~8 GB</td><td>image understanding</td></tr>
+</tbody></table></div>
+
+<div class="call key">
+  <div class="t">Recommended path for PAI</div>
+  <ol style="margin:4px 0 0">
+    <li><strong>Install Ollama</strong> (<code>brew install ollama</code>) — on your 48 GB Mac it uses the fast MLX path automatically, and exposes <code>localhost:11434/v1</code>.</li>
+    <li>Pull a starter set: <code>qwen2.5-coder:32b</code> (coding) + <code>llama3.2:3b</code> (fast) + <code>gpt-oss:20b</code> (reasoning/tools).</li>
+    <li><strong>Add a local tier to <code>Inference.ts</code></strong> — route privacy-sensitive + high-volume + routine work to local, keep frontier reasoning on Claude/GPT. Same OpenAI API, so it's a thin shim. This is the hybrid pattern, and it's the cost/privacy win for a solo builder.</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<div class="footnote" id="sources">
+  <p><strong>Sources &amp; method.</strong> Researched 25 Jun 2026 across five parallel streams against primary sources: Ollama, Hugging Face model/dataset cards, official lab blogs (Meta, Alibaba/Qwen, Google/Gemma, DeepSeek, Mistral, Microsoft, OpenAI, Ai2/OLMo, IBM/Granite, TII/Falcon), opensource.org (OSAID), Epoch AI, Artificial Analysis, LMArena, Berkeley BFCL, Apple ML Research &amp; MLX docs, and the "Leaderboard Illusion" paper (arXiv 2504.20879).</p>
+  <p><strong>Confidence &amp; recency.</strong> <span class="conf c-h">HIGH</span> on definitions, licensing, runtimes, strategy, and the China-share inflection. <span class="conf c-m">MED</span>/<span class="conf c-l">LOW</span> on specific mid-2026 model names &amp; benchmark scores — this field moves weekly; several 2026 releases (Qwen3.5, Gemma 4, DeepSeek V4, Mistral Small 4, exotic leaderboard tiers) are confirmed to exist but carry secondary-source specs. Verify the exact model card before betting production on a precise number. Key model tags (e.g. <code>ollama.com/library</code>) move — confirm at pull time.</p>
+  <p class="small">Generated for Yaron · PAI research · rendered inside the dashboard under Rental → Report.</p>
+</div>
+
+</main>
+</div>
+
+<script>
+  // TOC active-section highlight
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var map = {};
+    links.forEach(function(a){ var id=a.getAttribute('href').slice(1); if(id) map[id]=a; });
+    var ids = Object.keys(map);
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){ l.classList.remove('active'); });
+          var a = map[e.target.id]; if(a) a.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    ids.forEach(function(id){ var el=document.getElementById(id); if(el) obs.observe(el); });
+  })();
+</script>
+</body>
+</html>
