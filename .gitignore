@@ -26,3 +26,4 @@ dist-ssr
 lilach-*.png
 .secrets/
 public/farm-view/
+undefined/
